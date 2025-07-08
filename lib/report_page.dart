@@ -225,7 +225,6 @@ class ReportPage extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Column(
-            spacing: 4,
             children: [
               _buildNutrientItem('• 维生素A：0mg'),
               _buildNutrientItem('• 维生素B：0mg'),
