@@ -51,7 +51,7 @@ class _MainPageState extends State<MainPage> {
     PlaceholderWidget(title: "饮食报告", color: Colors.red[100]!),
     CameraPage(),
     HomePage(),
-    PlaceholderWidget(title: "食物仓库", color: Colors.orange[100]!),
+    // PlaceholderWidget(title: "食物仓库", color: Colors.orange[100]!),
     PlaceholderWidget(title: "个人中心", color: Colors.purple[100]!),
   ];
 
@@ -83,8 +83,8 @@ class _MainPageState extends State<MainPage> {
           _buildNavItem(0, Icons.assessment, "饮食报告"),
           _buildNavItem(1, Icons.camera_alt, "拍照"),
           _buildNavItem(2, Icons.home, "首页"),
-          _buildNavItem(3, Icons.kitchen, "食物仓库"),
-          _buildNavItem(4, Icons.person, "个人中心"),
+          // _buildNavItem(3, Icons.kitchen, "食物仓库"),
+          _buildNavItem(3, Icons.person, "个人中心"),
         ],
       ),
     );

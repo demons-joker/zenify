@@ -8,6 +8,7 @@ class CameraPage extends StatefulWidget {
 }
 
 class _CameraPageState extends State<CameraPage> {
+  // ignore: unused_field
   File? _image;
   bool _showCompletion = false;
 

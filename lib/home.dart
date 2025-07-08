@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'menu_page.dart';
 
 class HomePage extends StatelessWidget {
   @override
@@ -123,37 +124,58 @@ class HomePage extends StatelessWidget {
       alignment: Alignment.centerLeft, // 组件靠左对齐
       child: Padding(
         padding: EdgeInsets.only(left: 10), // 左侧 10px 边距
+        child: Row(
+          children: [
+            _buildCategoryButton('肉类', Color(0xFFEA7B3C)),
+            SizedBox(width: 10),
+            _buildCategoryButton('蔬菜', Color(0xFF7BEA3C)),
+            SizedBox(width: 10),
+            _buildCategoryButton('碳水', Color(0xFF3C7BEA)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 食谱分类按钮
+  Widget _buildCategoryButton(String category, Color color) {
+    return Builder(builder: (context) {
+      return GestureDetector(
+        onTap: () {
+          // 导航到菜单页面，并传递选择的类别
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => MenuPage(category: category),
+            ),
+          );
+        },
         child: Container(
-          width: 171,
+          width: 100,
           height: 37,
-          margin: EdgeInsets.only(bottom: 10), // 右 20px 边距
+          margin: EdgeInsets.only(bottom: 10),
           decoration: BoxDecoration(
-            color: Color(0xFFEA7B3C),
+            color: color,
             borderRadius: BorderRadius.circular(18.5),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.start, // 内部元素靠左
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Padding(
                 padding: EdgeInsets.only(left: 12, right: 8),
                 child: Icon(Icons.restaurant, color: Colors.black, size: 20),
               ),
               Text(
-                '168轻食食谱',
+                category,
                 style: TextStyle(
                   color: Colors.black,
                 ),
               ),
-              Spacer(),
-              Padding(
-                padding: EdgeInsets.only(right: 12),
-                child: Icon(Icons.arrow_forward, color: Colors.black, size: 20),
-              ),
             ],
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   // 5. 晚餐Card
