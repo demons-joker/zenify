@@ -104,7 +104,7 @@ class _MenuPageState extends State<MenuPage> {
 
             // 3. 水平滚动的标签列表
             Container(
-              height: 52, // 32px高度 + 上下padding
+              height: 32, // 32px高度 + 上下padding
               margin: EdgeInsets.only(top: 16.0),
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
@@ -140,34 +140,31 @@ class _MenuPageState extends State<MenuPage> {
               child: Container(
                 margin: EdgeInsets.only(top: 20.0),
                 child: PageView.builder(
-                  scrollDirection: Axis.vertical, // 垂直滚动
+                  scrollDirection: Axis.vertical,
                   controller: _pageController,
-                  itemCount: 10000, // 使用一个很大的数字来模拟无限滚动
-                  padEnds: false, // 不在列表两端添加额外的填充
+                  itemCount: 10000,
+                  padEnds: false,
                   itemBuilder: (context, index) {
-                    // 使用模运算来获取实际的菜品索引
                     final actualIndex = index % _actualItemCount;
-
-                    // 计算每个项目的旋转角度
                     double value = (index - _currentPage);
 
-                    // 应用变换 - 竖向旋转，圆心在左侧
                     return Transform(
-                      // 设置变换原点在左侧中心外部
-                      alignment: Alignment(-3.0, 0.0), // 负值表示左侧，值越小越远
+                      // 调整变换原点位置（更靠近左侧）
+                      alignment: Alignment(-1.5, -1.0), // 从-3.0调整为-1.5
                       transform: Matrix4.identity()
-                        ..setEntry(3, 2, 0.001) // 透视效果
-                        ..rotateX(value * 0.05) // X轴轻微旋转
-                        ..rotateZ(value * 0.12), // Z轴主要旋转，调整旋转角度使动画更流畅
+                        ..setEntry(3, 2, 0.002) // 增强透视效果
+                        ..rotateX(value * 0.03) // 减小X轴旋转
+                        ..rotateZ(value * 0.1), // 减小Z轴旋转角度
                       child: Container(
-                        width: 300, // 调整宽度为300
-                        height: 110, // 保持高度为110
+                        width: 300,
+                        height: 140,
+                        // 减小垂直间距（从10.0调为5.0）
                         margin: EdgeInsets.symmetric(
                           horizontal: 20.0,
-                          vertical: 10.0,
+                          vertical: 5.0, // 调整这里
                         ),
                         decoration: BoxDecoration(
-                          color: getColorForIndex(actualIndex), // 使用实际索引获取颜色
+                          color: getColorForIndex(actualIndex),
                           borderRadius: BorderRadius.circular(18),
                           boxShadow: [
                             BoxShadow(

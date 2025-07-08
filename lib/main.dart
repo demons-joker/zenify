@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 
 import 'package:zenify/camera_page.dart';
 import 'package:zenify/home.dart';
+import 'package:zenify/report_page.dart';
 
 void _setWindowSize() {
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
@@ -48,9 +49,9 @@ class _MainPageState extends State<MainPage> {
 
   // 5个页面的占位组件（实际替换为您的页面）
   final List<Widget> _pages = [
-    PlaceholderWidget(title: "饮食报告", color: Colors.red[100]!),
-    CameraPage(),
-    HomePage(),
+    ReportPage(), //我的报告
+    CameraPage(), //拍照
+    HomePage(), //首页
     // PlaceholderWidget(title: "食物仓库", color: Colors.orange[100]!),
     PlaceholderWidget(title: "个人中心", color: Colors.purple[100]!),
   ];
@@ -80,18 +81,18 @@ class _MainPageState extends State<MainPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildNavItem(0, Icons.assessment, "饮食报告"),
-          _buildNavItem(1, Icons.camera_alt, "拍照"),
-          _buildNavItem(2, Icons.home, "首页"),
+          _buildNavItem(0, Icons.assessment),
+          _buildNavItem(1, Icons.camera_alt),
+          _buildNavItem(2, Icons.home),
           // _buildNavItem(3, Icons.kitchen, "食物仓库"),
-          _buildNavItem(3, Icons.person, "个人中心"),
+          _buildNavItem(3, Icons.person),
         ],
       ),
     );
   }
 
   // 单个导航项
-  Widget _buildNavItem(int index, IconData icon, String label) {
+  Widget _buildNavItem(int index, IconData icon) {
     bool isSelected = _currentIndex == index;
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
@@ -99,11 +100,6 @@ class _MainPageState extends State<MainPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, color: isSelected ? Colors.blue : Colors.grey[700]),
-          Text(label,
-              style: TextStyle(
-                color: isSelected ? Colors.blue : Colors.grey[700],
-                fontSize: 12,
-              )),
         ],
       ),
     );

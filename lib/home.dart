@@ -18,7 +18,7 @@ class HomePage extends StatelessWidget {
           // 4. 食谱按钮
           _buildRecipeButton(),
           // 5. 晚餐Card
-          _buildDinnerCard(),
+          _buildDinnerCard(context),
           // 6. 分割线
           _buildDividerWithClock(),
           // 7. 进度条Card
@@ -124,65 +124,46 @@ class HomePage extends StatelessWidget {
       alignment: Alignment.centerLeft, // 组件靠左对齐
       child: Padding(
         padding: EdgeInsets.only(left: 10), // 左侧 10px 边距
-        child: Row(
-          children: [
-            _buildCategoryButton('肉类', Color(0xFFEA7B3C)),
-            SizedBox(width: 10),
-            _buildCategoryButton('蔬菜', Color(0xFF7BEA3C)),
-            SizedBox(width: 10),
-            _buildCategoryButton('碳水', Color(0xFF3C7BEA)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 食谱分类按钮
-  Widget _buildCategoryButton(String category, Color color) {
-    return Builder(builder: (context) {
-      return GestureDetector(
-        onTap: () {
-          // 导航到菜单页面，并传递选择的类别
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => MenuPage(category: category),
-            ),
-          );
-        },
         child: Container(
-          width: 100,
+          width: 171,
           height: 37,
-          margin: EdgeInsets.only(bottom: 10),
+          margin: EdgeInsets.only(bottom: 10), // 右 20px 边距
           decoration: BoxDecoration(
-            color: color,
+            color: Color(0xFFEA7B3C),
             borderRadius: BorderRadius.circular(18.5),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.start, // 内部元素靠左
             children: [
               Padding(
                 padding: EdgeInsets.only(left: 12, right: 8),
                 child: Icon(Icons.restaurant, color: Colors.black, size: 20),
               ),
               Text(
-                category,
+                '168轻食食谱',
                 style: TextStyle(
                   color: Colors.black,
                 ),
               ),
+              Spacer(),
+              Padding(
+                padding: EdgeInsets.only(right: 12),
+                child: Icon(Icons.arrow_forward, color: Colors.black, size: 20),
+              ),
             ],
           ),
         ),
-      );
-    });
+      ),
+    );
   }
 
   // 5. 晚餐Card
-  Widget _buildDinnerCard() {
+  Widget _buildDinnerCard(BuildContext context) {
+    // 模拟数据 - 实际使用时可以替换为您的数据源
+    final List<String> dinnerItems = ['沙拉', '牛排', '汤', '汤']; // 可以是1-4个
+
     return Padding(
-      // 添加外层Padding
-      padding: EdgeInsets.symmetric(horizontal: 10), // 左右各10px
+      padding: EdgeInsets.symmetric(horizontal: 10),
       child: Stack(
         children: [
           // 主Card
@@ -190,41 +171,25 @@ class HomePage extends StatelessWidget {
             width: double.infinity,
             height: 210,
             margin: EdgeInsets.only(top: 20),
-            padding: EdgeInsets.only(left: 20, right: 20),
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
               color: Color(0xFFEAEAEA),
               borderRadius: BorderRadius.circular(15),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2), // 阴影颜色和透明度
-                  offset: Offset(2, 2), // 右下方向2px偏移
-                  blurRadius: 2, // 模糊半径2px
-                  spreadRadius: 1, // 不扩展阴影
+                  color: Colors.black.withOpacity(0.2),
+                  offset: Offset(2, 2),
+                  blurRadius: 2,
+                  spreadRadius: 1,
                 ),
               ],
             ),
-            child: Column(
-              children: [
-                // 图片区域
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Expanded(child: _buildFoodItem('沙拉')),
-                      SizedBox(width: 5), // 起始间距
-                      Expanded(child: _buildFoodItem('牛排')),
-                      SizedBox(width: 5), // 起始间距
-                      Expanded(child: _buildFoodItem('汤')),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            child: _buildFoodItemsRow(context, dinnerItems),
           ),
           // 标题标签
           Positioned(
             top: 0,
-            left: 0, // 从150调整为140，保持居中效果
+            left: 0,
             child: Container(
               width: 100,
               height: 40,
@@ -232,10 +197,10 @@ class HomePage extends StatelessWidget {
                 color: Color(0xFFEAEAEA),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2), // 阴影颜色和透明度
+                    color: Colors.black.withOpacity(0.2),
                     offset: Offset(0, -5),
-                    blurRadius: 2, // 模糊半径2px
-                    spreadRadius: -2, // 不扩展阴影
+                    blurRadius: 2,
+                    spreadRadius: -2,
                   ),
                 ],
                 borderRadius: BorderRadius.only(
@@ -259,30 +224,65 @@ class HomePage extends StatelessWidget {
     );
   }
 
+// 构建食物项行 - 自适应1-4个项目
+  Widget _buildFoodItemsRow(BuildContext context, List<String> items) {
+    // 根据项目数量调整间距和扩展比例
+    final spacing = items.length > 1 ? 5.0 : 0.0;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        for (int i = 0; i < items.length; i++) ...[
+          Expanded(
+            child: _buildFoodItem(context, items[i]),
+          ),
+          if (i < items.length - 1) SizedBox(width: spacing),
+        ],
+      ],
+    );
+  }
+
   // 食物项组件
-  Widget _buildFoodItem(String name) {
+  Widget _buildFoodItem(BuildContext context, String name) {
+    void navigateToMenuPage(BuildContext context, String category) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MenuPage(category: category),
+        ),
+      );
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          height: 148,
+          height: 188, // 增加高度(148+40)容纳按钮
           decoration: BoxDecoration(
-            color: Colors.white,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              // 这里应该是食物图片，用占位色代替
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(10),
+              // 主内容区域（原高度148）
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 148, // 原高度
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
+
               // 底部文字区域
-              Align(
-                alignment: Alignment.bottomCenter,
+              Positioned(
+                bottom: 40, // 调整到按钮上方
+                left: 0,
+                right: 0,
                 child: Container(
                   width: 120,
                   height: 40,
@@ -293,38 +293,50 @@ class HomePage extends StatelessWidget {
                     ),
                   ),
                   child: Align(
-                    // 新增Align组件控制对齐方式
-                    alignment: Alignment.centerLeft, // 靠左对齐
+                    alignment: Alignment.centerLeft,
                     child: Padding(
-                      // 添加内边距
-                      padding: EdgeInsets.only(left: 10), // 左侧留12px间距
+                      padding: EdgeInsets.only(left: 10),
                       child: Text(
                         name,
                         style: TextStyle(
                           color: Colors.white,
-                          height: 1.2, // 行高调整，确保垂直居中
+                          height: 1.2,
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
+
+              // 刷新按钮（现在在容器内部）
               Positioned(
-                bottom: -40,
-                left: 0, // 从150调整为140，保持居中效果
-                child: Container(
-                  width: 46,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(23),
-                      bottomRight: Radius.circular(23),
+                bottom: 0, // 相对于父容器底部
+                left: 0,
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    onTap: () {
+                      navigateToMenuPage(context, name);
+                    },
+                    splashColor: Colors.orange.withOpacity(0.6),
+                    child: Container(
+                      width: 46,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(23),
+                          bottomRight: Radius.circular(23),
+                        ),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.autorenew,
+                          size: 20,
+                          color: Colors.grey[700],
+                        ),
+                      ),
                     ),
-                  ),
-                  child: Center(
-                    child: Icon(Icons.autorenew,
-                        size: 20, color: Colors.grey[700]),
                   ),
                 ),
               ),
