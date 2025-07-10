@@ -5,6 +5,11 @@ import 'dart:io' show Platform;
 import 'package:zenify/camera_page.dart';
 import 'package:zenify/home.dart';
 import 'package:zenify/report_page.dart';
+import 'package:zenify/profile_page.dart';
+import 'package:zenify/login.dart';
+import 'package:zenify/services/api_service.dart';
+import 'package:zenify/services/user_session.dart';
+import 'package:zenify/utils/iconfont.dart';
 
 void _setWindowSize() {
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
@@ -32,10 +37,35 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Zenify App',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: MainPage(),
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        fontFamily: 'iconfont',
+      ),
+      home: UserSession.userId != null ? MainPage() : Login(),
       debugShowCheckedModeBanner: false,
+      navigatorObservers: [
+        _AppLifecycleObserver(),
+      ],
     );
+  }
+}
+
+class _AppLifecycleObserver extends NavigatorObserver {
+  @override
+  void didPush(Route route, Route? previousRoute) {
+    super.didPush(route, previousRoute);
+    if (route.settings.name == '/') {
+      // 应用进入前台
+    }
+  }
+
+  @override
+  void didPop(Route route, Route? previousRoute) {
+    super.didPop(route, previousRoute);
+    if (previousRoute?.settings.name == '/') {
+      // 应用退出
+      ApiService.close();
+    }
   }
 }
 
@@ -53,53 +83,72 @@ class _MainPageState extends State<MainPage> {
     CameraPage(), //拍照
     HomePage(), //首页
     // PlaceholderWidget(title: "食物仓库", color: Colors.orange[100]!),
-    PlaceholderWidget(title: "个人中心", color: Colors.purple[100]!),
+    ProfilePage(), //个人中心
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_currentIndex],
-      bottomNavigationBar: _buildCustomBottomNavBar(),
+      // 关键点1：设置extendBody为true让内容延伸到导航栏后面
+      extendBody: true,
+      body: Stack(
+        children: [
+          // 关键点2：页面内容占满全屏
+          Positioned.fill(
+            child: _pages[_currentIndex],
+          ),
+          // 关键点3：悬浮导航栏定位在底部
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _buildCustomBottomNavBar(),
+          ),
+        ],
+      ),
+      // 移除原有的bottomNavigationBar参数
     );
   }
 
   // 自定义底部导航栏
   Widget _buildCustomBottomNavBar() {
     return Container(
-      width: 370, // 宽度
       height: 56, // 高度
       margin: EdgeInsets.only(
         bottom: 20, // 距离底部20px
-        left: 10, // 左右边距10px
-        right: 10,
+        left: 20, // 左右边距10px
+        right: 20,
       ),
       decoration: BoxDecoration(
-        color: Color(0xFFdcdcdc), // 背景色#dcdcdc
+        color: Color.fromRGBO(255, 255, 255, 0.9),
         borderRadius: BorderRadius.circular(28), // 圆角（直径的一半）
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildNavItem(0, Icons.assessment),
-          _buildNavItem(1, Icons.camera_alt),
-          _buildNavItem(2, Icons.home),
+          _buildNavItem(0, Icon(IconFont.daohangweixuanzhongTongji),
+              Icon(IconFont.daohangxuanzhongTongji)),
+          _buildNavItem(1, Icon(IconFont.daohangweixuanzhongPaizhao),
+              Icon(IconFont.daohangxuanzhongPaizhao)),
+          _buildNavItem(2, Icon(IconFont.daohangxuanzhongShouye),
+              Icon(IconFont.daohangxuanzhongShouye)),
           // _buildNavItem(3, Icons.kitchen, "食物仓库"),
-          _buildNavItem(3, Icons.person),
+          _buildNavItem(3, Icon(IconFont.daohangweixuanzhongWode),
+              Icon(IconFont.daohangxuanzhongWode)),
         ],
       ),
     );
   }
 
   // 单个导航项
-  Widget _buildNavItem(int index, IconData icon) {
+  Widget _buildNavItem(int index, Icon icon, Icon selectIcon) {
     bool isSelected = _currentIndex == index;
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: isSelected ? Colors.blue : Colors.grey[700]),
+          isSelected ? selectIcon : icon,
         ],
       ),
     );

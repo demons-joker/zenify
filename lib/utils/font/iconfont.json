@@ -1,0 +1,268 @@
+{
+  "id": "4967883",
+  "name": "2025初APP",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon-",
+  "description": "",
+  "glyphs": [
+    {
+      "icon_id": "44831643",
+      "name": "导航选中-【仓库】",
+      "font_class": "a-daohangxuanzhong-cangku",
+      "unicode": "e61c",
+      "unicode_decimal": 58908
+    },
+    {
+      "icon_id": "44831645",
+      "name": "导航选中-【我的】",
+      "font_class": "a-daohangxuanzhong-wode",
+      "unicode": "e61d",
+      "unicode_decimal": 58909
+    },
+    {
+      "icon_id": "44831644",
+      "name": "导航选中-【统计】",
+      "font_class": "a-daohangxuanzhong-tongji",
+      "unicode": "e61e",
+      "unicode_decimal": 58910
+    },
+    {
+      "icon_id": "44831642",
+      "name": "导航选中-【拍照】",
+      "font_class": "a-daohangxuanzhong-paizhao",
+      "unicode": "e61f",
+      "unicode_decimal": 58911
+    },
+    {
+      "icon_id": "44831641",
+      "name": "导航选中-【首页】",
+      "font_class": "a-daohangxuanzhong-shouye",
+      "unicode": "e620",
+      "unicode_decimal": 58912
+    },
+    {
+      "icon_id": "44831639",
+      "name": "导航栏",
+      "font_class": "daohanglan1",
+      "unicode": "e621",
+      "unicode_decimal": 58913
+    },
+    {
+      "icon_id": "44831640",
+      "name": "导航未选中-【我的】",
+      "font_class": "a-daohangweixuanzhong-wode",
+      "unicode": "e622",
+      "unicode_decimal": 58914
+    },
+    {
+      "icon_id": "44831638",
+      "name": "导航未选中-【统计】",
+      "font_class": "a-daohangweixuanzhong-tongji",
+      "unicode": "e623",
+      "unicode_decimal": 58915
+    },
+    {
+      "icon_id": "44831637",
+      "name": "导航未选中-【仓库】",
+      "font_class": "a-daohangweixuanzhong-cangku",
+      "unicode": "e624",
+      "unicode_decimal": 58916
+    },
+    {
+      "icon_id": "44831636",
+      "name": "导航未选中-【拍照】",
+      "font_class": "a-daohangweixuanzhong-paizhao",
+      "unicode": "e625",
+      "unicode_decimal": 58917
+    },
+    {
+      "icon_id": "44831430",
+      "name": "4、组件套装-打分【分析页面】",
+      "font_class": "a-Frame2043683555",
+      "unicode": "e605",
+      "unicode_decimal": 58885
+    },
+    {
+      "icon_id": "44831434",
+      "name": "新鲜食材",
+      "font_class": "xinxianshicai",
+      "unicode": "e608",
+      "unicode_decimal": 58888
+    },
+    {
+      "icon_id": "44831435",
+      "name": "预包装食材",
+      "font_class": "yubaozhuangshicai",
+      "unicode": "e609",
+      "unicode_decimal": 58889
+    },
+    {
+      "icon_id": "44831436",
+      "name": "01已摄入量",
+      "font_class": "a-01yisheruliang",
+      "unicode": "e60a",
+      "unicode_decimal": 58890
+    },
+    {
+      "icon_id": "44831437",
+      "name": "肉鸡腿",
+      "font_class": "roujitui",
+      "unicode": "e60b",
+      "unicode_decimal": 58891
+    },
+    {
+      "icon_id": "44831438",
+      "name": "鸡肉",
+      "font_class": "jirou",
+      "unicode": "e60c",
+      "unicode_decimal": 58892
+    },
+    {
+      "icon_id": "44831439",
+      "name": "拍照按钮",
+      "font_class": "paizhaoanniu",
+      "unicode": "e60d",
+      "unicode_decimal": 58893
+    },
+    {
+      "icon_id": "44831440",
+      "name": "小猪",
+      "font_class": "xiaozhu",
+      "unicode": "e60e",
+      "unicode_decimal": 58894
+    },
+    {
+      "icon_id": "44831441",
+      "name": "闪关灯",
+      "font_class": "shanguandeng",
+      "unicode": "e60f",
+      "unicode_decimal": 58895
+    },
+    {
+      "icon_id": "44831442",
+      "name": "胃肠道建议",
+      "font_class": "weichangdaojianyi",
+      "unicode": "e610",
+      "unicode_decimal": 58896
+    },
+    {
+      "icon_id": "44831443",
+      "name": "膳食建议",
+      "font_class": "shanshijianyi",
+      "unicode": "e611",
+      "unicode_decimal": 58897
+    },
+    {
+      "icon_id": "44831444",
+      "name": "已摄入值",
+      "font_class": "yisheruzhi",
+      "unicode": "e612",
+      "unicode_decimal": 58898
+    },
+    {
+      "icon_id": "44831445",
+      "name": "海鲜",
+      "font_class": "haixian",
+      "unicode": "e613",
+      "unicode_decimal": 58899
+    },
+    {
+      "icon_id": "44831446",
+      "name": "牛",
+      "font_class": "niu",
+      "unicode": "e614",
+      "unicode_decimal": 58900
+    },
+    {
+      "icon_id": "44831447",
+      "name": "更换",
+      "font_class": "genghuan",
+      "unicode": "e615",
+      "unicode_decimal": 58901
+    },
+    {
+      "icon_id": "44831448",
+      "name": "蔬菜",
+      "font_class": "shucai",
+      "unicode": "e616",
+      "unicode_decimal": 58902
+    },
+    {
+      "icon_id": "44831449",
+      "name": "美容养颜建议",
+      "font_class": "meirongyangyanjianyi",
+      "unicode": "e617",
+      "unicode_decimal": 58903
+    },
+    {
+      "icon_id": "44831450",
+      "name": "米饭",
+      "font_class": "mifan",
+      "unicode": "e618",
+      "unicode_decimal": 58904
+    },
+    {
+      "icon_id": "44831451",
+      "name": "断食倒计时",
+      "font_class": "duanshidaojishi",
+      "unicode": "e619",
+      "unicode_decimal": 58905
+    },
+    {
+      "icon_id": "44831452",
+      "name": "展开详情按钮",
+      "font_class": "zhankaixiangqinganniu",
+      "unicode": "e61a",
+      "unicode_decimal": 58906
+    },
+    {
+      "icon_id": "44831453",
+      "name": "004基础代谢",
+      "font_class": "a-004jichudaixie",
+      "unicode": "e61b",
+      "unicode_decimal": 58907
+    },
+    {
+      "icon_id": "44831432",
+      "name": "分析统计",
+      "font_class": "fenxitongji",
+      "unicode": "e606",
+      "unicode_decimal": 58886
+    },
+    {
+      "icon_id": "44831433",
+      "name": "吃饭时间速度",
+      "font_class": "chifanshijiansudu",
+      "unicode": "e607",
+      "unicode_decimal": 58887
+    },
+    {
+      "icon_id": "44831429",
+      "name": "4、组件套装-打分【分析页面】",
+      "font_class": "a-Frame1000003263",
+      "unicode": "e604",
+      "unicode_decimal": 58884
+    },
+    {
+      "icon_id": "44831427",
+      "name": "3、组件套装-每日早午晚餐等【分析页面】",
+      "font_class": "a-Frame10000032631",
+      "unicode": "e603",
+      "unicode_decimal": 58883
+    },
+    {
+      "icon_id": "44831424",
+      "name": "2、组件套装-星期一到周末【首页】",
+      "font_class": "a-Frame2043683521",
+      "unicode": "e602",
+      "unicode_decimal": 58882
+    },
+    {
+      "icon_id": "44831422",
+      "name": "导航栏",
+      "font_class": "daohanglan",
+      "unicode": "e601",
+      "unicode_decimal": 58881
+    }
+  ]
+}

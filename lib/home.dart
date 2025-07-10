@@ -169,7 +169,6 @@ class HomePage extends StatelessWidget {
           // 主Card
           Container(
             width: double.infinity,
-            height: 210,
             margin: EdgeInsets.only(top: 20),
             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
@@ -226,20 +225,45 @@ class HomePage extends StatelessWidget {
 
 // 构建食物项行 - 自适应1-4个项目
   Widget _buildFoodItemsRow(BuildContext context, List<String> items) {
-    // 根据项目数量调整间距和扩展比例
-    final spacing = items.length > 1 ? 5.0 : 0.0;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        for (int i = 0; i < items.length; i++) ...[
-          Expanded(
-            child: _buildFoodItem(context, items[i]),
+    // 根据项目数量决定布局方式
+    if (items.length <= 3) {
+      // 单行显示1-3个项目（居中对齐）
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: items
+            .map((item) => Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 5),
+                    child: _buildFoodItem(context, item),
+                  ),
+                ))
+            .toList(),
+      );
+    } else {
+      // 超过3个时换行显示
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start, // 整体左对齐
+        children: [
+          // 第一行显示前3个（居中对齐）
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: items
+                .sublist(0, 3)
+                .map((item) => Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 5),
+                        child: _buildFoodItem(context, item),
+                      ),
+                    ))
+                .toList(),
           ),
-          if (i < items.length - 1) SizedBox(width: spacing),
+          SizedBox(height: 10),
+          // 第二行显示剩余项目（左对齐）
+          _buildFoodItem(context, items[3])
         ],
-      ],
-    );
+      );
+    }
   }
 
   // 食物项组件
@@ -258,6 +282,7 @@ class HomePage extends StatelessWidget {
       children: [
         Container(
           height: 188, // 增加高度(148+40)容纳按钮
+          width: 100,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
           ),

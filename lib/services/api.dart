@@ -1,0 +1,137 @@
+import 'package:zenify/services/user_session.dart';
+import './api_service.dart';
+import './service_config.dart';
+
+class LoginRequest {
+  final String username;
+  final String email;
+  final String fullName;
+  final String password;
+
+  const LoginRequest({
+    required this.username,
+    this.email = '',
+    this.fullName = '',
+    required this.password,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'username': username,
+        'email': email,
+        'full_name': fullName,
+        'password': password,
+      };
+}
+
+class UserInfo {
+  final int id;
+  final String username;
+  final String email;
+  final String fullName;
+  final bool isActive;
+
+  UserInfo({
+    required this.id,
+    required this.username,
+    required this.email,
+    required this.fullName,
+    required this.isActive,
+  });
+
+  factory UserInfo.fromJson(Map<String, dynamic> json) {
+    return UserInfo(
+      id: json['id'] ?? 0,
+      username: json['username'] ?? '',
+      email: json['email'] ?? '',
+      fullName: json['full_name'] ?? json['fullName'] ?? '',
+      isActive: json['is_active'] ?? json['isActive'] ?? false,
+    );
+  }
+}
+
+class Api {
+  // 默认请求头
+  static Map<String, String> get _defaultHeaders {
+    return {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Accept': 'application/json',
+      'Accept-Charset': 'utf-8',
+    };
+  }
+
+  // 添加认证头
+  static Future<Map<String, String>> _getAuthHeaders() async {
+    final token = await UserSession.token;
+    if (token != null) {
+      return {
+        ..._defaultHeaders,
+        'Authorization': 'Bearer $token',
+      };
+    }
+    return _defaultHeaders;
+  }
+
+  // 注册
+  static Future<dynamic> register(LoginRequest request) async {
+    return _handleRequest(
+      ApiConfig.register,
+      body: request.toJson(),
+    );
+  }
+
+  // 登录
+  static Future<dynamic> login(LoginRequest request) async {
+    return _handleRequest(
+      ApiConfig.login,
+      body: request.toJson(),
+    );
+  }
+
+  // 获取用户信息
+  static Future<dynamic> getUserInfo() async {
+    final userId = await UserSession.userId;
+    print('$userId,用户未登录');
+    if (userId == null) {
+      throw Exception('用户未登录');
+    }
+    return _handleRequest(
+      ApiConfig.userInfo,
+      pathParams: {'user_id': userId},
+    );
+  }
+
+  // 登出
+  static Future<dynamic> logout() async {
+    await UserSession.clear();
+    return true;
+  }
+
+  // 统一请求处理
+  static Future<dynamic> _handleRequest(
+    ApiEndpoint endpoint, {
+    Map<String, dynamic>? body,
+    Map<String, dynamic>? queryParams,
+    Map<String, dynamic>? pathParams,
+    Map<String, dynamic>? header,
+  }) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await ApiService.request(
+        endpoint,
+        body: body,
+        queryParams: queryParams,
+        pathParams: pathParams,
+        headers: {...headers, ...?header},
+      );
+
+      // 如果需要，可以在这里统一处理响应数据
+      return response;
+    } catch (e) {
+      // 统一错误处理
+      if (e is! FormatException) {
+        rethrow;
+      }
+      throw Exception('请求处理失败: ${e.message}');
+    }
+  }
+}

@@ -1,41 +1,62 @@
 import 'package:flutter/material.dart';
+import 'package:zenify/random_word_cloud.dart';
 
 class ReportPage extends StatelessWidget {
   const ReportPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final words = [
+      {'text': '甜食', 'highlight': true},
+      {'text': '辣味', 'highlight': false},
+      {'text': '海鲜', 'highlight': true},
+      {'text': '素食', 'highlight': false},
+      {'text': '烧烤', 'highlight': true},
+      {'text': '火锅', 'highlight': false},
+      {'text': '面食', 'highlight': true},
+      {'text': '油炸', 'highlight': false},
+      {'text': '清淡', 'highlight': false},
+      {'text': '重口味', 'highlight': true},
+    ];
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 标题行
-            const Padding(
-              padding: EdgeInsets.only(top: 20, bottom: 20),
-              child: Text(
-                '我的报告',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 标题行
+              const Padding(
+                padding: EdgeInsets.only(top: 20, bottom: 20),
+                child: Text(
+                  '我的报告',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
 
-            // Tabs行
-            _buildTabs(),
+              // Tabs行
+              _buildTabs(),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // 卡路里统计块
-            _buildCalorieBlock(),
+              // 卡路里统计块
+              _buildCalorieBlock(),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // 营养成分分析块
-            _buildNutritionAnalysis(context),
-          ],
+              // 营养成分分析块
+              _buildNutritionAnalysis(context),
+
+              const SizedBox(height: 20),
+
+              // 词云块
+              RandomWordCloud(words: words),
+            ],
+          ),
         ),
       ),
     );
