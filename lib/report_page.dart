@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:zenify/random_word_cloud.dart';
+import 'package:zenify/utils/iconfont.dart';
 
 class ReportPage extends StatelessWidget {
   const ReportPage({super.key});
@@ -146,11 +147,15 @@ class ReportPage extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.restaurant, color: Color(0xFFEA7B3C)),
+                      const Icon(
+                        IconFont.yisheruzhi,
+                        color: Color(0xFFEA7B3C),
+                        size: 36,
+                      ),
                       const SizedBox(width: 5),
                       Flexible(
                         child: Text(
-                          '本次摄入400KCAL',
+                          '本次摄入400kcal',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Color(0xFFEA7B3C),
@@ -207,7 +212,7 @@ class ReportPage extends StatelessWidget {
           // 标题行
           Row(
             children: [
-              const Icon(Icons.data_usage, size: 20),
+              const Icon(IconFont.fenxitongji, size: 20),
               const SizedBox(width: 5),
               Text(
                 '营养成分分析',
