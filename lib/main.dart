@@ -76,52 +76,48 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   int _currentIndex = 2; // 默认选中首页（第3个Tab）
+  bool _showBottomNavBar = true; // 控制导航栏显示状态
 
-  // 5个页面的占位组件（实际替换为您的页面）
+  // 页面列表
   final List<Widget> _pages = [
-    ReportPage(), //我的报告
-    CameraPage(), //拍照
-    HomePage(), //首页
-    // PlaceholderWidget(title: "食物仓库", color: Colors.orange[100]!),
-    ProfilePage(), //个人中心
+    ReportPage(), // 我的报告
+    Container(), // 拍照按钮占位，实际不会显示
+    HomePage(), // 首页
+    ProfilePage(), // 个人中心
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // 关键点1：设置extendBody为true让内容延伸到导航栏后面
       extendBody: true,
       body: Stack(
         children: [
-          // 关键点2：页面内容占满全屏
+          // 页面内容
           Positioned.fill(
             child: _pages[_currentIndex],
           ),
-          // 关键点3：悬浮导航栏定位在底部
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _buildCustomBottomNavBar(),
-          ),
+
+          // 自定义底部导航栏（根据状态显示/隐藏）
+          if (_showBottomNavBar)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: _buildCustomBottomNavBar(),
+            ),
         ],
       ),
-      // 移除原有的bottomNavigationBar参数
     );
   }
 
   // 自定义底部导航栏
   Widget _buildCustomBottomNavBar() {
     return Container(
-      height: 56, // 高度
-      margin: EdgeInsets.only(
-        bottom: 20, // 距离底部20px
-        left: 20, // 左右边距10px
-        right: 20,
-      ),
+      height: 56,
+      margin: EdgeInsets.only(bottom: 20, left: 20, right: 20),
       decoration: BoxDecoration(
         color: Color.fromRGBO(255, 255, 255, 0.9),
-        borderRadius: BorderRadius.circular(28), // 圆角（直径的一半）
+        borderRadius: BorderRadius.circular(28),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -131,7 +127,6 @@ class _MainPageState extends State<MainPage> {
           _buildNavItem(1, Icon(IconFont.daohangweixuanzhongPaizhao),
               Icon(IconFont.daohangxuanzhongPaizhao)),
           _buildNavItem(2, Icon(IconFont.shouye), Icon(IconFont.shouye2)),
-          // _buildNavItem(3, Icons.kitchen, "食物仓库"),
           _buildNavItem(3, Icon(IconFont.daohangweixuanzhongWode),
               Icon(IconFont.daohangxuanzhongWode)),
         ],
@@ -143,7 +138,17 @@ class _MainPageState extends State<MainPage> {
   Widget _buildNavItem(int index, Icon icon, Icon selectIcon) {
     bool isSelected = _currentIndex == index;
     return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: () {
+        if (index == 1) {
+          // 拍照按钮点击处理
+          _openCameraPage();
+        } else {
+          // 其他导航项点击处理
+          setState(() {
+            _currentIndex = index;
+          });
+        }
+      },
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -151,6 +156,27 @@ class _MainPageState extends State<MainPage> {
         ],
       ),
     );
+  }
+
+  // 打开拍照页面
+  void _openCameraPage() {
+    setState(() {
+      _showBottomNavBar = false; // 隐藏导航栏
+    });
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CameraPage(),
+      ),
+    ).then((_) {
+      // 拍照页面关闭后恢复导航栏
+      if (mounted) {
+        setState(() {
+          _showBottomNavBar = true;
+        });
+      }
+    });
   }
 }
 

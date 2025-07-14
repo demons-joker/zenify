@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
@@ -10,10 +9,12 @@ class CameraPage extends StatefulWidget {
 }
 
 class _CameraPageState extends State<CameraPage> {
-  late CameraController _cameraController;
-  late Future<void> _initializeControllerFuture;
+  CameraController? _cameraController;
+  Future<void>? _initializeControllerFuture;
   XFile? _imageFile;
   bool _isTakingPhoto = false;
+  bool _showPreview = false;
+  bool _isInitializing = true;
 
   @override
   void initState() {
@@ -25,56 +26,61 @@ class _CameraPageState extends State<CameraPage> {
     try {
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
-        throw Exception('没有可用的相机');
+        throw Exception('No cameras available');
       }
 
-      _cameraController = CameraController(
-        cameras.firstWhere(
-          (camera) => camera.lensDirection == CameraLensDirection.back,
-          orElse: () => cameras.first,
-        ),
-        ResolutionPreset.medium,
+      final backCamera = cameras.firstWhere(
+        (camera) => camera.lensDirection == CameraLensDirection.back,
       );
 
-      _initializeControllerFuture = _cameraController.initialize();
+      _cameraController = CameraController(
+        backCamera,
+        ResolutionPreset.high,
+      );
+
+      _initializeControllerFuture = _cameraController!.initialize();
       await _initializeControllerFuture;
     } catch (e) {
-      print('相机初始化失败: $e');
-      // 可以在这里添加错误处理UI
+      print('Camera initialization error: $e');
+      // 可以考虑在这里显示错误UI
+    } finally {
+      if (mounted) {
+        setState(() => _isInitializing = false);
+      }
     }
   }
 
   Future<void> _takePhoto() async {
-    if (!_cameraController.value.isInitialized || _isTakingPhoto) {
+    if (_cameraController == null ||
+        !_cameraController!.value.isInitialized ||
+        _isTakingPhoto) {
       return;
     }
 
     setState(() => _isTakingPhoto = true);
 
     try {
-      final directory = await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final path = '${directory.path}/photo_$timestamp.jpg';
-
-      final imageFile = await _cameraController.takePicture();
-
-      // 检查文件是否存在
+      final imageFile = await _cameraController!.takePicture();
       final file = File(imageFile.path);
+
       if (await file.exists()) {
         setState(() {
           _imageFile = imageFile;
+          _showPreview = true;
         });
-
-        // 可以在这里添加照片处理逻辑
-        // 例如上传到服务器或保存到相册
       } else {
-        throw Exception('照片文件未创建成功');
+        throw Exception('Failed to create photo file');
       }
     } catch (e) {
-      print('拍照失败: $e');
-      // 可以在这里添加错误提示
+      print('Photo capture error: $e');
+      // 显示错误提示
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('拍照失败: ${e.toString()}')),
+      );
     } finally {
-      setState(() => _isTakingPhoto = false);
+      if (mounted) {
+        setState(() => _isTakingPhoto = false);
+      }
     }
   }
 
@@ -87,57 +93,140 @@ class _CameraPageState extends State<CameraPage> {
         imageQuality: 85,
       );
 
-      if (pickedFile != null) {
+      if (pickedFile != null && mounted) {
         setState(() {
           _imageFile = pickedFile;
+          _showPreview = true;
         });
-
-        // 可以在这里添加照片处理逻辑
       }
     } catch (e) {
-      print('选择照片失败: $e');
-      // 可以在这里添加错误提示
+      print('Photo pick error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('选择照片失败: ${e.toString()}')),
+      );
+    }
+  }
+
+  void _retakePhoto() {
+    if (mounted) {
+      setState(() {
+        _showPreview = false;
+        _imageFile = null;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('拍照')),
-      body: Stack(
-        children: [
-          if (_cameraController.value.isInitialized)
-            CameraPreview(_cameraController),
-          if (_imageFile != null)
-            Positioned.fill(
-              child: Image.file(File(_imageFile!.path), fit: BoxFit.cover),
-            ),
-          if (_isTakingPhoto) Center(child: CircularProgressIndicator()),
-        ],
+    return WillPopScope(
+      onWillPop: () async {
+        // 允许返回并确保main.dart会恢复导航栏
+        return true;
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: _isInitializing
+            ? Center(child: CircularProgressIndicator())
+            : Stack(
+                children: [
+                  // Camera preview or photo preview
+                  if (_showPreview && _imageFile != null)
+                    Positioned.fill(
+                      child:
+                          Image.file(File(_imageFile!.path), fit: BoxFit.cover),
+                    )
+                  else if (_cameraController != null)
+                    Positioned.fill(
+                      child: CameraPreview(_cameraController!),
+                    ),
+
+                  // Top controls
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 16,
+                    left: 0,
+                    right: 0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.close, color: Colors.white),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                        if (_showPreview && _imageFile != null)
+                          TextButton(
+                            child: Text('使用照片',
+                                style: TextStyle(color: Colors.white)),
+                            onPressed: () =>
+                                Navigator.of(context).pop(_imageFile!.path),
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  // Bottom controls
+                  Positioned(
+                    bottom: MediaQuery.of(context).padding.bottom + 24,
+                    left: 0,
+                    right: 0,
+                    child: _buildBottomControls(),
+                  ),
+
+                  // Loading indicator when taking photo
+                  if (_isTakingPhoto)
+                    Center(child: CircularProgressIndicator()),
+                ],
+              ),
       ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FloatingActionButton(
-            onPressed: _takePhoto,
-            child: Icon(Icons.camera),
-            heroTag: 'camera',
+    );
+  }
+
+  Widget _buildBottomControls() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_showPreview)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              TextButton(
+                child: Text('重拍', style: TextStyle(color: Colors.white)),
+                onPressed: _retakePhoto,
+              ),
+              TextButton(
+                child: Text('确认', style: TextStyle(color: Colors.white)),
+                onPressed: () => Navigator.of(context).pop(_imageFile!.path),
+              ),
+            ],
+          )
+        else
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              IconButton(
+                icon: Icon(Icons.photo_library, color: Colors.white),
+                onPressed: _pickPhoto,
+              ),
+              GestureDetector(
+                onTap: _takePhoto,
+                child: Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 4),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 48),
+            ],
           ),
-          SizedBox(height: 16),
-          FloatingActionButton(
-            onPressed: _pickPhoto,
-            child: Icon(Icons.photo_library),
-            heroTag: 'gallery',
-          ),
-        ],
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      ],
     );
   }
 
   @override
   void dispose() {
-    _cameraController.dispose();
+    _cameraController?.dispose();
     super.dispose();
   }
 }
