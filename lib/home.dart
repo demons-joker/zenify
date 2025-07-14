@@ -1,36 +1,91 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
+import 'package:zenify/services/api.dart';
+import 'package:zenify/utils/iconfont.dart';
 import 'menu_page.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  List<dynamic> allRecipes = [];
+  dynamic currentRecipe;
+  List<dynamic> currentFoods = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRecipes();
+  }
+
+  Future<void> _fetchRecipes() async {
+    try {
+      setState(() => isLoading = true);
+      final response = await Api.getRecipes(RecipesRequest(
+        skip: 0,
+        limit: 1000,
+        isPreset: true,
+      ));
+      setState(() {
+        allRecipes = response;
+        if (allRecipes.isNotEmpty) {
+          currentRecipe = allRecipes[0];
+          _updateFoodsFromRecipe(currentRecipe);
+        }
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() => isLoading = false);
+      print('获取食谱失败: $e');
+    }
+  }
+
+  void _updateFoodsFromRecipe(dynamic recipe) {
+    if (recipe != null && recipe['recipe_foods'] != null) {
+      setState(() {
+        currentFoods = recipe['recipe_foods']
+            .where((rf) => rf['food'] != null) // Filter out null foods
+            .map((rf) => rf['food'])
+            .toList();
+      });
+    }
+  }
+
+  void _switchRandomRecipe() {
+    if (allRecipes.isNotEmpty) {
+      final random = Random();
+      final newRecipe = allRecipes[random.nextInt(allRecipes.length)];
+      setState(() => currentRecipe = newRecipe);
+      _updateFoodsFromRecipe(newRecipe);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return Center(child: CircularProgressIndicator());
+    }
+
     return SingleChildScrollView(
       child: Column(
         children: [
-          // 1. 标题行
           _buildTitleRow(),
-          // 2. 星期Tabs
           _buildWeekTabs(),
-          // 3. "今天吃什么？"文案
           _buildTodayText(),
-          // 4. 食谱按钮
           _buildRecipeButton(),
-          // 5. 晚餐Card
-          _buildDinnerCard(context),
-          // 6. 分割线
+          _buildCurrentMealsCard(context),
           _buildDividerWithClock(),
-          // 7. 进度条Card
           _buildProgressCard(),
-          // 8. 餐食Card
           _buildMealsCard(),
         ],
       ),
     );
   }
 
-  // 1. 标题行
+  // 1. 标题行 (保持不变)
   Widget _buildTitleRow() {
     return Container(
       height: 30,
@@ -49,24 +104,24 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // 2. 星期Tabs
+  // 2. 星期Tabs (保持不变)
   Widget _buildWeekTabs() {
     final weekDays = ['日', '一', '二', '三', '四', '五', '六'];
-    int selectedDay = DateTime.now().weekday % 7; // 使用状态变量
+    int selectedDay = DateTime.now().weekday % 7;
 
     return StatefulBuilder(
       builder: (context, setState) {
         return Container(
           height: 37,
-          margin: EdgeInsets.symmetric(horizontal: 20), // 左右边距20px
+          margin: EdgeInsets.symmetric(horizontal: 20),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween, // 左右平分
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(weekDays.length, (index) {
               final isSelected = index == selectedDay;
               return GestureDetector(
-                onTap: () => setState(() => selectedDay = index), // 点击切换
+                onTap: () => setState(() => selectedDay = index),
                 child: Container(
-                  width: 30, // 固定宽度确保均匀分布
+                  width: 30,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -84,7 +139,7 @@ class HomePage extends StatelessWidget {
                               color:
                                   isSelected ? Colors.white : Color(0xFF4D4D4D),
                               fontSize: 14,
-                              fontWeight: FontWeight.bold, // 字体加粗
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
@@ -100,7 +155,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // 3. "今天吃什么？"文案
+  // 3. "今天吃什么？"文案 (保持不变)
   Widget _buildTodayText() {
     return Padding(
       padding: EdgeInsets.only(left: 10, top: 10, bottom: 5),
@@ -118,49 +173,62 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // 4. 食谱按钮
+  // 4. 食谱按钮 (优化后)
   Widget _buildRecipeButton() {
     return Align(
-      alignment: Alignment.centerLeft, // 组件靠左对齐
+      alignment: Alignment.centerLeft,
       child: Padding(
-        padding: EdgeInsets.only(left: 10), // 左侧 10px 边距
-        child: Container(
-          width: 171,
-          height: 37,
-          margin: EdgeInsets.only(bottom: 10), // 右 20px 边距
-          decoration: BoxDecoration(
-            color: Color(0xFFEA7B3C),
-            borderRadius: BorderRadius.circular(18.5),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.start, // 内部元素靠左
-            children: [
-              Padding(
-                padding: EdgeInsets.only(left: 12, right: 8),
-                child: Icon(Icons.restaurant, color: Colors.black, size: 20),
-              ),
-              Text(
-                '168轻食食谱',
-                style: TextStyle(
-                  color: Colors.black,
+        padding: EdgeInsets.only(left: 10),
+        child: GestureDetector(
+          onTap: _switchRandomRecipe,
+          child: Container(
+            width: 171,
+            height: 37,
+            margin: EdgeInsets.only(bottom: 10),
+            decoration: BoxDecoration(
+              color: Color(0xFFEA7B3C),
+              borderRadius: BorderRadius.circular(18.5),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: EdgeInsets.only(left: 12, right: 8),
+                  child: Icon(Icons.restaurant, color: Colors.black, size: 20),
                 ),
-              ),
-              Spacer(),
-              Padding(
-                padding: EdgeInsets.only(right: 12),
-                child: Icon(Icons.arrow_forward, color: Colors.black, size: 20),
-              ),
-            ],
+                Expanded(
+                  child: Text(
+                    currentRecipe != null
+                        ? currentRecipe['name'] ?? '随机食谱'
+                        : '加载中...',
+                    style: TextStyle(
+                      color: Colors.black,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.only(right: 12),
+                  child: Icon(Icons.autorenew, color: Colors.black, size: 20),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  // 5. 晚餐Card
-  Widget _buildDinnerCard(BuildContext context) {
-    // 模拟数据 - 实际使用时可以替换为您的数据源
-    final List<String> dinnerItems = ['沙拉', '牛排', '汤', '汤']; // 可以是1-4个
+  // 5. 当前餐食Card (优化后)
+  Widget _buildCurrentMealsCard(BuildContext context) {
+    if (currentFoods.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 20),
+          child: Text('暂无食物数据'),
+        ),
+      );
+    }
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 10),
@@ -170,7 +238,7 @@ class HomePage extends StatelessWidget {
           Container(
             width: double.infinity,
             margin: EdgeInsets.only(top: 20),
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: EdgeInsets.only(top: 30, left: 20, right: 20, bottom: 0),
             decoration: BoxDecoration(
               color: Color(0xFFEAEAEA),
               borderRadius: BorderRadius.circular(15),
@@ -183,7 +251,7 @@ class HomePage extends StatelessWidget {
                 ),
               ],
             ),
-            child: _buildFoodItemsRow(context, dinnerItems),
+            child: _buildFoodItemsRow(context, currentFoods),
           ),
           // 标题标签
           Positioned(
@@ -218,70 +286,66 @@ class HomePage extends StatelessWidget {
               ),
             ),
           ),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: IconButton(
+              icon: Icon(IconFont.genghuan, size: 45),
+              onPressed: _switchRandomRecipe,
+            ),
+          ),
         ],
       ),
     );
   }
 
-// 构建食物项行 - 自适应1-4个项目
-  Widget _buildFoodItemsRow(BuildContext context, List<String> items) {
-    // 根据项目数量决定布局方式
-    if (items.length <= 3) {
-      // 单行显示1-3个项目（居中对齐）
+  // 构建食物项行 (优化后)
+  Widget _buildFoodItemsRow(BuildContext context, List<dynamic> foods) {
+    // 限制最多显示4个食物
+    final displayFoods = foods.length > 4 ? foods.sublist(0, 4) : foods;
+
+    if (displayFoods.length <= 3) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: items
-            .map((item) => Expanded(
+        children: displayFoods
+            .map((food) => Expanded(
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 5),
-                    child: _buildFoodItem(context, item),
+                    child: _buildFoodItem(context, food),
                   ),
                 ))
             .toList(),
       );
     } else {
-      // 超过3个时换行显示
       return Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start, // 整体左对齐
         children: [
-          // 第一行显示前3个（居中对齐）
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: items
+            children: displayFoods
                 .sublist(0, 3)
-                .map((item) => Expanded(
+                .map((food) => Expanded(
                       child: Padding(
                         padding: EdgeInsets.symmetric(horizontal: 5),
-                        child: _buildFoodItem(context, item),
+                        child: _buildFoodItem(context, food),
                       ),
                     ))
                 .toList(),
           ),
           SizedBox(height: 10),
-          // 第二行显示剩余项目（左对齐）
-          _buildFoodItem(context, items[3])
+          _buildFoodItem(context, displayFoods[3]),
         ],
       );
     }
   }
 
-  // 食物项组件
-  Widget _buildFoodItem(BuildContext context, String name) {
-    void navigateToMenuPage(BuildContext context, String category) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => MenuPage(category: category),
-        ),
-      );
-    }
-
+  // 食物项组件 (优化后)
+  Widget _buildFoodItem(BuildContext context, dynamic food) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          height: 188, // 增加高度(148+40)容纳按钮
+          height: 188,
           width: 100,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
@@ -289,23 +353,28 @@ class HomePage extends StatelessWidget {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              // 主内容区域（原高度148）
+              // 食物图片
               Positioned(
                 top: 0,
                 left: 0,
                 right: 0,
-                height: 148, // 原高度
+                height: 148,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
                     borderRadius: BorderRadius.circular(10),
+                    image: food['image_url'] != null
+                        ? DecorationImage(
+                            image: NetworkImage(food['image_url']),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                    color: Colors.grey[300],
                   ),
                 ),
               ),
-
               // 底部文字区域
               Positioned(
-                bottom: 40, // 调整到按钮上方
+                bottom: 40,
                 left: 0,
                 right: 0,
                 child: Container(
@@ -322,26 +391,32 @@ class HomePage extends StatelessWidget {
                     child: Padding(
                       padding: EdgeInsets.only(left: 10),
                       child: Text(
-                        name,
+                        food['name'] ?? '未知食物',
                         style: TextStyle(
                           color: Colors.white,
                           height: 1.2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-
-              // 刷新按钮（现在在容器内部）
+              // 刷新按钮
               Positioned(
-                bottom: 0, // 相对于父容器底部
+                bottom: 0,
                 left: 0,
                 child: Material(
                   type: MaterialType.transparency,
                   child: InkWell(
                     onTap: () {
-                      navigateToMenuPage(context, name);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              MenuPage(category: food['name'] ?? '食物'),
+                        ),
+                      );
                     },
                     splashColor: Colors.orange.withOpacity(0.6),
                     child: Container(
@@ -372,7 +447,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // 6. 分割线
+  // 6. 分割线 (保持不变)
   Widget _buildDividerWithClock() {
     return Padding(
       padding: EdgeInsets.only(top: 30, bottom: 20),
@@ -416,10 +491,9 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // 7. 进度条Card
+  // 7. 进度条Card (保持不变)
   Widget _buildProgressCard() {
-    final progress = 0.5; // 50%进度
-
+    final progress = 0.5;
     return Container(
       width: double.infinity,
       margin: EdgeInsets.symmetric(horizontal: 20),
@@ -431,15 +505,12 @@ class HomePage extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          //摄入量
           Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            _buildDataItem(Icons.restaurant, '摄入量', '600'),
+            _buildDataItem(Icon(IconFont.yisheruzhi), '摄入量', '600'),
           ]),
-          // 进度条
           Stack(
             alignment: Alignment.center,
             children: [
-              // 背景圆环
               Container(
                 width: 110,
                 height: 110,
@@ -451,7 +522,6 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
               ),
-              // 进度圆环
               Container(
                 width: 110,
                 height: 110,
@@ -463,9 +533,7 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
               ),
-              // 进度指示器
               _buildProgressIndicator(progress),
-              // 中心文字
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -497,22 +565,19 @@ class HomePage extends StatelessWidget {
               ),
             ],
           ),
-          // 代谢量
           Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            _buildDataItem(Icons.local_fire_department, '代谢量', '1200'),
+            _buildDataItem(Icon(IconFont.a004jichudaixie), '代谢量', '1200'),
           ]),
         ],
       ),
     );
   }
 
-  // 8. 餐食Card
+  // 8. 餐食Card (保持不变)
   Widget _buildMealsCard() {
-    // 获取当前时间
     final now = DateTime.now();
     final currentTime = '${now.hour}:${now.minute.toString().padLeft(2, '0')}';
 
-    // 根据时间判断当前餐段
     String getMealType() {
       if (now.hour >= 5 && now.hour < 10) return '早餐';
       if (now.hour >= 11 && now.hour < 14) return '午餐';
@@ -520,7 +585,6 @@ class HomePage extends StatelessWidget {
       return '加餐';
     }
 
-    // 模拟餐食数据
     final meals = [
       {'name': '鸡胸肉', 'type': '蛋白质', 'calories': '200'},
       {'name': '蔬菜沙拉', 'type': '纤维素', 'calories': '150'},
@@ -543,7 +607,6 @@ class HomePage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 第一行：标题 + 时间
             Padding(
               padding: EdgeInsets.only(bottom: 16),
               child: Text(
@@ -555,14 +618,12 @@ class HomePage extends StatelessWidget {
                 ),
               ),
             ),
-            // 餐食列表
             ...meals
                 .map((meal) => Padding(
                       padding: EdgeInsets.only(bottom: 12),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          // 餐食图片
                           Container(
                             width: 45,
                             height: 45,
@@ -571,8 +632,6 @@ class HomePage extends StatelessWidget {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-
-                          // 餐食名称和类型
                           Expanded(
                             child: Padding(
                               padding: EdgeInsets.symmetric(horizontal: 12),
@@ -600,8 +659,6 @@ class HomePage extends StatelessWidget {
                               ),
                             ),
                           ),
-
-                          // 卡路里
                           Text(
                             '${meal['calories']}千卡',
                             style: TextStyle(
@@ -661,10 +718,10 @@ class HomePage extends StatelessWidget {
     ]);
   }
 
-  // 进度指示器
+  // 进度指示器 (保持不变)
   Widget _buildProgressIndicator(double progress) {
-    final angle = 2 * 3.1416 * progress - 3.1416 / 2; // 转换为弧度，从顶部开始
-    final x = 87.5 + 80 * cos(angle); // 圆心x=87.5, 半径=80
+    final angle = 2 * 3.1416 * progress - 3.1416 / 2;
+    final x = 87.5 + 80 * cos(angle);
     final y = 87.5 + 80 * sin(angle);
 
     return Positioned(
@@ -681,11 +738,11 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // 数据项组件
-  Widget _buildDataItem(IconData icon, String label, String value) {
+  // 数据项组件 (保持不变)
+  Widget _buildDataItem(Icon icon, String label, String value) {
     return Column(
       children: [
-        Icon(icon, size: 30),
+        icon,
         SizedBox(height: 5),
         Text(label, style: TextStyle(fontSize: 12)),
         SizedBox(height: 2),
@@ -696,7 +753,7 @@ class HomePage extends StatelessWidget {
   }
 }
 
-// 自定义进度条绘制
+// 自定义进度条绘制 (保持不变)
 class _ProgressPainter extends CustomPainter {
   final double progress;
   final Color color;
@@ -721,7 +778,7 @@ class _ProgressPainter extends CustomPainter {
 
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
-      -3.1416 / 2, // 从顶部开始
+      -3.1416 / 2,
       2 * 3.1416 * progress,
       false,
       paint,

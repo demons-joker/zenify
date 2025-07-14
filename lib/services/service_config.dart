@@ -32,7 +32,7 @@ class ApiConfig {
 
   // 注册接口
   static const createUserIngredient = ApiEndpoint(
-    '$apiVersion/users/{userId}/ingredients/',
+    '$apiVersion/users/{userId}/ingredients',
     HttpMethod.post,
   );
   // 获取用户食材
@@ -92,7 +92,7 @@ class ApiConfig {
   );
   // 更新食谱
   static const addFoodToRecipe = ApiEndpoint(
-    '$apiVersion/recipes/{recipe_id}/foods/',
+    '$apiVersion/recipes/{recipe_id}/foods',
     HttpMethod.post,
   );
 
@@ -122,12 +122,12 @@ class ApiConfig {
     HttpMethod.put,
   );
   static const getPlanMealFoods = ApiEndpoint(
-    '$apiVersion/users/{user_id}/recipe-plans/{plan_id}/meals/',
+    '$apiVersion/users/{user_id}/recipe-plans/{plan_id}/meals',
     HttpMethod.get,
   );
 
   static const addPlanMealFood = ApiEndpoint(
-    '$apiVersion/users/{user_id}/recipe-plans/{plan_id}/meals/',
+    '$apiVersion/users/{user_id}/recipe-plans/{plan_id}/meals',
     HttpMethod.post,
   );
 
@@ -141,7 +141,7 @@ class ApiConfig {
     HttpMethod.put,
   );
   static const generateCustomRecipe = ApiEndpoint(
-    '$apiVersion/users/{user_id}/generate-custom-recipe/',
+    '$apiVersion/users/{user_id}/generate-custom-recipe',
     HttpMethod.post,
   );
 }

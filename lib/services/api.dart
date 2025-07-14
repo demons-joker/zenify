@@ -23,6 +23,24 @@ class LoginRequest {
       };
 }
 
+class RecipesRequest {
+  final int skip;
+  final int limit;
+  final bool isPreset;
+
+  const RecipesRequest({
+    required this.skip,
+    required this.limit,
+    required this.isPreset,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'skip': skip,
+        'limit': limit,
+        'is_preset': isPreset,
+      };
+}
+
 class UserInfo {
   final int id;
   final String username;
@@ -106,6 +124,34 @@ class Api {
     return true;
   }
 
+  // 获取所有食谱数据
+  static Future<dynamic> getRecipes(RecipesRequest request) async {
+    print('请求参数: ${request.toJson()}');
+    try {
+      final response = await _handleRequest(
+        ApiConfig.getRecipes,
+        queryParams: request.toJson(),
+      );
+      return response;
+    } catch (e) {
+      print('获取食谱失败: $e');
+      throw Exception('获取食谱数据失败: $e');
+    }
+  } // 获取食谱数据
+
+  static Future<dynamic> getRecipesById(String id) async {
+    try {
+      final response = await _handleRequest(
+        ApiConfig.getRecipe,
+        pathParams: {'recipe_id': id},
+      );
+      return response;
+    } catch (e) {
+      print('获取食谱失败: $e');
+      throw Exception('获取食谱数据失败: $e');
+    }
+  }
+
   // 统一请求处理
   static Future<dynamic> _handleRequest(
     ApiEndpoint endpoint, {
@@ -123,7 +169,6 @@ class Api {
         pathParams: pathParams,
         headers: {...headers, ...?header},
       );
-
       // 如果需要，可以在这里统一处理响应数据
       return response;
     } catch (e) {

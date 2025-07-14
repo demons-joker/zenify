@@ -14,13 +14,17 @@ class ApiService {
     Map<String, String>? headers,
   }) async {
     try {
+      print('queryParams: $queryParams');
+      print('pathParams: $pathParams');
+      print('body: $body');
+      print('headers: $headers');
       String processedPath = endpoint.path;
       pathParams?.forEach((key, value) {
         processedPath = processedPath.replaceAll('{$key}', value.toString());
       });
-
       var uri = Uri.parse('${ApiConfig.baseUrl}$processedPath')
-          .replace(queryParameters: queryParams);
+          .replace(queryParameters: _convertParams(queryParams ?? {}));
+      print('uri: $uri');
 
       print('API请求: ${_methodToString(endpoint.method)} ${uri.toString()}');
 
@@ -40,7 +44,7 @@ class ApiService {
     } on TimeoutException {
       throw Exception('请求超时，请检查网络连接');
     } catch (e) {
-      print('$e');
+      print('Error details: $e');
       throw Exception('请求失败: $e');
     }
   }
@@ -61,10 +65,20 @@ class ApiService {
   }
 
   static dynamic _handleResponse(http.Response response) {
+    print('_handleResponse:$response');
     switch (response.statusCode) {
       case 200:
       case 201:
-        return jsonDecode(response.body);
+        final responseBody = response.body;
+        if (responseBody.isNotEmpty) {
+          try {
+            final jsonData = jsonDecode(responseBody);
+            return jsonData;
+          } catch (e) {
+            throw Exception('Failed to parse response: $e');
+          }
+        }
+        return null;
       case 204:
         return null;
       case 400:
@@ -85,4 +99,8 @@ class ApiService {
   static void close() {
     _client.close();
   }
+}
+
+Map<String, String> _convertParams(Map<String, dynamic> params) {
+  return params.map((key, value) => MapEntry(key, value.toString()));
 }
