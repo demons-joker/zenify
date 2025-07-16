@@ -4,6 +4,10 @@ class IconFont {
   static const String fontFamily = 'iconfont';
 
   // 导航相关图标
+  static const IconData daohangxuanzhongshouye =
+      IconData(0xe62f, fontFamily: fontFamily);
+  static const IconData daohangweixuanzhongshouye =
+      IconData(0xe62e, fontFamily: fontFamily);
   static const IconData daohanglan = IconData(0xe601, fontFamily: fontFamily);
   static const IconData daohangxuanzhongShouye =
       IconData(0xe620, fontFamily: fontFamily);

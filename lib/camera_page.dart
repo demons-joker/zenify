@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:zenify/services/upload_service.dart';
 
 class CameraPage extends StatefulWidget {
   @override
@@ -156,8 +157,14 @@ class _CameraPageState extends State<CameraPage> {
                           TextButton(
                             child: Text('使用照片',
                                 style: TextStyle(color: Colors.white)),
-                            onPressed: () =>
-                                Navigator.of(context).pop(_imageFile!.path),
+                            onPressed: () async {
+                              final file = File(_imageFile!.path);
+                              final result = await UploadService.uploadImage(
+                                  file, context);
+                              if (result != null && mounted) {
+                                Navigator.of(context).pop(result);
+                              }
+                            },
                           ),
                       ],
                     ),

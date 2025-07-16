@@ -27,7 +27,7 @@ class _HomePageState extends State<HomePage> {
       final response = await Api.getRecipes(RecipesRequest(
         skip: 0,
         limit: 1000,
-        isPreset: true,
+        isPreset: false,
       ));
       setState(() {
         allRecipes = response;
@@ -200,7 +200,7 @@ class _HomePageState extends State<HomePage> {
                   child: Text(
                     currentRecipe != null
                         ? currentRecipe['name'] ?? '随机食谱'
-                        : '加载中...',
+                        : '暂无数据',
                     style: TextStyle(
                       color: Colors.black,
                       overflow: TextOverflow.ellipsis,
@@ -290,7 +290,11 @@ class _HomePageState extends State<HomePage> {
             top: 0,
             right: 0,
             child: IconButton(
-              icon: Icon(IconFont.genghuan, size: 45),
+              icon: Icon(
+                IconFont.genghuan,
+                size: 45,
+                color: Color.fromARGB(255, 243, 109, 14),
+              ),
               onPressed: _switchRandomRecipe,
             ),
           ),
@@ -413,8 +417,10 @@ class _HomePageState extends State<HomePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              MenuPage(category: food['name'] ?? '食物'),
+                          builder: (context) => MenuPage(
+                            category: food['name'] ?? '食物',
+                            recipeFoods: currentFoods,
+                          ),
                         ),
                       );
                     },
@@ -466,7 +472,7 @@ class _HomePageState extends State<HomePage> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.hourglass_empty, size: 18),
+                Icon(IconFont.duanshidaojishi, size: 18),
                 SizedBox(width: 5),
                 Text(
                   '6h后禁食',

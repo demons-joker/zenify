@@ -6,6 +6,20 @@
   "description": "",
   "glyphs": [
     {
+      "icon_id": "44929765",
+      "name": "导航选中-【首页】",
+      "font_class": "a-daohangxuanzhong-shouye",
+      "unicode": "e62f",
+      "unicode_decimal": 58927
+    },
+    {
+      "icon_id": "44929753",
+      "name": "导航未选中-【首页】",
+      "font_class": "a-daohangweixuanzhong-shouye",
+      "unicode": "e62e",
+      "unicode_decimal": 58926
+    },
+    {
       "icon_id": "44906590",
       "name": "更换",
       "font_class": "genghuan1",

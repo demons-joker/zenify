@@ -8,20 +8,20 @@ class ApiEndpoint {
 }
 
 class ApiConfig {
-  //static const String baseUrl = "http://118.195.149.172:8000";
-  static const String baseUrl = "http://127.0.0.1:8000";
+  static const String baseUrl = "http://118.195.149.172:8000";
+  // static const String baseUrl = "http://127.0.0.1:8000";
   static const String apiVersion = "/api/v1";
   static const int connectTimeout = 5000;
   static const int receiveTimeout = 5000;
   // 登录接口
   static const login = ApiEndpoint(
-    '$apiVersion/login',
+    '$apiVersion/users/login',
     HttpMethod.post,
   );
 
   // 注册接口
   static const register = ApiEndpoint(
-    '$apiVersion/register',
+    '$apiVersion/users/register',
     HttpMethod.post,
   );
   // 获取用户信息

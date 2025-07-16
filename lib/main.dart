@@ -94,7 +94,10 @@ class _MainPageState extends State<MainPage> {
         children: [
           // 页面内容
           Positioned.fill(
-            child: _pages[_currentIndex],
+            child: Padding(
+              padding: EdgeInsets.only(bottom: 76), // 56(导航栏高度) + 20
+              child: _pages[_currentIndex],
+            ),
           ),
 
           // 自定义底部导航栏（根据状态显示/隐藏）
@@ -126,7 +129,8 @@ class _MainPageState extends State<MainPage> {
               Icon(IconFont.daohangxuanzhongTongji)),
           _buildNavItem(1, Icon(IconFont.daohangweixuanzhongPaizhao),
               Icon(IconFont.daohangxuanzhongPaizhao)),
-          _buildNavItem(2, Icon(IconFont.shouye), Icon(IconFont.shouye2)),
+          _buildNavItem(2, Icon(IconFont.daohangweixuanzhongshouye),
+              Icon(IconFont.daohangxuanzhongshouye)),
           _buildNavItem(3, Icon(IconFont.daohangweixuanzhongWode),
               Icon(IconFont.daohangxuanzhongWode)),
         ],

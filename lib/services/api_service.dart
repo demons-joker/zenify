@@ -22,8 +22,10 @@ class ApiService {
       pathParams?.forEach((key, value) {
         processedPath = processedPath.replaceAll('{$key}', value.toString());
       });
-      var uri = Uri.parse('${ApiConfig.baseUrl}$processedPath')
-          .replace(queryParameters: _convertParams(queryParams ?? {}));
+      var uri = Uri.parse('${ApiConfig.baseUrl}$processedPath');
+      if (queryParams != null) {
+        uri = uri.replace(queryParameters: _convertParams(queryParams ?? {}));
+      }
       print('uri: $uri');
 
       print('API请求: ${_methodToString(endpoint.method)} ${uri.toString()}');

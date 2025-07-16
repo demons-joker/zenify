@@ -45,6 +45,13 @@ class _Login extends State<Login> {
             password: _passwordController.text,
           ),
         );
+
+        // 保存登录响应数据
+        await UserSession.saveLoginResponse(response);
+
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => MainPage()),
+        );
       } else {
         response = await Api.register(
           LoginRequest(
@@ -54,14 +61,23 @@ class _Login extends State<Login> {
             password: _passwordController.text,
           ),
         );
+        if (response != null) {
+          var userInfo = await Api.login(
+            LoginRequest(
+              username: _usernameController.text,
+              password: _passwordController.text,
+            ),
+          );
+          // 注册成功后自动登录
+          await UserSession.saveLoginResponse(userInfo);
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => MainPage()),
+          );
+        } else {
+          setState(() => _errorMessage = '注册失败，请稍后再试');
+        }
       }
-
-      // 保存登录响应数据
-      await UserSession.saveLoginResponse(response);
-
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => MainPage()),
-      );
+      print('loginobject: $response');
     } catch (e) {
       setState(() => _errorMessage = '登录失败: ${e.toString()}');
     } finally {
