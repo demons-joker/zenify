@@ -148,8 +148,18 @@ class _MenuPageState extends State<MenuPage> {
                       );
                     }
 
-                    final actualIndex = index % _actualItemCount;
-                    final foodItem = widget.recipeFoods[actualIndex];
+                    final actualIndex = widget.recipeFoods.isEmpty
+                        ? 0
+                        : index % widget.recipeFoods.length;
+                    final foodItem = widget.recipeFoods.isEmpty
+                        ? {
+                            'name': '示例菜品',
+                            'image_url': null,
+                            'quantity': 100,
+                            'unit': 'g',
+                            'category': '示例'
+                          }
+                        : widget.recipeFoods[actualIndex];
                     final food = foodItem ?? {};
                     double value = (index - _currentPage);
                     print('${widget.recipeFoods}');

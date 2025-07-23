@@ -80,9 +80,9 @@ class _MainPageState extends State<MainPage> {
 
   // 页面列表
   final List<Widget> _pages = [
-    ReportPage(), // 我的报告
-    Container(), // 拍照按钮占位，实际不会显示
     HomePage(), // 首页
+    Container(), // 拍照按钮占位，实际不会显示
+    ReportPage(), // 我的报告
     ProfilePage(), // 个人中心
   ];
 
@@ -119,18 +119,31 @@ class _MainPageState extends State<MainPage> {
       height: 56,
       margin: EdgeInsets.only(bottom: 20, left: 20, right: 20),
       decoration: BoxDecoration(
-        color: Color.fromRGBO(255, 255, 255, 0.9),
         borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 2,
+            offset: Offset(1, 1),
+            spreadRadius: 1,
+          ),
+          BoxShadow(
+            color: Colors.white.withOpacity(0.1),
+            blurRadius: 2,
+            offset: Offset(-1, -1),
+            spreadRadius: 1,
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildNavItem(0, Icon(IconFont.daohangweixuanzhongTongji),
-              Icon(IconFont.daohangxuanzhongTongji)),
+          _buildNavItem(0, Icon(IconFont.daohangweixuanzhongshouye),
+              Icon(IconFont.daohangxuanzhongshouye)),
           _buildNavItem(1, Icon(IconFont.daohangweixuanzhongPaizhao),
               Icon(IconFont.daohangxuanzhongPaizhao)),
-          _buildNavItem(2, Icon(IconFont.daohangweixuanzhongshouye),
-              Icon(IconFont.daohangxuanzhongshouye)),
+          _buildNavItem(2, Icon(IconFont.daohangweixuanzhongTongji),
+              Icon(IconFont.daohangxuanzhongTongji)),
           _buildNavItem(3, Icon(IconFont.daohangweixuanzhongWode),
               Icon(IconFont.daohangxuanzhongWode)),
         ],

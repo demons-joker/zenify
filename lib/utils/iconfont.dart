@@ -9,12 +9,10 @@ class IconFont {
   static const IconData daohangweixuanzhongshouye =
       IconData(0xe62e, fontFamily: fontFamily);
   static const IconData daohanglan = IconData(0xe601, fontFamily: fontFamily);
-  static const IconData daohangxuanzhongShouye =
-      IconData(0xe620, fontFamily: fontFamily);
   static const IconData daohangxuanzhongWode =
       IconData(0xe61d, fontFamily: fontFamily);
   static const IconData daohangxuanzhongTongji =
-      IconData(0xe61e, fontFamily: fontFamily);
+      IconData(0xe620, fontFamily: fontFamily);
   static const IconData daohangxuanzhongCangku =
       IconData(0xe61c, fontFamily: fontFamily);
   static const IconData daohangxuanzhongPaizhao =
@@ -31,8 +29,6 @@ class IconFont {
   // 新增导航图标变体
   static const IconData shouye = IconData(0xe626, fontFamily: fontFamily);
   static const IconData shouye2 = IconData(0xe621, fontFamily: fontFamily);
-  static const IconData daohangxuanzhongWode1 =
-      IconData(0xe61d, fontFamily: fontFamily);
   static const IconData daohangweixuanzhongWode1 =
       IconData(0xe61e, fontFamily: fontFamily);
   static const IconData daohangxuanzhongCangku1 =

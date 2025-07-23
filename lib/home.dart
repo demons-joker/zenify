@@ -305,6 +305,54 @@ class _HomePageState extends State<HomePage> {
 
   // 构建食物项行 (优化后)
   Widget _buildFoodItemsRow(BuildContext context, List<dynamic> foods) {
+    final mockFoods = [
+      {
+        'name': '香煎鸡胸肉',
+        'image_url':
+            'https://photo.mac89.com/180710/JPG-180710_376/v7txUnfphM_small.jpg',
+        'category': '蛋白质',
+        'calories': 165,
+        'quantity': 200,
+        'unit': 'g'
+      },
+      {
+        'name': '清蒸西兰花',
+        'image_url':
+            'https://pic.rmb.bdstatic.com/bjh/news/cf06cb5dd3d6649e23bffbff4052f58b.png',
+        'category': '蔬菜',
+        'calories': 55,
+        'quantity': 150,
+        'unit': 'g'
+      },
+      {
+        'name': '糙米饭',
+        'image_url':
+            'https://pic.rmb.bdstatic.com/bjh/250312/dump/3431b10c15fa1331dbdf58901e62248b.jpeg',
+        'category': '碳水',
+        'calories': 111,
+        'quantity': 100,
+        'unit': 'g'
+      },
+      {
+        'name': '牛油果沙拉',
+        'image_url':
+            'https://gips2.baidu.com/it/u=2141646371,928207813&fm=3074&app=3074&f=JPEG',
+        'category': '健康脂肪',
+        'calories': 240,
+        'quantity': 180,
+        'unit': 'g'
+      },
+      {
+        'name': '水煮蛋',
+        'image_url':
+            'https://q7.itc.cn/q_70/images03/20250128/ddcdb66092e84fa48bbc9cf530cce86e.jpeg',
+        'category': '蛋白质',
+        'calories': 68,
+        'quantity': 1,
+        'unit': '个'
+      }
+    ];
+    final hasFoods = mockFoods;
     // 限制最多显示4个食物
     final displayFoods = foods.length > 4 ? foods.sublist(0, 4) : foods;
 
@@ -345,6 +393,53 @@ class _HomePageState extends State<HomePage> {
 
   // 食物项组件 (优化后)
   Widget _buildFoodItem(BuildContext context, dynamic food) {
+    final mockFoods = [
+      {
+        'name': '香煎鸡胸肉',
+        'image_url':
+            'https://photo.mac89.com/180710/JPG-180710_376/v7txUnfphM_small.jpg',
+        'category': '蛋白质',
+        'calories': 165,
+        'quantity': 200,
+        'unit': 'g'
+      },
+      {
+        'name': '清蒸西兰花',
+        'image_url':
+            'https://pic.rmb.bdstatic.com/bjh/news/cf06cb5dd3d6649e23bffbff4052f58b.png',
+        'category': '蔬菜',
+        'calories': 55,
+        'quantity': 150,
+        'unit': 'g'
+      },
+      {
+        'name': '糙米饭',
+        'image_url':
+            'https://pic.rmb.bdstatic.com/bjh/250312/dump/3431b10c15fa1331dbdf58901e62248b.jpeg',
+        'category': '碳水',
+        'calories': 111,
+        'quantity': 100,
+        'unit': 'g'
+      },
+      {
+        'name': '牛油果沙拉',
+        'image_url':
+            'https://gips2.baidu.com/it/u=2141646371,928207813&fm=3074&app=3074&f=JPEG',
+        'category': '健康脂肪',
+        'calories': 240,
+        'quantity': 180,
+        'unit': 'g'
+      },
+      {
+        'name': '水煮蛋',
+        'image_url':
+            'https://q7.itc.cn/q_70/images03/20250128/ddcdb66092e84fa48bbc9cf530cce86e.jpeg',
+        'category': '蛋白质',
+        'calories': 68,
+        'quantity': 1,
+        'unit': '个'
+      }
+    ];
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -592,9 +687,27 @@ class _HomePageState extends State<HomePage> {
     }
 
     final meals = [
-      {'name': '鸡胸肉', 'type': '蛋白质', 'calories': '200'},
-      {'name': '蔬菜沙拉', 'type': '纤维素', 'calories': '150'},
-      {'name': '全麦面包', 'type': '碳水化合物', 'calories': '180'},
+      {
+        'name': '鸡胸肉',
+        'type': '蛋白质',
+        'calories': '200',
+        "img":
+            'https://photo.mac89.com/180710/JPG-180710_376/v7txUnfphM_small.jpg'
+      },
+      {
+        'name': '西兰花',
+        'type': '蔬菜',
+        'calories': '50',
+        "img":
+            'https://pic.rmb.bdstatic.com/bjh/news/cf06cb5dd3d6649e23bffbff4052f58b.png'
+      },
+      {
+        'name': '糙米饭',
+        'type': '碳水化合物',
+        'calories': '150',
+        "img":
+            'https://pic.rmb.bdstatic.com/bjh/250312/dump/3431b10c15fa1331dbdf58901e62248b.jpeg'
+      },
     ];
     return Stack(children: [
       Container(
@@ -634,7 +747,10 @@ class _HomePageState extends State<HomePage> {
                             width: 45,
                             height: 45,
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              image: DecorationImage(
+                                image: NetworkImage(meal['img'] ?? ''),
+                                fit: BoxFit.cover,
+                              ),
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
