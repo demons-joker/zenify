@@ -3,20 +3,20 @@ import './api_service.dart';
 import './service_config.dart';
 
 class LoginRequest {
-  final String username;
+  final String name;
   final String email;
   final String fullName;
   final String password;
 
   const LoginRequest({
-    required this.username,
+    required this.name,
     this.email = '',
     this.fullName = '',
     required this.password,
   });
 
   Map<String, dynamic> toJson() => {
-        'username': username,
+        'name': name,
         'email': email,
         'full_name': fullName,
         'password': password,
@@ -43,14 +43,14 @@ class RecipesRequest {
 
 class UserInfo {
   final int id;
-  final String username;
+  final String name;
   final String email;
   final String fullName;
   final bool isActive;
 
   UserInfo({
     required this.id,
-    required this.username,
+    required this.name,
     required this.email,
     required this.fullName,
     required this.isActive,
@@ -59,7 +59,7 @@ class UserInfo {
   factory UserInfo.fromJson(Map<String, dynamic> json) {
     return UserInfo(
       id: json['id'] ?? 0,
-      username: json['username'] ?? '',
+      name: json['name'] ?? '',
       email: json['email'] ?? '',
       fullName: json['full_name'] ?? json['fullName'] ?? '',
       isActive: json['is_active'] ?? json['isActive'] ?? false,
@@ -87,6 +87,34 @@ class Api {
       };
     }
     return _defaultHeaders;
+  }
+
+  // 统一请求处理
+  static Future<dynamic> _handleRequest(
+    ApiEndpoint endpoint, {
+    Map<String, dynamic>? body,
+    Map<String, dynamic>? queryParams,
+    Map<String, dynamic>? pathParams,
+    Map<String, dynamic>? header,
+  }) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await ApiService.request(
+        endpoint,
+        body: body,
+        queryParams: queryParams,
+        pathParams: pathParams,
+        headers: {...headers, ...?header},
+      );
+      // 如果需要，可以在这里统一处理响应数据
+      return response;
+    } catch (e) {
+      // 统一错误处理
+      if (e is! FormatException) {
+        rethrow;
+      }
+      throw Exception('请求处理失败: ${e.message}');
+    }
   }
 
   // 注册
@@ -137,8 +165,9 @@ class Api {
       print('获取食谱失败: $e');
       throw Exception('获取食谱数据失败: $e');
     }
-  } // 获取食谱数据
+  }
 
+  // 获取食谱数据
   static Future<dynamic> getRecipesById(String id) async {
     try {
       final response = await _handleRequest(
@@ -152,31 +181,55 @@ class Api {
     }
   }
 
-  // 统一请求处理
-  static Future<dynamic> _handleRequest(
-    ApiEndpoint endpoint, {
-    Map<String, dynamic>? body,
-    Map<String, dynamic>? queryParams,
-    Map<String, dynamic>? pathParams,
-    Map<String, dynamic>? header,
-  }) async {
+  //新增接口--------------start-------------
+
+  // 获取当前用户食谱数据
+
+  // 获取当前用户食谱数据
+  static Future<Map<String, dynamic>> getCurrentUserRecipes(
+      Map<String, dynamic> request) async {
+    print('请求参数: $request');
     try {
-      final headers = await _getAuthHeaders();
-      final response = await ApiService.request(
-        endpoint,
-        body: body,
-        queryParams: queryParams,
-        pathParams: pathParams,
-        headers: {...headers, ...?header},
+      final response = await _handleRequest(
+        ApiConfig.getCurrentUserRecipes,
+        pathParams: request,
       );
-      // 如果需要，可以在这里统一处理响应数据
       return response;
     } catch (e) {
-      // 统一错误处理
-      if (e is! FormatException) {
-        rethrow;
-      }
-      throw Exception('请求处理失败: ${e.message}');
+      print('获取当前用户食谱数据失败: $e');
+      throw Exception('获取当前用户食谱数据失败: $e');
+    }
+  }
+
+  // 获取当前用户食物数据
+  static Future<dynamic> getCurrentUserFoods(
+      Map<String, dynamic> request) async {
+    print('请求参数: $request');
+    try {
+      final response = await _handleRequest(
+        ApiConfig.getCurrentUserFoods,
+        pathParams: request,
+      );
+      return response;
+    } catch (e) {
+      print('获取当前用户食物数据失败: $e');
+      throw Exception('获取当前用户食物数据失败: $e');
+    }
+  }
+
+  //获取用户当天的饮食记录
+  static Future<Map<String, dynamic>> getUserTodayMealRecords(
+      Map<String, dynamic> request) async {
+    print('请求参数: $request');
+    try {
+      final response = await _handleRequest(
+        ApiConfig.getUserTodayMealRecords,
+        pathParams: request,
+      );
+      return response;
+    } catch (e) {
+      print('获取当天饮食记录失败: $e');
+      throw Exception('获取当天饮食记录失败: $e');
     }
   }
 }

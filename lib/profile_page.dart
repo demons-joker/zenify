@@ -147,7 +147,7 @@ class _ProfilePageState extends State<ProfilePage> {
         Text(
           _userInfo!.fullName.isNotEmpty
               ? _userInfo!.fullName
-              : _userInfo!.username,
+              : _userInfo!.name,
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -172,7 +172,7 @@ class _ProfilePageState extends State<ProfilePage> {
       children: [
         // _buildInfoItem('用户ID', _userInfo!.id.toString()),
         Divider(height: 1),
-        _buildInfoItem('用户名', _userInfo!.username),
+        _buildInfoItem('用户名', _userInfo!.name),
         Divider(height: 1),
         _buildInfoItem('电子邮箱', _userInfo!.email),
         Divider(height: 1),

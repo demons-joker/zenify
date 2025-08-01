@@ -8,7 +8,7 @@ class ApiEndpoint {
 }
 
 class ApiConfig {
-  static const String baseUrl = "http://118.195.149.172:8000";
+  static const String baseUrl = "https://www.maididi.com/";
   // static const String baseUrl = "http://127.0.0.1:8000";
   static const String apiVersion = "/api/v1";
   static const int connectTimeout = 5000;
@@ -143,5 +143,21 @@ class ApiConfig {
   static const generateCustomRecipe = ApiEndpoint(
     '$apiVersion/users/{user_id}/generate-custom-recipe',
     HttpMethod.post,
+  );
+  //新增接口--------------start-------------
+  //获取当前用户食谱数据
+  static const getCurrentUserRecipes = ApiEndpoint(
+    '$apiVersion/users/{user_id}/recipe-plans/current',
+    HttpMethod.get,
+  );
+  //获取当前用户食物数据
+  static const getCurrentUserFoods = ApiEndpoint(
+    '$apiVersion/users/{user_id}/recipe-plans/current/foods',
+    HttpMethod.get,
+  );
+  //获取当天的饮食记录
+  static const getUserTodayMealRecords = ApiEndpoint(
+    '$apiVersion/users/{user_id}/plates/{plate_id}/meal-records/today',
+    HttpMethod.get,
   );
 }

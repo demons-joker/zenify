@@ -10,7 +10,7 @@ class Login extends StatefulWidget {
 
 class _Login extends State<Login> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
+  final _nameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _emailController = TextEditingController();
   final _fullNameController = TextEditingController();
@@ -21,7 +21,7 @@ class _Login extends State<Login> {
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _nameController.dispose();
     _passwordController.dispose();
     _emailController.dispose();
     _fullNameController.dispose();
@@ -41,7 +41,7 @@ class _Login extends State<Login> {
       if (_isLoginMode) {
         response = await Api.login(
           LoginRequest(
-            username: _usernameController.text,
+            name: _nameController.text,
             password: _passwordController.text,
           ),
         );
@@ -55,7 +55,7 @@ class _Login extends State<Login> {
       } else {
         response = await Api.register(
           LoginRequest(
-            username: _usernameController.text,
+            name: _nameController.text,
             email: _emailController.text,
             fullName: _fullNameController.text,
             password: _passwordController.text,
@@ -64,7 +64,7 @@ class _Login extends State<Login> {
         if (response != null) {
           var userInfo = await Api.login(
             LoginRequest(
-              username: _usernameController.text,
+              name: _nameController.text,
               password: _passwordController.text,
             ),
           );
@@ -106,7 +106,7 @@ class _Login extends State<Login> {
           child: Column(
             children: [
               TextFormField(
-                controller: _usernameController,
+                controller: _nameController,
                 decoration: InputDecoration(
                   labelText: '用户名',
                   border: OutlineInputBorder(),

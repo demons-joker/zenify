@@ -343,7 +343,7 @@ class ScoreCircle extends StatelessWidget {
                     ),
                     Positioned(
                       right: 0,
-                      top: 15,
+                      top: 10,
                       child: Container(
                         width: 8,
                         height: 8,

@@ -4,7 +4,7 @@ import 'dart:io' show Platform;
 
 import 'package:zenify/camera_page.dart';
 import 'package:zenify/home.dart';
-import 'package:zenify/report_page.dart';
+import 'package:zenify/pages/report.dart';
 import 'package:zenify/profile_page.dart';
 import 'package:zenify/login.dart';
 import 'package:zenify/services/api_service.dart';
@@ -120,6 +120,7 @@ class _MainPageState extends State<MainPage> {
       height: 56,
       margin: EdgeInsets.only(bottom: 20, left: 20, right: 20),
       decoration: BoxDecoration(
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
