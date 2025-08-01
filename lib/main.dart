@@ -41,6 +41,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         fontFamily: 'iconfont',
       ),
+      // ignore: unnecessary_null_comparison
       home: UserSession.userId != null ? MainPage() : Login(),
       debugShowCheckedModeBanner: false,
       navigatorObservers: [

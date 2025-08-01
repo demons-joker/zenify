@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:zenify/random_word_cloud.dart';
 import 'package:zenify/utils/iconfont.dart';
 
@@ -19,6 +20,15 @@ class ReportPage extends StatelessWidget {
       {'text': '清淡', 'highlight': false},
       {'text': '重口味', 'highlight': true},
     ];
+
+// 示例数据
+    final List<NutrientData> data = [
+      NutrientData(name: "蛋白质", value: 30, color: Colors.blue),
+      NutrientData(name: "脂肪", value: 20, color: Colors.red),
+      NutrientData(name: "碳水化合物", value: 40, color: Colors.green),
+      NutrientData(name: "膳食纤维", value: 10, color: Colors.orange),
+    ];
+
     return Scaffold(
       body: SingleChildScrollView(
         child: Padding(
@@ -28,37 +38,75 @@ class ReportPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 标题行
-              const Padding(
-                padding: EdgeInsets.only(top: 20, bottom: 20),
-                child: Text(
-                  '你的报告',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+              Padding(
+                padding: const EdgeInsets.only(top: 20, bottom: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () {},
+                    ),
+                    const Text(
+                      '详细信息',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
               // Tabs行
               _buildTabs(),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 30),
+              // 文案内容
+              _buildKcalCard(),
+              const SizedBox(height: 30),
+              // // 卡路里统计块
+              // _buildCalorieBlock(),
 
-              // 卡路里统计块
-              _buildCalorieBlock(),
-
-              const SizedBox(height: 20),
+              // const SizedBox(height: 20),
 
               // 营养成分分析块
-              _buildNutritionAnalysis(context),
+              SizedBox(
+                height: 200,
+                child: PieChart(
+                  PieChartData(
+                    centerSpaceRadius: 0,
+                    sectionsSpace: 2, // 扇区间距（可选）
+                    startDegreeOffset: -90, // 从12点钟方向开始
+                    sections: data.map<PieChartSectionData>((item) {
+                      return PieChartSectionData(
+                        color: item.color,
+                        value: item.value.toDouble(),
+                        // title: '${item.value}%',
+                        radius: 90,
+                        titleStyle: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        // 外部标签（带延伸线）
+                        badgeWidget: _buildLegendItem(item),
+                        badgePositionPercentageOffset: 1.2, // 标签位置（1.0 = 边缘）
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
 
-              const SizedBox(height: 20),
+              // const SizedBox(height: 20),
 
-              // 词云块
-              RandomWordCloud(words: words),
-              const SizedBox(height: 20),
-              _buildWhiteListCard(), // 添加211白名单卡片
-              const SizedBox(height: 20),
+              // // 词云块
+              // RandomWordCloud(words: words),
+              const SizedBox(height: 30),
+              _buildWhiteListCard(), // 添加本餐
+              const SizedBox(height: 30),
+              _buildNutrientAnalysisCard(),
+              const SizedBox(height: 30),
               _buildDietSuggestionCard(),
               const SizedBox(height: 20),
               _buildTextCard(
@@ -120,11 +168,129 @@ class ReportPage extends StatelessWidget {
     );
   }
 
+  Widget _buildNutrientAnalysisCard() {
+    return Container(
+      padding: EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: Offset(2, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 第一部分：竖向排列的文字
+          Text(
+            '营养分析',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 10),
+          Text(
+            '1. 番茄炒蛋富含维生素C和蛋白质。',
+            style: TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+          Text(
+            '2. 清蒸鱼含有丰富的优质蛋白。',
+            style: TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+          Text(
+            '3. 西兰花是膳食纤维的良好来源。',
+            style: TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+          SizedBox(height: 10),
+          Divider(color: Colors.grey),
+          SizedBox(height: 10),
+          // 第二部分：图片展示
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildFoodImage('assets/images/tomato_egg.jpg'),
+              _buildFoodImage('assets/images/steamed_fish.jpg'),
+              _buildFoodImage('assets/images/broccoli.jpg'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFoodImage(String imagePath) {
+    return Container(
+      width: 100,
+      height: 90,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        image: DecorationImage(
+          image: AssetImage(imagePath),
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLegendItem(NutrientData item) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      // decoration: BoxDecoration(
+      //   borderRadius: BorderRadius.circular(4),
+      //   boxShadow: [
+      //     BoxShadow(
+      //       color: Colors.black.withOpacity(0.1),
+      //       blurRadius: 2,
+      //       offset: const Offset(0, 1),
+      //     ),
+      //   ],
+      // ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Stack(
+            children: [
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: item.color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+              Text(
+                '${item.value}％',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 4),
+          Text(
+            item.name,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   //tabs
   Widget _buildTabs() {
     return DefaultTabController(
       // initialIndex: 0, // 默认选中第一个Tab
-      length: 5,
+      length: 4,
       child: Container(
         width: 280,
         height: 32,
@@ -147,11 +313,6 @@ class ReportPage extends StatelessWidget {
               labelColor: Colors.white,
               unselectedLabelColor: Color.fromRGBO(23, 23, 23, 0.6),
               tabs: const [
-                SizedBox(
-                  width: 50,
-                  height: 24,
-                  child: Tab(text: '全天'),
-                ),
                 SizedBox(
                   width: 50,
                   height: 24,
@@ -180,68 +341,90 @@ class ReportPage extends StatelessWidget {
     );
   }
 
-  //摄入时间
-  Widget _buildCalorieBlock() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final blockWidth = constraints.maxWidth * 0.9; // 使用90%的可用宽度
-        return Container(
-          width: blockWidth,
-          height: 66,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
+  Widget _buildKcalCard() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 左侧分数组件（模拟ScoreCircle）
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 左侧刀叉和卡路里
+              ScoreCircle(score: 92),
+              SizedBox(height: 8),
+              Padding(
+                padding: EdgeInsets.only(top: 0),
+                child: Text(
+                  '保持得很牛，加油呀！',
+                  style: TextStyle(fontSize: 22),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(width: 10),
+        // 右侧竖向卡路里块（基于_buildCalorieBlock逻辑）
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // 第一个块：黑色背景 + 图标 + 文字
               Container(
-                width: blockWidth * 0.6, // 左侧占50%
+                width: 180,
+                height: 50,
+                margin: EdgeInsets.only(top: 15),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: Color(0xFFD8D1CF),
+                  borderRadius: BorderRadius.circular(15),
+                  color: Colors.black, // 黑色背景
                 ),
                 child: Center(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
+                      Icon(
                         IconFont.yisheruzhi,
-                        color: Color(0xFFEA7B3C),
-                        size: 36,
+                        color: Color(0xFFEA7B3C), // 橙色图标
+                        size: 28,
                       ),
-                      const SizedBox(width: 5),
-                      Flexible(
-                        child: Text(
-                          '本次摄入400kcal',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFEA7B3C),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                      SizedBox(width: 6),
+                      Text(
+                        '400kcal',
+                        style: TextStyle(
+                            color: Color(0xFFEA7B3C), // 橙色文字
+                            fontSize: 30),
                       ),
                     ],
                   ),
                 ),
               ),
-              // 右侧时间
-              Expanded(
-                child: Container(
-                  margin: const EdgeInsets.only(left: 10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    color: Color(0xFF373737),
+              SizedBox(height: 8),
+              // 第二个块：白色背景 + 虚线边框 + 文字
+              Container(
+                width: 120,
+                height: 45,
+                margin: EdgeInsets.all(1), // 微小边距创造分隔效果
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    color: const Color.fromARGB(255, 241, 241, 241), // 白色虚线边框
+                    width: 1,
                   ),
-                  child: Column(
+                  color: Colors.white,
+                ),
+                child: Center(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.access_time, color: Color(0xFFEA7B3C)),
+                      Icon(
+                        IconFont.chifanshijiansudu,
+                        color: Color(0xFF777777),
+                        size: 26,
+                      ),
+                      SizedBox(width: 6),
                       Text(
                         '32min',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFEA7B3C),
-                        ),
+                        style:
+                            TextStyle(color: Color(0xFF777777), fontSize: 20),
                       ),
                     ],
                   ),
@@ -249,151 +432,225 @@ class ReportPage extends StatelessWidget {
               ),
             ],
           ),
-        );
-      },
-    );
-  }
-
-  //营养成分分析
-  Widget _buildNutritionAnalysis(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFECEB),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 标题行
-          Row(
-            children: [
-              const Icon(IconFont.fenxitongji, size: 20),
-              const SizedBox(width: 5),
-              Text(
-                '营养成分分析',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // 第一组柱状图
-          _buildNutrientBars(context, {
-            '碳水': 10,
-            '蛋白质': 10,
-            '脂肪': 20
-          }, [
-            const Color(0xFFEA7B3C),
-            const Color(0xFFB59E41),
-            const Color(0xFFFF6767)
-          ]),
-          const SizedBox(height: 16),
-
-          // 第二组柱状图
-          _buildNutrientBars(context, {'膳食纤维': 10, '钠': 50},
-              [const Color(0xFF4CAF50), const Color(0xFF2196F3)]),
-          const SizedBox(height: 16),
-
-          // 关键微量营养素
-          Text(
-            '关键微量营养素：',
-            style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: Color.fromRGBO(115, 115, 115, 1)),
-          ),
-          const SizedBox(height: 8),
-          Column(
-            children: [
-              _buildNutrientItem('• 维生素A：0mg'),
-              _buildNutrientItem('• 维生素B：0mg'),
-              _buildNutrientItem('• 维生素C：0mg'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNutrientBars(
-      BuildContext context, Map<String, int> labels, List<Color> colors) {
-    final totalWidth = MediaQuery.of(context).size.width - 100; // 减去更多padding
-    final totalPercentage =
-        labels.entries.map((e) => e.value).reduce((a, b) => a + b);
-    List<MapEntry<String, int>> maplist = labels.entries.toList();
-    return Container(
-      height: 58,
-      padding: EdgeInsets.all(5),
-      decoration: BoxDecoration(
-        color: const Color(0xFFD9D9D9),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: SizedBox(
-        height: 16,
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(maplist.length, (index) {
-                double currentWidth = double.parse(
-                    (maplist[index].value / totalPercentage * totalWidth)
-                        .toStringAsFixed(2));
-                return SizedBox(
-                  width: currentWidth, // 每个柱状图占30%的宽度
-                  height: 20,
-                  child: OverflowBox(
-                    maxWidth: double.infinity, // 允许无限宽度
-                    alignment: Alignment.centerLeft, // 左对齐
-                    child: Text(
-                      '${maplist[index].key} ${maplist[index].value}g',
-                      style: TextStyle(fontSize: 12, color: colors[index]),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                );
-              }),
-              // children: labels.entries.map((label) {
-              //   return Text(
-              //     label.key,
-              //     style: TextStyle(fontSize: 12),
-              //   );
-              // }).toList(),
-            ),
-            const SizedBox(height: 5),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(maplist.length, (index) {
-                double currentWidth = double.parse(
-                    (maplist[index].value / totalPercentage * totalWidth)
-                        .toStringAsFixed(2));
-                return Container(
-                  width: currentWidth, // 每个柱状图占30%的宽度
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: colors[index],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                );
-              }),
-            ),
-          ],
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildNutrientItem(String text) {
-    return Text(
-      text,
-      style: TextStyle(fontSize: 12, color: Color.fromRGBO(115, 115, 115, 1)),
-    );
-  }
+  //摄入时间
+  // Widget _buildCalorieBlock() {
+  //   return LayoutBuilder(
+  //     builder: (context, constraints) {
+  //       final blockWidth = constraints.maxWidth * 0.9; // 使用90%的可用宽度
+  //       return Container(
+  //         width: blockWidth,
+  //         height: 66,
+  //         decoration: BoxDecoration(
+  //           borderRadius: BorderRadius.circular(16),
+  //         ),
+  //         child: Row(
+  //           children: [
+  //             // 左侧刀叉和卡路里
+  //             Container(
+  //               width: blockWidth * 0.6, // 左侧占50%
+  //               decoration: BoxDecoration(
+  //                 borderRadius: BorderRadius.circular(16),
+  //                 color: Color(0xFFD8D1CF),
+  //               ),
+  //               child: Center(
+  //                 child: Row(
+  //                   mainAxisAlignment: MainAxisAlignment.center,
+  //                   children: [
+  //                     const Icon(
+  //                       IconFont.yisheruzhi,
+  //                       color: Color(0xFFEA7B3C),
+  //                       size: 36,
+  //                     ),
+  //                     const SizedBox(width: 5),
+  //                     Flexible(
+  //                       child: Text(
+  //                         '本次摄入400kcal',
+  //                         style: TextStyle(
+  //                           fontWeight: FontWeight.bold,
+  //                           color: Color(0xFFEA7B3C),
+  //                         ),
+  //                         overflow: TextOverflow.ellipsis,
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ),
+  //             ),
+  //             // 右侧时间
+  //             Expanded(
+  //               child: Container(
+  //                 margin: const EdgeInsets.only(left: 10),
+  //                 decoration: BoxDecoration(
+  //                   borderRadius: BorderRadius.circular(16),
+  //                   color: Color(0xFF373737),
+  //                 ),
+  //                 child: Column(
+  //                   mainAxisAlignment: MainAxisAlignment.center,
+  //                   children: [
+  //                     const Icon(Icons.access_time, color: Color(0xFFEA7B3C)),
+  //                     Text(
+  //                       '32min',
+  //                       style: TextStyle(
+  //                         fontWeight: FontWeight.bold,
+  //                         color: Color(0xFFEA7B3C),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
 
-  // 211白名单
+  // //营养成分分析
+  // Widget _buildNutritionAnalysis(BuildContext context) {
+  //   return Container(
+  //     width: double.infinity,
+  //     padding: const EdgeInsets.all(16),
+  //     decoration: BoxDecoration(
+  //       color: const Color(0xFFEFECEB),
+  //       borderRadius: BorderRadius.circular(16),
+  //     ),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         // 标题行
+  //         Row(
+  //           children: [
+  //             const Icon(IconFont.fenxitongji, size: 20),
+  //             const SizedBox(width: 5),
+  //             Text(
+  //               '营养成分分析',
+  //               style: TextStyle(
+  //                 fontWeight: FontWeight.w800,
+  //                 fontSize: 16,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //         const SizedBox(height: 16),
+  //         // 第一组柱状图
+  //         _buildNutrientBars(context, {
+  //           '碳水': 10,
+  //           '蛋白质': 10,
+  //           '脂肪': 20
+  //         }, [
+  //           const Color(0xFFEA7B3C),
+  //           const Color(0xFFB59E41),
+  //           const Color(0xFFFF6767)
+  //         ]),
+  //         const SizedBox(height: 16),
+
+  //         // 第二组柱状图
+  //         _buildNutrientBars(context, {'膳食纤维': 10, '钠': 50},
+  //             [const Color(0xFF4CAF50), const Color(0xFF2196F3)]),
+  //         const SizedBox(height: 16),
+
+  //         // 关键微量营养素
+  //         Text(
+  //           '关键微量营养素：',
+  //           style: TextStyle(
+  //               fontWeight: FontWeight.bold,
+  //               fontSize: 14,
+  //               color: Color.fromRGBO(115, 115, 115, 1)),
+  //         ),
+  //         const SizedBox(height: 8),
+  //         Column(
+  //           children: [
+  //             _buildNutrientItem('• 维生素A：0mg'),
+  //             _buildNutrientItem('• 维生素B：0mg'),
+  //             _buildNutrientItem('• 维生素C：0mg'),
+  //           ],
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
+  // Widget _buildNutrientBars(
+  //     BuildContext context, Map<String, int> labels, List<Color> colors) {
+  //   final totalWidth = MediaQuery.of(context).size.width - 100; // 减去更多padding
+  //   final totalPercentage =
+  //       labels.entries.map((e) => e.value).reduce((a, b) => a + b);
+  //   List<MapEntry<String, int>> maplist = labels.entries.toList();
+  //   return Container(
+  //     height: 58,
+  //     padding: EdgeInsets.all(5),
+  //     decoration: BoxDecoration(
+  //       color: const Color(0xFFD9D9D9),
+  //       borderRadius: BorderRadius.circular(10),
+  //     ),
+  //     child: SizedBox(
+  //       height: 16,
+  //       child: Column(
+  //         children: [
+  //           Row(
+  //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //             children: List.generate(maplist.length, (index) {
+  //               double currentWidth = double.parse(
+  //                   (maplist[index].value / totalPercentage * totalWidth)
+  //                       .toStringAsFixed(2));
+  //               return SizedBox(
+  //                 width: currentWidth, // 每个柱状图占30%的宽度
+  //                 height: 20,
+  //                 child: OverflowBox(
+  //                   maxWidth: double.infinity, // 允许无限宽度
+  //                   alignment: Alignment.centerLeft, // 左对齐
+  //                   child: Text(
+  //                     '${maplist[index].key} ${maplist[index].value}g',
+  //                     style: TextStyle(fontSize: 12, color: colors[index]),
+  //                     textAlign: TextAlign.center,
+  //                   ),
+  //                 ),
+  //               );
+  //             }),
+  //             // children: labels.entries.map((label) {
+  //             //   return Text(
+  //             //     label.key,
+  //             //     style: TextStyle(fontSize: 12),
+  //             //   );
+  //             // }).toList(),
+  //           ),
+  //           const SizedBox(height: 5),
+  //           Row(
+  //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //             children: List.generate(maplist.length, (index) {
+  //               double currentWidth = double.parse(
+  //                   (maplist[index].value / totalPercentage * totalWidth)
+  //                       .toStringAsFixed(2));
+  //               return Container(
+  //                 width: currentWidth, // 每个柱状图占30%的宽度
+  //                 height: 16,
+  //                 decoration: BoxDecoration(
+  //                   color: colors[index],
+  //                   borderRadius: BorderRadius.circular(8),
+  //                 ),
+  //               );
+  //             }),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  // Widget _buildNutrientItem(String text) {
+  //   return Text(
+  //     text,
+  //     style: TextStyle(fontSize: 12, color: Color.fromRGBO(115, 115, 115, 1)),
+  //   );
+  // }
+
+  // 本餐
   Widget _buildWhiteListCard() {
     return Stack(
         clipBehavior: Clip.none, // 关键设置，允许子组件溢出
@@ -423,30 +680,6 @@ class ReportPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 标题
-                Padding(
-                  padding: EdgeInsets.only(left: 70, top: 12, bottom: 8),
-                  child: Stack(
-                    alignment: Alignment.bottomCenter,
-                    children: [
-                      Text(
-                        '211白名单',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      Container(
-                        height: 2, // 下划线高度
-                        width: 100, // 下划线宽度
-                        margin: EdgeInsets.only(top: 4), // 与文字的间距
-                        color: Colors.black87, // 下划线颜色
-                      ),
-                    ],
-                  ),
-                ),
-
                 // 菜品横向列表
                 Expanded(
                   child: Padding(
@@ -469,10 +702,25 @@ class ReportPage extends StatelessWidget {
           Positioned(
             top: -20,
             left: 10,
-            child: Icon(
-              IconFont.shucai,
-              size: 60,
-              color: const Color.fromARGB(255, 4, 160, 56),
+            child: Container(
+              padding: EdgeInsets.only(left: 18, right: 18),
+              decoration: BoxDecoration(
+                color: Color(0xFFEFECEB),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  Text(
+                    '本餐',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ]);
@@ -484,7 +732,7 @@ class ReportPage extends StatelessWidget {
       child: Container(
         height: 180,
         decoration: BoxDecoration(
-          color: Color(0xFFD8D1CF),
+          color: Color(0xFF000000),
           borderRadius: BorderRadius.circular(10),
           boxShadow: [
             BoxShadow(
@@ -536,6 +784,7 @@ class ReportPage extends StatelessWidget {
                         name,
                         style: TextStyle(
                           fontSize: 14,
+                          color: Color(0xFFFFFFFF),
                           fontWeight: FontWeight.bold,
                         ),
                         maxLines: 1,
@@ -546,10 +795,10 @@ class ReportPage extends StatelessWidget {
                     Container(
                       alignment: Alignment.centerLeft, // 强制左对齐
                       child: Text(
-                        calories,
+                        weight,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.black54,
+                          color: Color(0xFFE5A454),
                         ),
                         textAlign: TextAlign.left, // 明确设置文本左对齐
                       ),
@@ -557,10 +806,10 @@ class ReportPage extends StatelessWidget {
                     Container(
                       alignment: Alignment.centerLeft, // 强制左对齐
                       child: Text(
-                        weight,
+                        calories,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.black54,
+                          color: Color(0xFF7C7C7C),
                         ),
                         textAlign: TextAlign.left, // 明确设置文本左对齐
                       ),
@@ -854,4 +1103,74 @@ class ReportPage extends StatelessWidget {
       ],
     );
   }
+}
+
+// 评分圆形组件
+class ScoreCircle extends StatelessWidget {
+  final int score;
+
+  const ScoreCircle({super.key, required this.score});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 70,
+      height: 60,
+      child: RichText(
+        textAlign: TextAlign.left,
+        textScaler: TextScaler.noScaling,
+        overflow: TextOverflow.clip,
+        text: TextSpan(
+          style: const TextStyle(
+            fontFamily: 'PingFang SC',
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
+          children: [
+            WidgetSpan(
+              child: Stack(
+                children: [
+                  Text(
+                    '$score',
+                    style: const TextStyle(fontSize: 40, color: Colors.black),
+                  ),
+                  Positioned(
+                    right: 0,
+                    top: 15,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEA7B3C),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            TextSpan(
+              text: '分',
+              style: const TextStyle(
+                fontSize: 10,
+                color: Colors.black,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class NutrientData {
+  final String name;
+  final double value;
+  final Color color;
+
+  NutrientData({
+    required this.name,
+    required this.value,
+    required this.color,
+  });
 }
