@@ -7,7 +7,6 @@ import 'package:zenify/home.dart';
 import 'package:zenify/pages/report.dart';
 import 'package:zenify/profile_page.dart';
 import 'package:zenify/login.dart';
-import 'package:zenify/services/api_service.dart';
 import 'package:zenify/services/user_session.dart';
 import 'package:zenify/utils/iconfont.dart';
 
@@ -64,8 +63,8 @@ class _AppLifecycleObserver extends NavigatorObserver {
   void didPop(Route route, Route? previousRoute) {
     super.didPop(route, previousRoute);
     if (previousRoute?.settings.name == '/') {
-      // 应用退出
-      ApiService.close();
+      // 仅打印日志，不关闭客户端
+      print('返回首页---------------------');
     }
   }
 }

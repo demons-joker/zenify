@@ -8,11 +8,11 @@ class ApiEndpoint {
 }
 
 class ApiConfig {
-  static const String baseUrl = "https://www.maididi.com/";
-  // static const String baseUrl = "http://127.0.0.1:8000";
+  // static const String baseUrl = "https://www.maididi.com";
+  static const String baseUrl = "http://localhost:8000";
   static const String apiVersion = "/api/v1";
-  static const int connectTimeout = 5000;
-  static const int receiveTimeout = 5000;
+  static const int connectTimeout = 30000;
+  static const int receiveTimeout = 30000;
   // 登录接口
   static const login = ApiEndpoint(
     '$apiVersion/users/login',
@@ -149,6 +149,11 @@ class ApiConfig {
   static const getCurrentUserRecipes = ApiEndpoint(
     '$apiVersion/users/{user_id}/recipe-plans/current',
     HttpMethod.get,
+  );
+  //绑定用户食谱数据
+  static const updateCurrentUserRecipes = ApiEndpoint(
+    '$apiVersion/users/{user_id}/recipe-plans/update',
+    HttpMethod.put,
   );
   //获取当前用户食物数据
   static const getCurrentUserFoods = ApiEndpoint(

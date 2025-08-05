@@ -23,21 +23,50 @@ class LoginRequest {
       };
 }
 
+class Recipe {
+  final String name;
+  final String description;
+  final int durationDays;
+  final String? dietaryRules;
+  final bool isPreset;
+  final int id;
+
+  Recipe({
+    required this.name,
+    required this.description,
+    required this.durationDays,
+    this.dietaryRules,
+    required this.isPreset,
+    required this.id,
+  });
+
+  factory Recipe.fromJson(Map<String, dynamic> json) {
+    return Recipe(
+      name: json['name'],
+      description: json['description'],
+      durationDays: json['duration_days'],
+      dietaryRules: json['dietary_rules'],
+      isPreset: json['is_preset'],
+      id: json['id'],
+    );
+  }
+}
+
 class RecipesRequest {
   final int skip;
   final int limit;
-  final bool isPreset;
+  final bool? isPreset;
 
   const RecipesRequest({
     required this.skip,
     required this.limit,
-    required this.isPreset,
+    this.isPreset,
   });
 
   Map<String, dynamic> toJson() => {
         'skip': skip,
         'limit': limit,
-        'is_preset': isPreset,
+        if (isPreset != null) 'is_preset': isPreset,
       };
 }
 
@@ -78,15 +107,19 @@ class Api {
   }
 
   // 添加认证头
+  static Map<String, String>? _cachedAuthHeaders;
   static Future<Map<String, String>> _getAuthHeaders() async {
+    if (_cachedAuthHeaders != null) return _cachedAuthHeaders!;
     final token = await UserSession.token;
     if (token != null) {
-      return {
+      _cachedAuthHeaders = {
         ..._defaultHeaders,
         'Authorization': 'Bearer $token',
       };
+    } else {
+      _cachedAuthHeaders = _defaultHeaders;
     }
-    return _defaultHeaders;
+    return _cachedAuthHeaders!;
   }
 
   // 统一请求处理
@@ -153,16 +186,22 @@ class Api {
   }
 
   // 获取所有食谱数据
-  static Future<dynamic> getRecipes(RecipesRequest request) async {
+  static Future<List<Recipe>> getRecipes(RecipesRequest request) async {
     print('请求参数: ${request.toJson()}');
     try {
-      final response = await _handleRequest(
+      final dynamic response = await _handleRequest(
         ApiConfig.getRecipes,
         queryParams: request.toJson(),
       );
-      return response;
+      if (response is List) {
+        return response
+            .map<Recipe>(
+                (item) => Recipe.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+      throw Exception('Invalid response format');
     } catch (e) {
-      print('获取食谱失败: $e');
+      print('获取食谱api失败: $e');
       throw Exception('获取食谱数据失败: $e');
     }
   }
@@ -176,7 +215,7 @@ class Api {
       );
       return response;
     } catch (e) {
-      print('获取食谱失败: $e');
+      print('获取食谱byid失败: $e');
       throw Exception('获取食谱数据失败: $e');
     }
   }
@@ -217,8 +256,25 @@ class Api {
     }
   }
 
+  // 修改当前用户食物数据
+  static Future<dynamic> updateCurrentUserFoods(
+      Map<String, dynamic> request) async {
+    print('请求参数: $request');
+    try {
+      final response = await _handleRequest(
+        ApiConfig.updateCurrentUserRecipes,
+        pathParams: request,
+        queryParams: request,
+      );
+      return response;
+    } catch (e) {
+      print('获取当前用户食物数据失败: $e');
+      throw Exception('获取当前用户食物数据失败: $e');
+    }
+  }
+
   //获取用户当天的饮食记录
-  static Future<Map<String, dynamic>> getUserTodayMealRecords(
+  static Future<dynamic> getUserTodayMealRecords(
       Map<String, dynamic> request) async {
     print('请求参数: $request');
     try {

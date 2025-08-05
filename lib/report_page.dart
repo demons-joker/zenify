@@ -210,9 +210,9 @@ class ReportPage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildFoodImage('assets/images/tomato_egg.jpg'),
-              _buildFoodImage('assets/images/steamed_fish.jpg'),
-              _buildFoodImage('assets/images/broccoli.jpg'),
+              _buildFoodImage('assets/images/egg.jpeg'),
+              _buildFoodImage('assets/images/egg.jpeg'),
+              _buildFoodImage('assets/images/egg.jpeg'),
             ],
           ),
         ],
@@ -222,7 +222,7 @@ class ReportPage extends StatelessWidget {
 
   Widget _buildFoodImage(String imagePath) {
     return Container(
-      width: 100,
+      width: 80,
       height: 90,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
