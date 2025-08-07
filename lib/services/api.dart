@@ -23,6 +23,30 @@ class LoginRequest {
       };
 }
 
+class FoodsRequest {
+  final int skip;
+  final int limit;
+  final String? name;
+  final String? category;
+  final String? subcategory;
+
+  const FoodsRequest({
+    required this.skip,
+    required this.limit,
+    this.name,
+    this.category,
+    this.subcategory,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'skip': skip,
+        'limit': limit,
+        if (name != null) 'name': name,
+        if (category != null) 'category': category,
+        if (subcategory != null) 'subcategory': subcategory,
+      };
+}
+
 class Recipe {
   final String name;
   final String description;
@@ -222,7 +246,20 @@ class Api {
 
   //新增接口--------------start-------------
 
-  // 获取当前用户食谱数据
+  // 获取所有食物列表
+  static Future<dynamic> getFoods(FoodsRequest request) async {
+    print('请求参数: $request');
+    try {
+      final response = await _handleRequest(
+        ApiConfig.getFoods,
+        queryParams: request.toJson(),
+      );
+      return response;
+    } catch (e) {
+      print('获取所有食物列表数据失败: $e');
+      throw Exception('获取所有食物列表数据失败: $e');
+    }
+  }
 
   // 获取当前用户食谱数据
   static Future<Map<String, dynamic>> getCurrentUserRecipes(
@@ -256,8 +293,8 @@ class Api {
     }
   }
 
-  // 修改当前用户食物数据
-  static Future<dynamic> updateCurrentUserFoods(
+  // 修改当前用户食谱
+  static Future<dynamic> updateCurrentUserRecipes(
       Map<String, dynamic> request) async {
     print('请求参数: $request');
     try {
@@ -268,8 +305,8 @@ class Api {
       );
       return response;
     } catch (e) {
-      print('获取当前用户食物数据失败: $e');
-      throw Exception('获取当前用户食物数据失败: $e');
+      print('修改当前用户食谱数据失败: $e');
+      throw Exception('修改当前用户食谱数据失败: $e');
     }
   }
 

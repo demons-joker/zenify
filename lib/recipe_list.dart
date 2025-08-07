@@ -30,7 +30,7 @@ class _RecipeListState extends State<RecipeListPage> {
   Future<void> _updateCurrentRecipe(Recipe recipe) async {
     print('_updateCurrentRecipe:$recipe');
     try {
-      await Api.updateCurrentUserFoods(
+      await Api.updateCurrentUserRecipes(
           {'user_id': await UserSession.userId, 'recipe_id': recipe.id});
       widget.onRecipeSelected(recipe);
     } catch (e) {

@@ -75,7 +75,7 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  int _currentIndex = 2; // 默认选中首页（第3个Tab）
+  int _currentIndex = 0; // 默认选中首页（第3个Tab）
   bool _showBottomNavBar = true; // 控制导航栏显示状态
 
   // 页面列表

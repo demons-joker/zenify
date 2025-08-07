@@ -40,7 +40,7 @@ class ApiService {
           .timeout(const Duration(milliseconds: ApiConfig.connectTimeout))
           .then(http.Response.fromStream);
 
-      print('API响应: ${response.statusCode} ${response.body}');
+      // print('API响应: ${response.statusCode} ${response.body}');
 
       return _handleResponse(response);
     } on TimeoutException {

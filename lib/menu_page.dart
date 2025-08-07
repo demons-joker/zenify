@@ -18,7 +18,7 @@ class _MenuPageState extends State<MenuPage> {
   late PageController _pageController;
   double _currentPage = 0;
   final double _viewportFraction = 0.2; // 减小视口比例，使页面同时显示5个菜品
-  final int _actualItemCount = 10; // 实际菜品数量
+  // final int _actualItemCount = 10; // 实际菜品数量
 
   // 固定的随机颜色列表
   final List<Color> _colorList = [
@@ -42,6 +42,7 @@ class _MenuPageState extends State<MenuPage> {
   @override
   void initState() {
     super.initState();
+    print('recipeFoods:${widget.recipeFoods}');
     int initialPage = 5000;
     _pageController = PageController(
       initialPage: initialPage,
@@ -52,6 +53,12 @@ class _MenuPageState extends State<MenuPage> {
       setState(() {
         _currentPage = _pageController.page!;
       });
+      // 判断是否滚动到边界并实现无限循环
+      if (_pageController.page!.round() >= 10000 - 1) {
+        _pageController.jumpToPage(5000);
+      } else if (_pageController.page!.round() <= 0) {
+        _pageController.jumpToPage(5000);
+      }
     });
   }
 
@@ -133,7 +140,7 @@ class _MenuPageState extends State<MenuPage> {
                 child: PageView.builder(
                   scrollDirection: Axis.vertical,
                   controller: _pageController,
-                  itemCount: widget.recipeFoods.isEmpty ? 1 : 10000,
+                  itemCount: 10000,
                   padEnds: false,
                   itemBuilder: (context, index) {
                     if (widget.recipeFoods.isEmpty) {
@@ -292,7 +299,7 @@ class _MenuPageState extends State<MenuPage> {
 
   List<String> getTags() {
     final categories = widget.recipeFoods
-        .map((rf) => rf['food']?['category']?.toString() ?? '其他')
+        .map((rf) => rf['subcategory']?.toString() ?? '其他')
         .toSet()
         .toList();
     return categories.isNotEmpty ? categories : ['全部'];

@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:zenify/models/enums.dart';
 import 'recipe_list.dart';
 import 'package:zenify/services/api.dart';
 import 'package:zenify/services/user_session.dart';
@@ -15,6 +16,7 @@ class _HomePageState extends State<HomePage> {
   List<dynamic> allRecipes = [];
   Recipe? currentRecipe;
   List<dynamic> currentFoods = [];
+  List<dynamic> foods = [];
   List<dynamic> historyFoods = [];
   bool isLoading = true;
 
@@ -31,10 +33,9 @@ class _HomePageState extends State<HomePage> {
       final response = await Api.getCurrentUserRecipes(
           {'user_id': await UserSession.userId});
       setState(() {
-        currentRecipe = (response != null && response.containsKey('recipe'))
-            ? response['recipe']
+        currentRecipe = (response.containsKey('recipe'))
+            ? Recipe.fromJson(response['recipe'])
             : null;
-        print('currentRecipe: $currentRecipe');
         _fetchUserTodayMealRecords(currentRecipe);
         isLoading = false;
       });
@@ -50,7 +51,21 @@ class _HomePageState extends State<HomePage> {
           await Api.getCurrentUserFoods({'user_id': await UserSession.userId});
       setState(() {
         currentFoods = response;
-        // print('object: $currentFoods');
+        print('currentFoods: $currentFoods');
+      });
+    } catch (e) {
+      print('获取食物失败: $e');
+    }
+  }
+
+  Future<void> _fetchFoodsBySubcategory(
+      String? category, String? subcategory) async {
+    try {
+      final response = await Api.getFoods(FoodsRequest(
+          skip: 0, limit: 1000, category: category, subcategory: subcategory));
+      setState(() {
+        foods = response;
+        print('_fetchFoodsBySubcategory: $foods');
       });
     } catch (e) {
       print('获取食物失败: $e');
@@ -63,7 +78,7 @@ class _HomePageState extends State<HomePage> {
           {'user_id': await UserSession.userId, 'plate_id': '1'});
       setState(() {
         historyFoods = response;
-        print('historyFoods: $historyFoods');
+        // print('historyFoods: $historyFoods');
       });
     } catch (e) {
       print('获取历史食物失败: $e');
@@ -250,9 +265,12 @@ class _HomePageState extends State<HomePage> {
   // 5. 动态生成餐点卡片列表
   List<Widget> _buildPlanMealCards(BuildContext context) {
     return currentFoods.map((meal) {
+      print('meal: $meal');
+      MealType? mealType = MealTypeExtension.fromString(meal['meal_type']);
       return Column(
         children: [
-          _buildCurrentMealsCard(context, meal['meal_type'], meal['foods']),
+          _buildCurrentMealsCard(
+              context, mealType?.displayName ?? '早餐', meal['foods']),
           const SizedBox(height: 20),
         ],
       );
@@ -318,7 +336,7 @@ class _HomePageState extends State<HomePage> {
               ),
               child: Center(
                 child: Text(
-                  '晚餐',
+                  category,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -348,7 +366,6 @@ class _HomePageState extends State<HomePage> {
   Widget _buildFoodItemsRow(BuildContext context, List<dynamic> foods) {
     // 限制最多显示4个食物
     final displayFoods = foods.length > 4 ? foods.sublist(0, 4) : foods;
-    // print('displayFoods: $displayFoods');
 
     if (displayFoods.length <= 3) {
       return Row(
@@ -389,7 +406,7 @@ class _HomePageState extends State<HomePage> {
   // 食物项组件 (优化后)
   Widget _buildFoodItem(BuildContext context, dynamic food) {
     final realFood = food['food'];
-    // print('realFood: $realFood');
+    print('realFood:$realFood');
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -483,16 +500,23 @@ class _HomePageState extends State<HomePage> {
                 child: Material(
                   type: MaterialType.transparency,
                   child: InkWell(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => MenuPage(
-                            category: realFood['name'] ?? '食物',
-                            recipeFoods: currentFoods,
+                    onTap: () async {
+                      await _fetchFoodsBySubcategory(
+                          realFood['category'], null);
+                      if (context.mounted) {
+                        FoodCategory? category =
+                            FoodCategoryExtension.fromString(
+                                realFood['category']);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MenuPage(
+                              category: category?.displayName ?? '未知食物',
+                              recipeFoods: foods,
+                            ),
                           ),
-                        ),
-                      );
+                        );
+                      }
                     },
                     splashColor: Colors.orange.withOpacity(0.6),
                     child: Container(
@@ -663,9 +687,7 @@ class _HomePageState extends State<HomePage> {
 
   // 8. 餐食Card (保持不变)
   Widget _buildMealsCard(dynamic foodObject) {
-    // print('_buildMealsCard: $foodObject');
     List<dynamic> foods = foodObject['foods'];
-    // print('_buildMealsCardfoods: $foods');
     final now = DateTime.now();
     final currentTime = '${now.hour}:${now.minute.toString().padLeft(2, '0')}';
 

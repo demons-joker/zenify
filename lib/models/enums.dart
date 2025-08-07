@@ -163,6 +163,16 @@ extension MealTypeExtension on MealType {
         return '加餐';
     }
   }
+
+  static MealType? fromString(String value) {
+    try {
+      return MealType.values.firstWhere(
+        (e) => e.toString().split('.').last == value,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
 }
 
 extension PlanStatusExtension on PlanStatus {
@@ -193,6 +203,16 @@ extension FoodCategoryExtension on FoodCategory {
         return '脂肪';
       case FoodCategory.other:
         return '其他';
+    }
+  }
+
+  static FoodCategory? fromString(String value) {
+    try {
+      return FoodCategory.values.firstWhere(
+        (e) => e.toString().split('.').last == value,
+      );
+    } catch (e) {
+      return null;
     }
   }
 }
