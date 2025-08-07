@@ -165,4 +165,14 @@ class ApiConfig {
     '$apiVersion/users/{user_id}/plates/{plate_id}/meal-records/today',
     HttpMethod.get,
   );
+  //替换食谱中的食物项
+  static const replaceRecipeFood = ApiEndpoint(
+    '$apiVersion/recipes/foods/replace/{recipe_food_id}',
+    HttpMethod.put,
+  );
+  //替换计划中的食物项
+  static const replacePlanFood = ApiEndpoint(
+    '$apiVersion/plan/foods/replace/{plan_food_id}',
+    HttpMethod.put,
+  );
 }

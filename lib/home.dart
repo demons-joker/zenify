@@ -511,11 +511,17 @@ class _HomePageState extends State<HomePage> {
                           context,
                           MaterialPageRoute(
                             builder: (context) => MenuPage(
+                              recipeFoodId: food['id'],
                               category: category?.displayName ?? '未知食物',
                               recipeFoods: foods,
                             ),
                           ),
-                        );
+                        ).then((shouldRefresh) {
+                          if (shouldRefresh == true) {
+                            _fetchCurrentUserFoods();
+                            _fetchRecipes();
+                          }
+                        });
                       }
                     },
                     splashColor: Colors.orange.withOpacity(0.6),
