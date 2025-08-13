@@ -103,34 +103,29 @@ class _MenuPageState extends State<MenuPage> {
     final tags = getTags();
 
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new, color: Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Container(
+          alignment: Alignment.centerRight,
+          child: Text(
+            widget.category,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF222222),
+            ),
+          ),
+        ),
+      ),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Back button and title row
-            Padding(
-              padding:
-                  const EdgeInsets.only(left: 16.0, top: 16.0, right: 16.0),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.arrow_back, color: Colors.black),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                  Expanded(
-                    child: Text(
-                      widget.category,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
             // 2. Tags
             Container(
               height: 40,

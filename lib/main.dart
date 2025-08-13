@@ -72,6 +72,7 @@ class _AppLifecycleObserver extends NavigatorObserver {
 
 class MainPage extends StatefulWidget {
   @override
+  // ignore: library_private_types_in_public_api
   _MainPageState createState() => _MainPageState();
 }
 
@@ -96,7 +97,26 @@ class _MainPageState extends State<MainPage> {
             children: [
               // 页面内容
               Positioned.fill(
-                child: _pages[_currentIndex],
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: constraints.maxHeight,
+                      ),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.only(
+                            bottom: kBottomNavigationBarHeight),
+                        child: IntrinsicHeight(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                                minHeight: constraints.maxHeight),
+                            child: _pages[_currentIndex],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
 
               // 自定义底部导航栏（根据状态显示/隐藏）

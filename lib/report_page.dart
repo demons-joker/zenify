@@ -30,6 +30,25 @@ class ReportPage extends StatelessWidget {
     ];
 
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Container(
+          alignment: Alignment.centerRight,
+          child: const Text(
+            '详细参数',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF222222),
+            ),
+          ),
+        ),
+      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -37,26 +56,15 @@ class ReportPage extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 标题行
-              Padding(
-                padding: const EdgeInsets.only(top: 20, bottom: 20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: () {},
-                    ),
-                    const Text(
-                      '详细信息',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              //     '详细信息',
+              //     style: TextStyle(
+              //       fontSize: 18,
+              //       fontWeight: FontWeight.bold,
+              //     ),
+              //   ),
+              // ],
+              //   ),
+              // ),
 
               // Tabs行
               _buildTabs(),

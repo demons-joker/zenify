@@ -12,6 +12,7 @@ class RecipeListPage extends StatefulWidget {
   });
 
   @override
+  // ignore: library_private_types_in_public_api
   _RecipeListState createState() => _RecipeListState();
 }
 
@@ -69,7 +70,18 @@ class _RecipeListState extends State<RecipeListPage> {
     }
     return Scaffold(
       appBar: AppBar(
-        title: Text('食谱列表'),
+        backgroundColor: Colors.transparent,
+        title: Container(
+          alignment: Alignment.centerRight,
+          child: const Text(
+            '食谱列表',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF222222),
+            ),
+          ),
+        ),
       ),
       body: ListView.builder(
         itemCount: recipes.length,

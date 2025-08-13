@@ -137,6 +137,7 @@ class Report extends StatelessWidget {
                       ),
                       textAlign: TextAlign.justify,
                     ),
+                    const SizedBox(height: 100),
                   ],
                 ),
               ),

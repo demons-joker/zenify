@@ -126,6 +126,27 @@ class _CameraPageState extends State<CameraPage> {
       },
       child: Scaffold(
         backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back_ios_new, color: Colors.white),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          title: _showPreview && _imageFile != null
+              ? TextButton(
+                  child: Text('使用照片', style: TextStyle(color: Colors.white)),
+                  onPressed: () async {
+                    final file = File(_imageFile!.path);
+                    final result =
+                        await UploadService.uploadImage(file, context);
+                    if (result != null && mounted) {
+                      Navigator.of(context).pop(result);
+                    }
+                  },
+                )
+              : null,
+        ),
         body: _isInitializing
             ? Center(child: CircularProgressIndicator())
             : Stack(
@@ -140,35 +161,6 @@ class _CameraPageState extends State<CameraPage> {
                     Positioned.fill(
                       child: CameraPreview(_cameraController!),
                     ),
-
-                  // Top controls
-                  Positioned(
-                    top: MediaQuery.of(context).padding.top + 16,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.close, color: Colors.white),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                        if (_showPreview && _imageFile != null)
-                          TextButton(
-                            child: Text('使用照片',
-                                style: TextStyle(color: Colors.white)),
-                            onPressed: () async {
-                              final file = File(_imageFile!.path);
-                              final result = await UploadService.uploadImage(
-                                  file, context);
-                              if (result != null && mounted) {
-                                Navigator.of(context).pop(result);
-                              }
-                            },
-                          ),
-                      ],
-                    ),
-                  ),
 
                   // Bottom controls
                   Positioned(

@@ -46,9 +46,13 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('个人中心'),
+        backgroundColor: Colors.transparent,
         actions: [
           IconButton(
-            icon: Icon(Icons.logout),
+            icon: Icon(
+              Icons.logout,
+              size: 18,
+            ),
             onPressed: _logout,
             tooltip: '退出登录',
           ),

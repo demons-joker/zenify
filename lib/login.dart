@@ -96,6 +96,7 @@ class _Login extends State<Login> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: Text(_isLoginMode ? '用户登录' : '用户注册'),
         centerTitle: true,
       ),
