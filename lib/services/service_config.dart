@@ -8,8 +8,8 @@ class ApiEndpoint {
 }
 
 class ApiConfig {
-  // static const String baseUrl = "https://www.maididi.com";
-  static const String baseUrl = "http://localhost:8000";
+  static const String baseUrl = "https://www.maididi.com";
+  // static const String baseUrl = "http://localhost:8000";
   static const String apiVersion = "/api/v1";
   static const int connectTimeout = 30000;
   static const int receiveTimeout = 30000;

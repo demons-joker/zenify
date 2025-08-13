@@ -4,7 +4,7 @@ import 'dart:io' show Platform;
 
 import 'package:zenify/camera_page.dart';
 import 'package:zenify/home.dart';
-import 'package:zenify/pages/report.dart';
+import 'package:zenify/report.dart';
 import 'package:zenify/profile_page.dart';
 import 'package:zenify/login.dart';
 import 'package:zenify/services/user_session.dart';
@@ -39,6 +39,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
         fontFamily: 'iconfont',
+        scaffoldBackgroundColor: Color(0xFFF6F6F6),
       ),
       // ignore: unnecessary_null_comparison
       home: UserSession.userId != null ? MainPage() : Login(),
@@ -82,35 +83,33 @@ class _MainPageState extends State<MainPage> {
   final List<Widget> _pages = [
     HomePage(), // 首页
     Container(), // 拍照按钮占位，实际不会显示
-    ReportPage(), // 我的报告
+    Report(), // 我的报告
     ProfilePage(), // 个人中心
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true,
-      body: Stack(
-        children: [
-          // 页面内容
-          Positioned.fill(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: 76), // 56(导航栏高度) + 20
-              child: _pages[_currentIndex],
-            ),
-          ),
+        extendBody: true,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              // 页面内容
+              Positioned.fill(
+                child: _pages[_currentIndex],
+              ),
 
-          // 自定义底部导航栏（根据状态显示/隐藏）
-          if (_showBottomNavBar)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: _buildCustomBottomNavBar(),
-            ),
-        ],
-      ),
-    );
+              // 自定义底部导航栏（根据状态显示/隐藏）
+              if (_showBottomNavBar)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: _buildCustomBottomNavBar(),
+                ),
+            ],
+          ),
+        ));
   }
 
   // 自定义底部导航栏
@@ -119,7 +118,7 @@ class _MainPageState extends State<MainPage> {
       height: 56,
       margin: EdgeInsets.only(bottom: 20, left: 20, right: 20),
       decoration: BoxDecoration(
-        color: Colors.transparent,
+        color: Color.fromRGBO(255, 255, 255, 0.7),
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(

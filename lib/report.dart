@@ -1,10 +1,11 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:zenify/report_random_word_cloud.dart';
+import 'package:zenify/report_page.dart';
 import 'package:zenify/utils/iconfont.dart';
 
-class ReportPage extends StatelessWidget {
-  const ReportPage({super.key});
+class Report extends StatelessWidget {
+  const Report({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -109,14 +110,32 @@ class ReportPage extends StatelessWidget {
                           ),
                         ),
                         const Spacer(),
-                        const Text(
-                          '详细参数>',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF6F6F6F),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ReportPage()),
+                            );
+                          },
+                          child: const Text(
+                            '详细参数>',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF6F6F6F),
+                            ),
                           ),
-                        ),
+                        )
                       ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      '开发当中...',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF6F6F6F),
+                      ),
+                      textAlign: TextAlign.justify,
                     ),
                   ],
                 ),
