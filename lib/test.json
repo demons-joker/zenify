@@ -1,0 +1,380 @@
+{
+  "id": 1,
+  "image_url": "https://oss-pai-wg4otmxrzffj7vy41l-cn-shanghai.oss-cn-shanghai.aliyuncs.com/xilanhua/mifan_niurou_huluobo.jpg?x-oss-signature-version=OSS4-HMAC-SHA256&x-oss-date=20250814T025242Z&x-oss-expires=3600&x-oss-credential=LTAI5tGChGvihkbEvBh26bbz%2F20250814%2Fcn-shanghai%2Foss%2Faliyun_v4_request&x-oss-signature=bd827a0ffdd47c8f659c0ab305473c8c238d72a2dad6d7c33f3991d54440aa41",
+  "start_time": "2025-08-14T10:40:03.369079",
+  "duration_minutes": 1,
+  "total_calories": 344.9,
+  "meal_type": "extra_meal",
+  "notes": "",
+  "foods": [
+    {
+      "quantity": 50,
+      "unit": "g",
+      "calories": 58,
+      "zone_id": 1,
+      "supply_proportion": 0.16816468541606264,
+      "food": {
+        "name": "白米饭",
+        "image_url": "https://oss-pai-wg4otmxrzffj7vy41l-cn-shanghai.oss-cn-shanghai.aliyuncs.com/xilanhua/foods/%E7%99%BD%E7%B1%B3%E9%A5%AD.png?x-oss-signature-version=OSS4-HMAC-SHA256&x-oss-date=20250814T025249Z&x-oss-expires=3600&x-oss-credential=LTAI5tGChGvihkbEvBh26bbz%2F20250814%2Fcn-shanghai%2Foss%2Faliyun_v4_request&x-oss-signature=e2d291dade2d7f17adad684fb7416f6ddd1d809ea6cf290503c918fa2ee7400a",
+        "description": "白米饭是经过精制处理的稻米，去除了外壳、糠层和胚芽，主要成分为淀粉，是亚洲地区的主要主食之一。",
+        "preparation_method": "1. 取适量白米，放入容器中。\n2. 用清水冲洗米粒，直至水变清。\n3. 加入适量清水（通常比例为1:1.5或根据个人喜好调整）。\n4. 将容器放入电饭锅或置于炉灶上，盖上盖子。\n5. 开火煮沸后调至小火焖煮约15-20分钟，直至水分被完全吸收。\n6. 关火后焖约5-10分钟，使米饭更加松软可口。",
+        "category": "carbohydrate",
+        "subcategory": "谷物类",
+        "calories_per_100g": 116,
+        "nutrition_per_100g": {
+          "protein": 2.6,
+          "fat": 0.3,
+          "carbohydrate": 28.6,
+          "calories": 116,
+          "fiber": 0.4,
+          "vitamins": [
+            {
+              "name": "维生素B1",
+              "amount": 0.12
+            },
+            {
+              "name": "维生素B2",
+              "amount": 0.03
+            }
+          ]
+        },
+        "id": 31
+      }
+    },
+    {
+      "quantity": 100,
+      "unit": "g",
+      "calories": 250,
+      "zone_id": 2,
+      "supply_proportion": 0.7248477819657873,
+      "food": {
+        "name": "芝麻牛肉",
+        "image_url": "https://oss-pai-wg4otmxrzffj7vy41l-cn-shanghai.oss-cn-shanghai.aliyuncs.com/xilanhua/foods/%E8%8A%9D%E9%BA%BB%E7%89%9B%E8%82%89.png?x-oss-signature-version=OSS4-HMAC-SHA256&x-oss-date=20250814T025249Z&x-oss-expires=3600&x-oss-credential=LTAI5tGChGvihkbEvBh26bbz%2F20250814%2Fcn-shanghai%2Foss%2Faliyun_v4_request&x-oss-signature=2dbc9a961d09f3d8835932969cde30bdb72caf5bd0d53e9755f66fd7b10c7f2f",
+        "description": "芝麻牛肉是一道经典的中式菜肴，主要由牛肉片和芝麻制成，通常带有香甜或咸甜的风味。",
+        "preparation_method": "1. 准备食材：牛肉（通常选用牛里脊）切片，芝麻炒香备用。\n2. 牛肉片用酱油、料酒、淀粉、少许糖和油腌制15-20分钟。\n3. 锅中加热油，将腌好的牛肉片煸炒至变色并熟透。\n4. 另起锅加入少许水、糖、酱油和醋，调成甜咸口味的酱汁。\n5. 将炒好的牛肉倒入酱汁中翻炒，使牛肉均匀裹上酱汁。\n6. 最后撒入炒香的芝麻，翻炒几下即可出锅。",
+        "category": "protein",
+        "subcategory": "牛肉",
+        "calories_per_100g": 250,
+        "nutrition_per_100g": {
+          "protein": 26,
+          "fat": 15,
+          "carbohydrate": 8,
+          "calories": 250,
+          "fiber": 0,
+          "vitamins": [
+            {
+              "name": "维生素B6",
+              "amount": 0.4
+            },
+            {
+              "name": "维生素B12",
+              "amount": 2.4
+            },
+            {
+              "name": "维生素E",
+              "amount": 0.3
+            }
+          ]
+        },
+        "id": 32
+      }
+    },
+    {
+      "quantity": 90,
+      "unit": "g",
+      "calories": 36.9,
+      "zone_id": 3,
+      "supply_proportion": 0.1069875326181502,
+      "food": {
+        "name": "胡萝卜",
+        "image_url": "https://oss-pai-wg4otmxrzffj7vy41l-cn-shanghai.oss-cn-shanghai.aliyuncs.com/xilanhua/foods/%E8%83%A1%E8%90%9D%E5%8D%9C.png?x-oss-signature-version=OSS4-HMAC-SHA256&x-oss-date=20250814T025249Z&x-oss-expires=3600&x-oss-credential=LTAI5tGChGvihkbEvBh26bbz%2F20250814%2Fcn-shanghai%2Foss%2Faliyun_v4_request&x-oss-signature=019b599da8632a06fa88f035247c400e194e54b7ae6d836ebe23ef483eee55cd",
+        "description": "胡萝卜是一种营养丰富的根茎类蔬菜，呈橙色（也有紫色或白色品种），味道清甜，常用于生吃或烹饪。",
+        "preparation_method": "1. 将胡萝卜去皮，用清水冲洗干净。\n2. 根据需要切成片、丝或块。\n3. 可直接生吃，或用于炒菜、煮汤、蒸食。\n4. 若做胡萝卜汁，可将胡萝卜切块放入榨汁机中榨取汁液。",
+        "category": "vegetable",
+        "subcategory": "根茎类",
+        "calories_per_100g": 41,
+        "nutrition_per_100g": {
+          "protein": 0.9,
+          "fat": 0.2,
+          "carbohydrate": 9.6,
+          "calories": 41,
+          "fiber": 2.8,
+          "vitamins": [
+            {
+              "name": "维生素A",
+              "amount": 835
+            },
+            {
+              "name": "维生素C",
+              "amount": 5.9
+            },
+            {
+              "name": "维生素K",
+              "amount": 13.2
+            }
+          ]
+        },
+        "id": 33
+      }
+    }
+  ],
+  "nutritive_proportion": {
+    "carbohydrate": 30.94,
+    "protein": 28.11,
+    "fat": 15.33,
+    "fiber": 2.7199999999999998,
+    "vitamins": [
+      {
+        "name": "维生素B1",
+        "amount": 0.000059999999999999995
+      },
+      {
+        "name": "维生素B2",
+        "amount": 0.000014999999999999999
+      },
+      {
+        "name": "维生素B6",
+        "amount": 0.0004
+      },
+      {
+        "name": "维生素B12",
+        "amount": 0.0024
+      },
+      {
+        "name": "维生素E",
+        "amount": 0.0003
+      },
+      {
+        "name": "维生素A",
+        "amount": 0.7515
+      },
+      {
+        "name": "维生素C",
+        "amount": 0.00531
+      },
+      {
+        "name": "维生素K",
+        "amount": 0.01188
+      }
+    ]
+  },
+  "nutrition_analysis": {
+    "balanced_meal": false,
+    "meal_score": 7,
+    //高蛋白
+    "high_quality_protein": [
+      {
+        "name": "芝麻牛肉",
+        "image_url": "https://oss-pai-wg4otmxrzffj7vy41l-cn-shanghai.oss-cn-shanghai.aliyuncs.com/xilanhua/foods/%E8%8A%9D%E9%BA%BB%E7%89%9B%E8%82%89.png?x-oss-signature-version=OSS4-HMAC-SHA256&x-oss-date=20250814T025249Z&x-oss-expires=3600&x-oss-credential=LTAI5tGChGvihkbEvBh26bbz%2F20250814%2Fcn-shanghai%2Foss%2Faliyun_v4_request&x-oss-signature=2dbc9a961d09f3d8835932969cde30bdb72caf5bd0d53e9755f66fd7b10c7f2f",
+        "description": "芝麻牛肉是一道经典的中式菜肴，主要由牛肉片和芝麻制成，通常带有香甜或咸甜的风味。",
+        "preparation_method": "1. 准备食材：牛肉（通常选用牛里脊）切片，芝麻炒香备用。\n2. 牛肉片用酱油、料酒、淀粉、少许糖和油腌制15-20分钟。\n3. 锅中加热油，将腌好的牛肉片煸炒至变色并熟透。\n4. 另起锅加入少许水、糖、酱油和醋，调成甜咸口味的酱汁。\n5. 将炒好的牛肉倒入酱汁中翻炒，使牛肉均匀裹上酱汁。\n6. 最后撒入炒香的芝麻，翻炒几下即可出锅。",
+        "category": "protein",
+        "subcategory": "牛肉",
+        "calories_per_100g": 250,
+        "nutrition_per_100g": {
+          "protein": 26,
+          "fat": 15,
+          "carbohydrate": 8,
+          "calories": 250,
+          "fiber": 0,
+          "vitamins": [
+            {
+              "name": "维生素B6",
+              "amount": 0.4
+            },
+            {
+              "name": "维生素B12",
+              "amount": 2.4
+            },
+            {
+              "name": "维生素E",
+              "amount": 0.3
+            }
+          ]
+        },
+        "id": 32
+      }
+    ],
+    //高纤维
+    "high_fiber": [
+      {
+        "name": "胡萝卜",
+        "image_url": "https://oss-pai-wg4otmxrzffj7vy41l-cn-shanghai.oss-cn-shanghai.aliyuncs.com/xilanhua/foods/%E8%83%A1%E8%90%9D%E5%8D%9C.png?x-oss-signature-version=OSS4-HMAC-SHA256&x-oss-date=20250814T025249Z&x-oss-expires=3600&x-oss-credential=LTAI5tGChGvihkbEvBh26bbz%2F20250814%2Fcn-shanghai%2Foss%2Faliyun_v4_request&x-oss-signature=019b599da8632a06fa88f035247c400e194e54b7ae6d836ebe23ef483eee55cd",
+        "description": "胡萝卜是一种营养丰富的根茎类蔬菜，呈橙色（也有紫色或白色品种），味道清甜，常用于生吃或烹饪。",
+        "preparation_method": "1. 将胡萝卜去皮，用清水冲洗干净。\n2. 根据需要切成片、丝或块。\n3. 可直接生吃，或用于炒菜、煮汤、蒸食。\n4. 若做胡萝卜汁，可将胡萝卜切块放入榨汁机中榨取汁液。",
+        "category": "vegetable",
+        "subcategory": "根茎类",
+        "calories_per_100g": 41,
+        "nutrition_per_100g": {
+          "protein": 0.9,
+          "fat": 0.2,
+          "carbohydrate": 9.6,
+          "calories": 41,
+          "fiber": 2.8,
+          "vitamins": [
+            {
+              "name": "维生素A",
+              "amount": 835
+            },
+            {
+              "name": "维生素C",
+              "amount": 5.9
+            },
+            {
+              "name": "维生素K",
+              "amount": 13.2
+            }
+          ]
+        },
+        "id": 33
+      }
+    ],
+    //低gi
+    "low_gi": [
+      {
+        "name": "胡萝卜",
+        "image_url": "https://oss-pai-wg4otmxrzffj7vy41l-cn-shanghai.oss-cn-shanghai.aliyuncs.com/xilanhua/foods/%E8%83%A1%E8%90%9D%E5%8D%9C.png?x-oss-signature-version=OSS4-HMAC-SHA256&x-oss-date=20250814T025249Z&x-oss-expires=3600&x-oss-credential=LTAI5tGChGvihkbEvBh26bbz%2F20250814%2Fcn-shanghai%2Foss%2Faliyun_v4_request&x-oss-signature=019b599da8632a06fa88f035247c400e194e54b7ae6d836ebe23ef483eee55cd",
+        "description": "胡萝卜是一种营养丰富的根茎类蔬菜，呈橙色（也有紫色或白色品种），味道清甜，常用于生吃或烹饪。",
+        "preparation_method": "1. 将胡萝卜去皮，用清水冲洗干净。\n2. 根据需要切成片、丝或块。\n3. 可直接生吃，或用于炒菜、煮汤、蒸食。\n4. 若做胡萝卜汁，可将胡萝卜切块放入榨汁机中榨取汁液。",
+        "category": "vegetable",
+        "subcategory": "根茎类",
+        "calories_per_100g": 41,
+        "nutrition_per_100g": {
+          "protein": 0.9,
+          "fat": 0.2,
+          "carbohydrate": 9.6,
+          "calories": 41,
+          "fiber": 2.8,
+          "vitamins": [
+            {
+              "name": "维生素A",
+              "amount": 835
+            },
+            {
+              "name": "维生素C",
+              "amount": 5.9
+            },
+            {
+              "name": "维生素K",
+              "amount": 13.2
+            }
+          ]
+        },
+        "id": 33
+      }
+    ],
+    //免疫增强
+    "immunity_boosting": [
+      {
+        "name": "胡萝卜",
+        "image_url": "https://oss-pai-wg4otmxrzffj7vy41l-cn-shanghai.oss-cn-shanghai.aliyuncs.com/xilanhua/foods/%E8%83%A1%E8%90%9D%E5%8D%9C.png?x-oss-signature-version=OSS4-HMAC-SHA256&x-oss-date=20250814T025249Z&x-oss-expires=3600&x-oss-credential=LTAI5tGChGvihkbEvBh26bbz%2F20250814%2Fcn-shanghai%2Foss%2Faliyun_v4_request&x-oss-signature=019b599da8632a06fa88f035247c400e194e54b7ae6d836ebe23ef483eee55cd",
+        "description": "胡萝卜是一种营养丰富的根茎类蔬菜，呈橙色（也有紫色或白色品种），味道清甜，常用于生吃或烹饪。",
+        "preparation_method": "1. 将胡萝卜去皮，用清水冲洗干净。\n2. 根据需要切成片、丝或块。\n3. 可直接生吃，或用于炒菜、煮汤、蒸食。\n4. 若做胡萝卜汁，可将胡萝卜切块放入榨汁机中榨取汁液。",
+        "category": "vegetable",
+        "subcategory": "根茎类",
+        "calories_per_100g": 41,
+        "nutrition_per_100g": {
+          "protein": 0.9,
+          "fat": 0.2,
+          "carbohydrate": 9.6,
+          "calories": 41,
+          "fiber": 2.8,
+          "vitamins": [
+            {
+              "name": "维生素A",
+              "amount": 835
+            },
+            {
+              "name": "维生素C",
+              "amount": 5.9
+            },
+            {
+              "name": "维生素K",
+              "amount": 13.2
+            }
+          ]
+        },
+        "id": 33
+      }
+    ],
+    //抗氧剂
+    "antioxidant": [
+      {
+        "name": "胡萝卜",
+        "image_url": "https://oss-pai-wg4otmxrzffj7vy41l-cn-shanghai.oss-cn-shanghai.aliyuncs.com/xilanhua/foods/%E8%83%A1%E8%90%9D%E5%8D%9C.png?x-oss-signature-version=OSS4-HMAC-SHA256&x-oss-date=20250814T025249Z&x-oss-expires=3600&x-oss-credential=LTAI5tGChGvihkbEvBh26bbz%2F20250814%2Fcn-shanghai%2Foss%2Faliyun_v4_request&x-oss-signature=019b599da8632a06fa88f035247c400e194e54b7ae6d836ebe23ef483eee55cd",
+        "description": "胡萝卜是一种营养丰富的根茎类蔬菜，呈橙色（也有紫色或白色品种），味道清甜，常用于生吃或烹饪。",
+        "preparation_method": "1. 将胡萝卜去皮，用清水冲洗干净。\n2. 根据需要切成片、丝或块。\n3. 可直接生吃，或用于炒菜、煮汤、蒸食。\n4. 若做胡萝卜汁，可将胡萝卜切块放入榨汁机中榨取汁液。",
+        "category": "vegetable",
+        "subcategory": "根茎类",
+        "calories_per_100g": 41,
+        "nutrition_per_100g": {
+          "protein": 0.9,
+          "fat": 0.2,
+          "carbohydrate": 9.6,
+          "calories": 41,
+          "fiber": 2.8,
+          "vitamins": [
+            {
+              "name": "维生素A",
+              "amount": 835
+            },
+            {
+              "name": "维生素C",
+              "amount": 5.9
+            },
+            {
+              "name": "维生素K",
+              "amount": 13.2
+            }
+          ]
+        },
+        "id": 33
+      }
+    ],
+    //高钙
+    "calcium_rich": [],
+    //促进吸收
+    "acne_promoting": [
+      {
+        "name": "芝麻牛肉",
+        "image_url": "https://oss-pai-wg4otmxrzffj7vy41l-cn-shanghai.oss-cn-shanghai.aliyuncs.com/xilanhua/foods/%E8%8A%9D%E9%BA%BB%E7%89%9B%E8%82%89.png?x-oss-signature-version=OSS4-HMAC-SHA256&x-oss-date=20250814T025249Z&x-oss-expires=3600&x-oss-credential=LTAI5tGChGvihkbEvBh26bbz%2F20250814%2Fcn-shanghai%2Foss%2Faliyun_v4_request&x-oss-signature=2dbc9a961d09f3d8835932969cde30bdb72caf5bd0d53e9755f66fd7b10c7f2f",
+        "description": "芝麻牛肉是一道经典的中式菜肴，主要由牛肉片和芝麻制成，通常带有香甜或咸甜的风味。",
+        "preparation_method": "1. 准备食材：牛肉（通常选用牛里脊）切片，芝麻炒香备用。\n2. 牛肉片用酱油、料酒、淀粉、少许糖和油腌制15-20分钟。\n3. 锅中加热油，将腌好的牛肉片煸炒至变色并熟透。\n4. 另起锅加入少许水、糖、酱油和醋，调成甜咸口味的酱汁。\n5. 将炒好的牛肉倒入酱汁中翻炒，使牛肉均匀裹上酱汁。\n6. 最后撒入炒香的芝麻，翻炒几下即可出锅。",
+        "category": "protein",
+        "subcategory": "牛肉",
+        "calories_per_100g": 250,
+        "nutrition_per_100g": {
+          "protein": 26,
+          "fat": 15,
+          "carbohydrate": 8,
+          "calories": 250,
+          "fiber": 0,
+          "vitamins": [
+            {
+              "name": "维生素B6",
+              "amount": 0.4
+            },
+            {
+              "name": "维生素B12",
+              "amount": 2.4
+            },
+            {
+              "name": "维生素E",
+              "amount": 0.3
+            }
+          ]
+        },
+        "id": 32
+      }
+    ],
+    //睡眠质量
+    "sleep_affecting": []
+  },
+  //健康建议
+  "health_tips": {
+    "post_meal_exercise": "建议适当散步15分钟，有助于消化。",
+    "dietary_suggestions": "建议增加绿叶蔬菜的比例，并减少高脂肪的烹饪方式，以提升整体营养均衡性。",
+    "digestion_note": "注意芝麻牛肉可能偏油腻，消化较慢，建议多喝水以帮助代谢。",
+    "cooking_method_advice": "建议使用少油清炒或蒸煮方式减少脂肪摄入，保留更多营养。"
+  }
+}

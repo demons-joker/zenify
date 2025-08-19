@@ -1,33 +1,139 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:zenify/random_word_cloud.dart';
+import 'package:zenify/components/common_card.dart';
+import 'package:zenify/services/user_session.dart';
 import 'package:zenify/utils/iconfont.dart';
+import 'package:zenify/services/api.dart';
+import 'package:zenify/models/meal_record.dart';
 
-class ReportPage extends StatelessWidget {
+class GlucoseData {
+  final String time;
+  final double value;
+
+  GlucoseData({required this.time, required this.value});
+}
+
+class _LeftArrowPainter extends CustomPainter {
+  final Color color;
+
+  _LeftArrowPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    // 箭头头部（三角形）
+    final arrowHead = Path();
+    arrowHead.moveTo(14, -6);
+    arrowHead.lineTo(0, 0);
+    arrowHead.lineTo(14, 6);
+    arrowHead.close();
+
+    // 箭杆（矩形）
+    final arrowBody = Path();
+    arrowBody.addRect(Rect.fromLTRB(14, 1, size.width, -1));
+
+    // 合并路径
+    final path = Path.combine(PathOperation.union, arrowHead, arrowBody);
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class ReportPage extends StatefulWidget {
   const ReportPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final words = [
-      {'text': '甜食', 'highlight': true},
-      {'text': '辣味', 'highlight': false},
-      {'text': '海鲜', 'highlight': true},
-      {'text': '素食', 'highlight': false},
-      {'text': '烧烤', 'highlight': true},
-      {'text': '火锅', 'highlight': false},
-      {'text': '面食', 'highlight': true},
-      {'text': '油炸', 'highlight': false},
-      {'text': '清淡', 'highlight': false},
-      {'text': '重口味', 'highlight': true},
-    ];
+  State<ReportPage> createState() => _ReportPageState();
+}
 
-// 示例数据
-    final List<NutrientData> data = [
-      NutrientData(name: "蛋白质", value: 30, color: Colors.blue),
-      NutrientData(name: "脂肪", value: 20, color: Colors.red),
-      NutrientData(name: "碳水化合物", value: 40, color: Colors.green),
-      NutrientData(name: "膳食纤维", value: 10, color: Colors.orange),
-    ];
+class _ReportPageState extends State<ReportPage> {
+  MealRecord? mealRecordsData;
+  num totalScore = 0;
+  dynamic totalCal = '';
+  List<NutrientData> nData = [
+    NutrientData(name: "蛋白质", value: 30, color: Colors.blue),
+    NutrientData(name: "脂肪", value: 20, color: Colors.red),
+    NutrientData(name: "碳水化合物", value: 40, color: Colors.green),
+    NutrientData(name: "膳食纤维", value: 10, color: Colors.orange),
+  ];
+  List chartColors = [Colors.blue, Colors.green, Colors.yellow, Colors.orange];
+  List<dynamic> foods = [];
+  // 血糖数据
+  List<GlucoseData> get glucoseData => [
+        GlucoseData(time: '00:00', value: 4.2),
+        GlucoseData(time: '03:00', value: 5.1),
+        GlucoseData(time: '06:00', value: 6.7),
+        GlucoseData(time: '09:00', value: 7.8),
+        GlucoseData(time: '12:00', value: 5.4),
+        GlucoseData(time: '15:00', value: 4.9),
+        GlucoseData(time: '18:00', value: 5.6),
+        GlucoseData(time: '21:00', value: 6.2),
+      ];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchMealRecords();
+  }
+
+  Future<void> _fetchMealRecords() async {
+    try {
+      final data = await Api.getMealRecordsDetail({
+        'user_id': await UserSession.userId,
+        'plate_id': 1,
+        'meal_record_id': 1
+      });
+      print('mealRecordsData: $data');
+      setState(() {
+        if (data != null) {
+          mealRecordsData = MealRecord.fromJson(data);
+          print('mealRecordsData1: $data');
+          foods = mealRecordsData!.foods;
+          //营养成分数据
+          nData = [
+            NutrientData(
+                name: '蛋白质',
+                value: double.parse(mealRecordsData!.nutritiveProportion.protein
+                    .toStringAsFixed(2)),
+                color: chartColors[0]),
+            NutrientData(
+                name: '脂肪',
+                value: double.parse(mealRecordsData!.nutritiveProportion.fat
+                    .toStringAsFixed(2)),
+                color: chartColors[1]),
+            NutrientData(
+                name: '碳水化合物',
+                value: double.parse(mealRecordsData!
+                    .nutritiveProportion.carbohydrate
+                    .toStringAsFixed(2)),
+                color: chartColors[2]),
+            NutrientData(
+                name: '膳食纤维',
+                value: double.parse(mealRecordsData!.nutritiveProportion.fiber
+                    .toStringAsFixed(2)),
+                color: chartColors[3]),
+          ];
+          totalScore = mealRecordsData!.nutritionAnalysis.mealScore * 10;
+          totalCal = '${(mealRecordsData!.totalCalories).toInt()}kcal';
+        }
+      });
+    } catch (e) {
+      debugPrint('获取餐食记录失败: $e');
+    }
+  }
+
+  Color get titleColor => const Color(0XFF292929);
+  Color get text2Color => const Color(0XFF595959);
+
+  @override
+  Widget build(BuildContext context) {
+    // 示例数据
 
     return Scaffold(
       appBar: AppBar(
@@ -86,11 +192,18 @@ class ReportPage extends StatelessWidget {
                     centerSpaceRadius: 0,
                     sectionsSpace: 2, // 扇区间距（可选）
                     startDegreeOffset: -90, // 从12点钟方向开始
-                    sections: data.map<PieChartSectionData>((item) {
+                    sections: nData.map<PieChartSectionData>((item) {
+                      print(
+                          'nDataitem: ${item.name} ${item.value} ${item.color}');
+                      final total =
+                          nData.fold(0.0, (sum, item) => sum + item.value);
+                      final percentage = double.parse(
+                          (item.value / total * 100).toStringAsFixed(2));
+                      print('percentage: $percentage');
                       return PieChartSectionData(
                         color: item.color,
-                        value: item.value.toDouble(),
-                        // title: '${item.value}%',
+                        value: percentage,
+                        showTitle: false,
                         radius: 90,
                         titleStyle: const TextStyle(
                           fontSize: 12,
@@ -106,8 +219,24 @@ class ReportPage extends StatelessWidget {
                 ),
               ),
 
-              // const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
+              Row(
+                children: [
+                  Icon(
+                    IconFont.genghuan1,
+                    size: 30,
+                    color: Color(0XFF292929),
+                  ),
+                  Text(
+                    '皮肤美容',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: text2Color),
+                  )
+                ],
+              ),
               // // 词云块
               // RandomWordCloud(words: words),
               const SizedBox(height: 30),
@@ -115,60 +244,11 @@ class ReportPage extends StatelessWidget {
               const SizedBox(height: 30),
               _buildNutrientAnalysisCard(),
               const SizedBox(height: 30),
+              _buildHealthAdviceCard(),
+              const SizedBox(height: 30),
               _buildDietSuggestionCard(),
-              const SizedBox(height: 20),
-              _buildTextCard(
-                  title: '胃肠道',
-                  content: [
-                    '1、每天保证充足的水分摄入',
-                    '2、保持规律的作息时间',
-                    '3、适量运动有助于消化',
-                    '4、注意饮食多样化',
-                  ],
-                  icon: IconFont.weichangdaojianyi),
-              const SizedBox(height: 20),
-              _buildTextCard(
-                  title: '美容养颜',
-                  content: [
-                    '1. 皮肤健康维度',
-                    '氧化损伤防御力：',
-                    '评估参数：深色蔬果（VC/VE/类胡萝卜素）、坚果种子（硒/VE）、茶多酚摄入频率。',
-                    '关联症状：日晒后易红肿/色斑加深、皮肤修复速度慢。',
-                    '胶原蛋白合成力：',
-                    '评估参数：优质蛋白（肉蛋豆）、VC（柑橘/莓果）、铜锌（贝壳/内脏）摄入量。',
-                    '关联症状：皮肤松弛、细纹增多、伤口愈合慢。',
-                    '炎症调控能力：',
-                    '评估参数：Omega-3（深海鱼/亚麻籽）/Omega-6比例、姜黄/莓果摄入、精制糖/油炸食品频率。',
-                    '关联症状：反复痘痘、泛红敏感、毛孔粗大。',
-                    '水合保湿力：',
-                    '评估参数：必需脂肪酸（坚果/鱼油）、饮水总量、高水分蔬果（黄瓜/番茄）摄入。',
-                    '关联症状：干燥脱屑、外油内干、角质层薄。',
-                    '2. 代谢与循环维度',
-                    '血糖平稳度：',
-                    '评估参数：低GI主食占比、膳食纤维摄入量、餐后零食选择（是否高糖）。',
-                    '关联症状：面部糖化（暗黄/法令纹深）、易浮肿。',
-                    '肝肠解毒效率：',
-                    '评估参数：十字花科蔬菜（西兰花/芥蓝）、硫化物（大蒜/洋葱）、水溶性纤维（燕麦/苹果）摄入。',
-                    '关联症状：肤色晦暗、黑眼圈顽固、易长痘。',
-                    '微循环状态：',
-                    '评估参数：铁（红肉/菠菜）、B12（动物肝/蛋）、叶酸（深绿叶菜）是否充足。',
-                    '关联症状：面色苍白/蜡黄、手脚冰凉、唇色淡。',
-                    '3. 激素平衡维度',
-                    '雌激素代谢支持：',
-                    '评估参数：大豆异黄酮（豆腐/豆浆）、木酚素（亚麻籽）、西兰花摄入。',
-                    '关联症状：经前爆痘、周期皮肤波动、更年期潮红加剧。',
-                    '压力激素调节：',
-                    '评估参数：镁（黑巧/杏仁）、VC（彩椒/猕猴桃）、磷脂（蛋黄）摄入。',
-                    '关联症状：压力性痤疮、皮肤屏障脆弱、脱发。',
-                    '4. 毛发与体态维度',
-                    '发质与头皮健康：',
-                    '评估参数：生物素（鸡蛋/酵母）、锌（牡蛎/南瓜籽）、优质蛋白摄入。',
-                    '关联症状：脱发量增加、头发细软易断、头屑增多。',
-                    '水肿与轮廓管理：',
-                    '评估参数：钾（香蕉/菠菜）/钠比例、水分摄入规律性。',
-                    '关联症状：晨起面部浮肿、下肢沉重。'
-                  ],
-                  icon: IconFont.xiaozhu)
+              const SizedBox(height: 30),
+              _buildDietSuggestionCard(),
             ],
           ),
         ),
@@ -177,54 +257,389 @@ class ReportPage extends StatelessWidget {
   }
 
   Widget _buildNutrientAnalysisCard() {
-    return Container(
-      padding: EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 4,
-            offset: Offset(2, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 第一部分：竖向排列的文字
-          Text(
-            '营养分析',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 10),
-          Text(
-            '1. 番茄炒蛋富含维生素C和蛋白质。',
-            style: TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-          Text(
-            '2. 清蒸鱼含有丰富的优质蛋白。',
-            style: TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-          Text(
-            '3. 西兰花是膳食纤维的良好来源。',
-            style: TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-          SizedBox(height: 10),
-          Divider(color: Colors.grey),
-          SizedBox(height: 10),
-          // 第二部分：图片展示
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildFoodImage('assets/images/egg.jpeg'),
-              _buildFoodImage('assets/images/egg.jpeg'),
-              _buildFoodImage('assets/images/egg.jpeg'),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          padding: EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: Offset(2, 2),
+              ),
             ],
           ),
-        ],
-      ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '均衡度：',
+                style: TextStyle(fontSize: 16, color: text2Color),
+              ),
+              Text(
+                '优质蛋白：',
+                style: TextStyle(fontSize: 16, color: text2Color),
+              ),
+              Text(
+                '膳食纤维情况：',
+                style: TextStyle(fontSize: 16, color: text2Color),
+              ),
+              Text(
+                '微量元素情况：',
+                style: TextStyle(fontSize: 16, color: text2Color),
+              ),
+              SizedBox(height: 10),
+              Divider(color: Colors.grey),
+              SizedBox(height: 10),
+              // 第二部分：图片展示
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildFoodImage('assets/images/egg.jpeg'),
+                  _buildFoodImage('assets/images/egg.jpeg'),
+                  _buildFoodImage('assets/images/egg.jpeg'),
+                ],
+              ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '低GI的',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF595959)),
+                  )
+                ],
+              ),
+              SizedBox(height: 10),
+              Divider(color: Colors.grey),
+              SizedBox(height: 10),
+              // 第二部分：图片展示
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildFoodImage('assets/images/egg.jpeg'),
+                  _buildFoodImage('assets/images/egg.jpeg'),
+                  _buildFoodImage('assets/images/egg.jpeg'),
+                ],
+              ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '提高免疫力的',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF595959)),
+                  )
+                ],
+              ),
+            ],
+          ),
+        ),
+        Positioned(
+          top: -20,
+          left: 10,
+          child: Container(
+            padding: EdgeInsets.only(left: 18, right: 18),
+            decoration: BoxDecoration(
+              color: Color(0xFFFFFFFF),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Stack(
+              alignment: Alignment.bottomCenter,
+              children: [
+                Text(
+                  '营养分析',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: titleColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHealthAdviceCard() {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          padding: EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: Offset(2, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Divider(color: Colors.grey),
+              SizedBox(height: 10),
+              // 第二部分：图片展示
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(IconFont.meirongyangyanjianyi, size: 30),
+                  Text(
+                    '皮肤美容',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: text2Color),
+                  )
+                ],
+              ),
+              SizedBox(height: 10),
+              CommonCard(
+                  imagePath: 'assets/images/egg.jpeg',
+                  statusIcon: Icon(IconFont.daohanglan),
+                  title: '小雨A',
+                  subtitle: '详细信息啊啊啊啊啊',
+                  text2Color: text2Color),
+              CommonCard(
+                  imagePath: 'assets/images/egg.jpeg',
+                  statusIcon: Icon(IconFont.daohanglan),
+                  title: '小雨A',
+                  subtitle: '详细信息啊啊啊啊啊',
+                  text2Color: text2Color),
+              SizedBox(height: 10),
+              Divider(color: Colors.grey),
+              SizedBox(height: 10),
+              // 第二部分：图片展示
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(IconFont.meirongyangyanjianyi, size: 30),
+                  Text(
+                    '皮肤美容',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: text2Color),
+                  )
+                ],
+              ),
+              SizedBox(height: 10),
+              CommonCard(
+                  imagePath: 'assets/images/egg.jpeg',
+                  statusIcon: Icon(IconFont.daohanglan),
+                  title: '小雨A',
+                  subtitle: '详细信息啊啊啊啊啊',
+                  text2Color: text2Color),
+              CommonCard(
+                  imagePath: 'assets/images/egg.jpeg',
+                  statusIcon: Icon(IconFont.daohanglan),
+                  title: '小雨A',
+                  subtitle: '详细信息啊啊啊啊啊',
+                  text2Color: text2Color),
+              SizedBox(height: 10),
+              //这里需要加一个血糖mmol/l的的echart面积图，
+              Container(
+                height: 200,
+                decoration: BoxDecoration(
+                  color: Color(0XFFFAFAFA),
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color.fromRGBO(0, 0, 0, 0.07),
+                      offset: Offset(2.26, 4.53),
+                      blurRadius: 2.06,
+                      spreadRadius: 0,
+                    ),
+                  ],
+                ),
+                padding: EdgeInsets.all(16),
+                child: LineChart(
+                  LineChartData(
+                    gridData: FlGridData(
+                      show: false,
+                    ),
+                    titlesData: FlTitlesData(
+                      show: false,
+                    ),
+                    borderData: FlBorderData(
+                      show: false,
+                    ),
+                    minX: 0,
+                    maxX: (glucoseData.length - 1).toDouble(),
+                    minY: 3,
+                    maxY: 10,
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: glucoseData
+                            .asMap()
+                            .entries
+                            .map((entry) => FlSpot(
+                                  entry.key.toDouble(),
+                                  entry.value.value,
+                                ))
+                            .toList(),
+                        isCurved: true,
+                        gradient: LinearGradient(
+                          colors: [
+                            Color.fromRGBO(255, 128, 44, 1),
+                            Color.fromRGBO(255, 128, 44, 0)
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                        barWidth: 3,
+                        isStrokeCapRound: true,
+                        belowBarData: BarAreaData(
+                          show: true,
+                          gradient: LinearGradient(
+                            colors: [
+                              Color(0xFFFF6B81).withOpacity(0.2),
+                              Color(0xFFFFA07A).withOpacity(0.2)
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                        dotData: FlDotData(
+                          show: true,
+                          getDotPainter: (FlSpot spot, double xPercentage,
+                              LineChartBarData bar, int index) {
+                            // 仅在最顶点显示数字
+                            if (index == glucoseData.length - 5) {
+                              return FlDotCirclePainter(
+                                radius: 4,
+                                color: Color.fromRGBO(255, 128, 44, 1),
+                                strokeWidth: 0,
+                                strokeColor: Colors.transparent,
+                              );
+                            }
+                            return FlDotCirclePainter(
+                              radius: 0,
+                              color: Colors.transparent,
+                              strokeWidth: 0,
+                              strokeColor: Colors.transparent,
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Divider(color: Colors.grey),
+              SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(IconFont.meirongyangyanjianyi, size: 30),
+                  Text(
+                    '皮肤美容',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: text2Color),
+                  )
+                ],
+              ),
+              SizedBox(height: 10),
+              CommonCard(
+                  imagePath: 'assets/images/egg.jpeg',
+                  statusIcon: Icon(IconFont.daohanglan),
+                  title: '小雨A',
+                  subtitle: '详细信息啊啊啊啊啊',
+                  text2Color: text2Color),
+              CommonCard(
+                  imagePath: 'assets/images/egg.jpeg',
+                  statusIcon: Icon(IconFont.daohanglan),
+                  title: '小雨A',
+                  subtitle: '详细信息啊啊啊啊啊',
+                  text2Color: text2Color),
+              SizedBox(height: 10),
+              Divider(color: Colors.grey),
+              SizedBox(height: 10),
+              // 第二部分：图片展示
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(IconFont.meirongyangyanjianyi, size: 30),
+                  Text(
+                    '皮肤美容',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: text2Color),
+                  )
+                ],
+              ),
+              SizedBox(height: 10),
+              CommonCard(
+                  imagePath: 'assets/images/egg.jpeg',
+                  statusIcon: Icon(IconFont.daohanglan),
+                  title: '小雨A',
+                  subtitle: '详细信息啊啊啊啊啊',
+                  text2Color: text2Color),
+              CommonCard(
+                  imagePath: 'assets/images/egg.jpeg',
+                  statusIcon: Icon(IconFont.daohanglan),
+                  title: '小雨A',
+                  subtitle: '详细信息啊啊啊啊啊',
+                  text2Color: text2Color),
+            ],
+          ),
+        ),
+        Positioned(
+          top: -20,
+          left: 10,
+          child: Container(
+            padding: EdgeInsets.only(left: 18, right: 18),
+            decoration: BoxDecoration(
+              color: Color(0xFFFFFFFF),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '健康建议：',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: titleColor,
+                  ),
+                ),
+                Text(
+                  '哪些食物需注意',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: text2Color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -358,7 +773,7 @@ class ReportPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ScoreCircle(score: 92),
+              ScoreCircle(score: totalScore),
               SizedBox(height: 8),
               Padding(
                 padding: EdgeInsets.only(top: 0),
@@ -378,7 +793,7 @@ class ReportPage extends StatelessWidget {
             children: [
               // 第一个块：黑色背景 + 图标 + 文字
               Container(
-                width: 180,
+                width: 200,
                 height: 50,
                 margin: EdgeInsets.only(top: 15),
                 decoration: BoxDecoration(
@@ -396,7 +811,7 @@ class ReportPage extends StatelessWidget {
                       ),
                       SizedBox(width: 6),
                       Text(
-                        '400kcal',
+                        totalCal,
                         style: TextStyle(
                             color: Color(0xFFEA7B3C), // 橙色文字
                             fontSize: 30),
@@ -664,9 +1079,8 @@ class ReportPage extends StatelessWidget {
         clipBehavior: Clip.none, // 关键设置，允许子组件溢出
         children: [
           Container(
-            height: 255,
+            height: 300,
             width: double.infinity,
-            margin: EdgeInsets.only(bottom: 20),
             decoration: BoxDecoration(
               color: Color(0xFFEFECEB),
               borderRadius: BorderRadius.circular(15),
@@ -685,26 +1099,48 @@ class ReportPage extends StatelessWidget {
                 ),
               ],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 菜品横向列表
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(left: 10, right: 10),
+            child: SizedBox(
+              height: 300, // 固定高度
+              child: PageView(
+                children: [
+                  // 第一页：菜品列表
+                  Padding(
+                    padding: EdgeInsets.only(left: 15, right: 10, top: 30),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildFoodItem('番茄炒蛋', '100kcal', '222g'),
-                        SizedBox(width: 5),
-                        _buildFoodItem('清蒸鱼', '120kcal', '180g'),
-                        SizedBox(width: 5),
-                        _buildFoodItem('西兰花', '80kcal', '150g'),
+                        ...foods.map((food) => _buildFoodItem(food.food.name,
+                            food.calories, '${food?.quantity}${food?.unit}'))
                       ],
                     ),
                   ),
-                ),
-              ],
+                  // 第二页：全屏图片
+                  Center(
+                    child: Container(
+                      height: 200,
+                      width: 200,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.25),
+                            blurRadius: 8,
+                            offset: Offset(1, 1),
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      child: Image.network(
+                        mealRecordsData?.imageUrl ?? '',
+                        fit: BoxFit.cover,
+                        width: 200,
+                        height: 200,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           Positioned(
@@ -714,7 +1150,7 @@ class ReportPage extends StatelessWidget {
               padding: EdgeInsets.only(left: 18, right: 18),
               decoration: BoxDecoration(
                 color: Color(0xFFEFECEB),
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: Stack(
                 alignment: Alignment.bottomCenter,
@@ -724,7 +1160,35 @@ class ReportPage extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: titleColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 44,
+            left: 0,
+            child: Container(
+              padding: EdgeInsets.only(left: 18, right: 18),
+              decoration: BoxDecoration(
+                color: Color(0xFFEFECEB),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CustomPaint(
+                    size: Size(274, 4),
+                    painter: _LeftArrowPainter(color: Color(0xFFEA7B3C)),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    '供能占比',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFFEA7B3C),
                     ),
                   ),
                 ],
@@ -735,10 +1199,13 @@ class ReportPage extends StatelessWidget {
   }
 
 // 构建单个菜品项
-  Widget _buildFoodItem(String name, String calories, String weight) {
+  Widget _buildFoodItem(String name, double calories, String weight) {
+    String percentage =
+        '${(calories / mealRecordsData!.totalCalories * 100).toStringAsFixed(0)}%';
     return Expanded(
       child: Container(
         height: 180,
+        margin: EdgeInsets.fromLTRB(0, 0, 5, 0),
         decoration: BoxDecoration(
           color: Color(0xFF000000),
           borderRadius: BorderRadius.circular(10),
@@ -757,72 +1224,101 @@ class ReportPage extends StatelessWidget {
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch, // 让子项填满宽度
+        child: Stack(
+          clipBehavior: Clip.none, // 关键设置，允许子组件溢出
           children: [
-            // 菜品图片部分
-            Expanded(
-              flex: 1,
-              child: ClipRRect(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
-                child: Image.network(
-                  _getRandomFoodImage(),
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.grey[300],
-                    child: Icon(Icons.fastfood, size: 40, color: Colors.white),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // 菜品图片部分
+                Expanded(
+                  flex: 1,
+                  child: ClipRRect(
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(10)),
+                    child: Image.network(
+                      _getRandomFoodImage(),
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.grey[300],
+                        child:
+                            Icon(Icons.fastfood, size: 40, color: Colors.white),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
 
-            // 菜品信息部分
-            Expanded(
-              flex: 1,
-              child: Padding(
-                padding: EdgeInsets.only(left: 10, right: 5), // 调整左侧padding
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start, // 子项左对齐
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Container(
-                      alignment: Alignment.centerLeft, // 强制左对齐
-                      child: Text(
-                        name,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFFFFFFFF),
-                          fontWeight: FontWeight.bold,
+                // 菜品信息部分
+                Expanded(
+                  flex: 1,
+                  child: Padding(
+                    padding: EdgeInsets.only(left: 10, right: 5), // 调整左侧padding
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Container(
+                          alignment: Alignment.centerLeft, // 强制左对齐
+                          child: Text(
+                            name,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFFFFFFFF),
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.left, // 明确设置文本左对齐
+                          ),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.left, // 明确设置文本左对齐
-                      ),
-                    ),
-                    Container(
-                      alignment: Alignment.centerLeft, // 强制左对齐
-                      child: Text(
-                        weight,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFFE5A454),
+                        Container(
+                          alignment: Alignment.centerLeft, // 强制左对齐
+                          child: Text(
+                            weight,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFFE5A454),
+                            ),
+                            textAlign: TextAlign.left, // 明确设置文本左对齐
+                          ),
                         ),
-                        textAlign: TextAlign.left, // 明确设置文本左对齐
-                      ),
-                    ),
-                    Container(
-                      alignment: Alignment.centerLeft, // 强制左对齐
-                      child: Text(
-                        calories,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF7C7C7C),
+                        Container(
+                          alignment: Alignment.centerLeft, // 强制左对齐
+                          child: Text(
+                            '$calories',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF7C7C7C),
+                            ),
+                            textAlign: TextAlign.left, // 明确设置文本左对齐
+                          ),
                         ),
-                        textAlign: TextAlign.left, // 明确设置文本左对齐
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
+                ),
+              ],
+            ),
+            Positioned(
+              right: 0,
+              bottom: -20,
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Color(0xFFEA7B3C),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Center(
+                  child: Text(
+                    percentage,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -848,7 +1344,7 @@ class ReportPage extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         Container(
-          margin: EdgeInsets.only(bottom: 20),
+          padding: EdgeInsets.only(bottom: 20, top: 30),
           decoration: BoxDecoration(
             color: Color(0xFFEFECEB),
             borderRadius: BorderRadius.circular(15),
@@ -870,30 +1366,6 @@ class ReportPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 标题
-              Padding(
-                padding: EdgeInsets.only(left: 70, top: 12, bottom: 8),
-                child: Stack(
-                  alignment: Alignment.bottomCenter,
-                  children: [
-                    Text(
-                      '膳食调整建议',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    Container(
-                      height: 2,
-                      width: 100,
-                      margin: EdgeInsets.only(top: 4),
-                      color: Colors.black87,
-                    ),
-                  ],
-                ),
-              ),
-
               // 第一行三个图文结合体
               Container(
                 height: 128,
@@ -901,14 +1373,17 @@ class ReportPage extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildSuggestionItem('蛋白质食物',
-                        'https://img.freepik.com/free-photo/grilled-chicken-breast-vegetables_2829-19744.jpg'),
+                    _buildSuggestionItem(
+                        'https://img.freepik.com/free-photo/grilled-chicken-breast-vegetables_2829-19744.jpg',
+                        Icon(IconFont.daohanglan)),
                     SizedBox(width: 5),
-                    _buildSuggestionItem('碳水食物',
-                        'https://img.freepik.com/free-photo/assortment-raw-whole-grains_23-2148892083.jpg'),
+                    _buildSuggestionItem(
+                        'https://img.freepik.com/free-photo/assortment-raw-whole-grains_23-2148892083.jpg',
+                        Icon(IconFont.daohanglan)),
                     SizedBox(width: 5),
-                    _buildSuggestionItem('膳食纤维',
-                        'https://img.freepik.com/free-photo/healthy-vegetables-wooden-table_1150-38014.jpg'),
+                    _buildSuggestionItem(
+                        'https://img.freepik.com/free-photo/healthy-vegetables-wooden-table_1150-38014.jpg',
+                        Icon(IconFont.daohanglan)),
                   ],
                 ),
               ),
@@ -933,10 +1408,33 @@ class ReportPage extends StatelessWidget {
         Positioned(
           top: -20,
           left: 10,
-          child: Icon(
-            IconFont.shanshijianyi,
-            size: 60,
-            color: const Color.fromARGB(255, 4, 160, 56),
+          child: Container(
+            padding: EdgeInsets.only(left: 18, right: 18),
+            decoration: BoxDecoration(
+              color: Color(0xFFEFECEB),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '健康建议：',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: titleColor,
+                  ),
+                ),
+                Text(
+                  '消化分析',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: text2Color,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -944,67 +1442,41 @@ class ReportPage extends StatelessWidget {
   }
 
 // 构建单个建议项
-  Widget _buildSuggestionItem(String name, String imageUrl) {
-    return Expanded(
-      child: Container(
-        height: 128,
-        decoration: BoxDecoration(
-          color: Color(0xFFD8D1CF),
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 4,
-              offset: Offset(2, 2),
-              spreadRadius: 1,
+  Widget _buildSuggestionItem(String imageUrl, Widget statusIcon) {
+    return Flexible(
+      child: Stack(children: [
+        Container(
+          height: 100,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.all(Radius.circular(20)),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.all(Radius.circular(20)),
+            child: Image.network(
+              imageUrl,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                color: Colors.grey[300],
+                child: Icon(Icons.fastfood, size: 40, color: Colors.white),
+              ),
             ),
-            BoxShadow(
-              color: Colors.white.withOpacity(0.1),
-              blurRadius: 4,
-              offset: Offset(-2, -2),
-              spreadRadius: 1,
-            ),
-          ],
+          ),
         ),
-        child: Column(
-          children: [
-            // 图片部分
-            Container(
-              height: 100,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
-                child: Image.network(
-                  imageUrl,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.grey[300],
-                    child: Icon(Icons.fastfood, size: 40, color: Colors.white),
-                  ),
-                ),
-              ),
+        Positioned(
+          right: 0,
+          bottom: 0,
+          child: Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(17),
             ),
-            // 文字部分
-            Container(
-              height: 28,
-              padding: EdgeInsets.only(left: 8),
-              alignment: Alignment.centerLeft,
-              child: Text(
-                name,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
+            child: Center(child: statusIcon),
+          ),
         ),
-      ),
+      ]),
     );
   }
 
@@ -1068,14 +1540,14 @@ class ReportPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: titleColor,
                       ),
                     ),
                     Container(
                       height: 2,
                       width: 100,
                       margin: EdgeInsets.only(top: 4),
-                      color: Colors.black87,
+                      color: titleColor,
                     ),
                   ],
                 ),
@@ -1115,7 +1587,7 @@ class ReportPage extends StatelessWidget {
 
 // 评分圆形组件
 class ScoreCircle extends StatelessWidget {
-  final int score;
+  final num score;
 
   const ScoreCircle({super.key, required this.score});
 
@@ -1173,7 +1645,7 @@ class ScoreCircle extends StatelessWidget {
 
 class NutrientData {
   final String name;
-  final double value;
+  final num value;
   final Color color;
 
   NutrientData({

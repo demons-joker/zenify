@@ -39,6 +39,7 @@ class IconFont {
       IconData(0xe627, fontFamily: fontFamily);
   static const IconData daohangxuanzhongPaizhao1 =
       IconData(0xe628, fontFamily: fontFamily);
+  static const IconData genghuan1 = IconData(0xe637, fontFamily: fontFamily);
 
   // 食物相关图标
   static const IconData xinxianshicai =
@@ -58,7 +59,6 @@ class IconFont {
   static const IconData paizhaoanniu = IconData(0xe60d, fontFamily: fontFamily);
   static const IconData shanguandeng = IconData(0xe60f, fontFamily: fontFamily);
   static const IconData genghuan = IconData(0xe615, fontFamily: fontFamily);
-  static const IconData genghuan1 = IconData(0xe62d, fontFamily: fontFamily);
   static const IconData zhankaixiangqinganniu =
       IconData(0xe61a, fontFamily: fontFamily);
   static const IconData duanshidaojishi =

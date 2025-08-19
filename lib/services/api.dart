@@ -357,4 +357,35 @@ class Api {
       throw Exception('获取当天饮食记录失败: $e');
     }
   }
+
+  //获取用户当天的饮食记录
+  static Future<dynamic> getMealRecordsDetail(
+      Map<String, dynamic> request) async {
+    print('请求参数: $request');
+    try {
+      final response = await _handleRequest(
+        ApiConfig.getMealRecordsDetail,
+        pathParams: request,
+      );
+      return response;
+    } catch (e) {
+      print('获取饮食记录详情失败: $e');
+      throw Exception('获取饮食记录详情失败: $e');
+    }
+  }
+
+  //获取图像识别结果（会耗费很多时间）
+  static Future<dynamic> getRecognize(Map<String, dynamic> request) async {
+    print('请求参数: $request');
+    try {
+      final response = await _handleRequest(
+        ApiConfig.getRecognize,
+        pathParams: request,
+      );
+      return response;
+    } catch (e) {
+      print('获取图像识别结果（会耗费很多时间）失败: $e');
+      throw Exception('获取图像识别结果（会耗费很多时间）失败: $e');
+    }
+  }
 }

@@ -20,24 +20,30 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadUserInfo() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
 
     try {
       final response = await Api.getUserInfo();
       final userInfoJson =
           response is Map ? response['user_info'] ?? response : response;
-      setState(() {
-        _userInfo = UserInfo.fromJson(userInfoJson);
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _userInfo = UserInfo.fromJson(userInfoJson);
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = '获取用户信息失败: ${e.toString()}';
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = '获取用户信息失败: ${e.toString()}';
+        });
+      }
     }
   }
 

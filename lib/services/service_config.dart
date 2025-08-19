@@ -8,8 +8,8 @@ class ApiEndpoint {
 }
 
 class ApiConfig {
-  static const String baseUrl = "https://www.maididi.com";
-  // static const String baseUrl = "http://localhost:8000";
+  // static const String baseUrl = "https://www.maididi.com";
+  static const String baseUrl = "http://localhost:8000";
   static const String apiVersion = "/api/v1";
   static const int connectTimeout = 30000;
   static const int receiveTimeout = 30000;
@@ -165,6 +165,11 @@ class ApiConfig {
     '$apiVersion/users/{user_id}/plates/{plate_id}/meal-records/today',
     HttpMethod.get,
   );
+  //获取饮食记录详情
+  static const getMealRecordsDetail = ApiEndpoint(
+    '$apiVersion/users/{user_id}/plates/{plate_id}/meal-records/{meal_record_id}',
+    HttpMethod.get,
+  );
   //替换食谱中的食物项
   static const replaceRecipeFood = ApiEndpoint(
     '$apiVersion/recipes/foods/replace/{recipe_food_id}',
@@ -174,5 +179,11 @@ class ApiConfig {
   static const replacePlanFood = ApiEndpoint(
     '$apiVersion/plan/foods/replace/{plan_food_id}',
     HttpMethod.put,
+  );
+
+  //获取图像识别结果（会耗费很多时间）
+  static const getRecognize = ApiEndpoint(
+    '$apiVersion/users/{user_id}/plates/{plate_id}/recognize',
+    HttpMethod.post,
   );
 }

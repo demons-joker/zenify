@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:zenify/services/api.dart';
 import 'dart:io';
 import 'package:zenify/services/upload_service.dart';
+import 'package:zenify/services/user_session.dart';
 
 class CameraPage extends StatefulWidget {
   @override
@@ -16,6 +18,8 @@ class _CameraPageState extends State<CameraPage> {
   bool _isTakingPhoto = false;
   bool _showPreview = false;
   bool _isInitializing = true;
+  bool _isAnalyzing = false;
+  bool _isSynced = false;
 
   @override
   void initState() {
@@ -162,6 +166,59 @@ class _CameraPageState extends State<CameraPage> {
                       child: CameraPreview(_cameraController!),
                     ),
 
+                  // Top controls
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 16,
+                    left: 0,
+                    right: 0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.close, color: Colors.white),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                        if (_showPreview && _imageFile != null)
+                          TextButton(
+                            child: Text('使用照片',
+                                style: TextStyle(color: Colors.white)),
+                            onPressed: () async {
+                              final file = File(_imageFile!.path);
+                              final result = await UploadService.uploadImage(
+                                  file, context);
+                              if (result != null && mounted) {
+                                setState(() {
+                                  _isAnalyzing = true;
+                                });
+                                // 调用服务端API获取识别结果
+                                final data = await Api.getRecognize({
+                                  'user_id': await UserSession.userId,
+                                  'plate_id': 1
+                                });
+                                if (mounted && data != null) {
+                                  setState(() {
+                                    _isAnalyzing = false;
+                                    _isSynced = true;
+                                  });
+                                  // 延时3秒返回首页
+                                  Future.delayed(Duration(seconds: 3), () {
+                                    if (mounted) {
+                                      Navigator.of(context).pop(result);
+                                    }
+                                  });
+                                } else if (mounted) {
+                                  setState(() => _isAnalyzing = false);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('分析失败，请重试')),
+                                  );
+                                }
+                              }
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
+
                   // Bottom controls
                   Positioned(
                     bottom: MediaQuery.of(context).padding.bottom + 24,
@@ -173,6 +230,30 @@ class _CameraPageState extends State<CameraPage> {
                   // Loading indicator when taking photo
                   if (_isTakingPhoto)
                     Center(child: CircularProgressIndicator()),
+                  if (_isAnalyzing)
+                    Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text('分析中...', style: TextStyle(color: Colors.white)),
+                        ],
+                      ),
+                    ),
+                  if (_isSynced)
+                    Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.check_circle,
+                              color: Colors.green, size: 48),
+                          SizedBox(height: 16),
+                          Text('数据同步到餐盘',
+                              style: TextStyle(color: Colors.white)),
+                        ],
+                      ),
+                    ),
                 ],
               ),
       ),

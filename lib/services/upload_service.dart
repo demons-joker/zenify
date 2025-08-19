@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 import 'package:flutter/material.dart';
 import 'package:zenify/services/service_config.dart';
+import 'package:zenify/services/user_session.dart';
 
 class UploadService {
   static Future<String?> uploadImage(
@@ -10,8 +11,9 @@ class UploadService {
     BuildContext context,
   ) async {
     try {
-      final uri =
-          Uri.parse('${ApiConfig.baseUrl}/api/v0/upload/upload-to-oss/');
+      final userId = await UserSession.userId;
+      final uri = Uri.parse(
+          '${ApiConfig.baseUrl}/api/v1/users/$userId/plates/1/recognize/upload');
       final request = http.MultipartRequest('POST', uri);
 
       // 添加文件
