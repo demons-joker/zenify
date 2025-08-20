@@ -14,6 +14,7 @@ class UploadService {
       final userId = await UserSession.userId;
       final uri = Uri.parse(
           '${ApiConfig.baseUrl}/api/v1/users/$userId/plates/1/recognize/upload');
+      print('uri: $uri');
       final request = http.MultipartRequest('POST', uri);
 
       // 添加文件

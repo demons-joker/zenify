@@ -224,7 +224,7 @@ class _ReportPageState extends State<ReportPage> {
               Row(
                 children: [
                   Icon(
-                    IconFont.genghuan1,
+                    IconFont.biaoqing1,
                     size: 30,
                     color: Color(0XFF292929),
                   ),

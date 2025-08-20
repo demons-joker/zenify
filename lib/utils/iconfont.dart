@@ -6,6 +6,7 @@ class IconFont {
   // 导航相关图标
   static const IconData daohangxuanzhongshouye =
       IconData(0xe62f, fontFamily: fontFamily);
+  static const IconData biaoqing1 = IconData(0xe615, fontFamily: fontFamily);
   static const IconData daohangweixuanzhongshouye =
       IconData(0xe62e, fontFamily: fontFamily);
   static const IconData daohanglan = IconData(0xe601, fontFamily: fontFamily);

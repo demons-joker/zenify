@@ -178,43 +178,43 @@ class _CameraPageState extends State<CameraPage> {
                           icon: Icon(Icons.close, color: Colors.white),
                           onPressed: () => Navigator.of(context).pop(),
                         ),
-                        if (_showPreview && _imageFile != null)
-                          TextButton(
-                            child: Text('使用照片',
-                                style: TextStyle(color: Colors.white)),
-                            onPressed: () async {
-                              final file = File(_imageFile!.path);
-                              final result = await UploadService.uploadImage(
-                                  file, context);
-                              if (result != null && mounted) {
-                                setState(() {
-                                  _isAnalyzing = true;
-                                });
-                                // 调用服务端API获取识别结果
-                                final data = await Api.getRecognize({
-                                  'user_id': await UserSession.userId,
-                                  'plate_id': 1
-                                });
-                                if (mounted && data != null) {
-                                  setState(() {
-                                    _isAnalyzing = false;
-                                    _isSynced = true;
-                                  });
-                                  // 延时3秒返回首页
-                                  Future.delayed(Duration(seconds: 3), () {
-                                    if (mounted) {
-                                      Navigator.of(context).pop(result);
-                                    }
-                                  });
-                                } else if (mounted) {
-                                  setState(() => _isAnalyzing = false);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('分析失败，请重试')),
-                                  );
-                                }
-                              }
-                            },
-                          ),
+                        // if (_showPreview && _imageFile != null)
+                        //   TextButton(
+                        //     child: Text('使用照片',
+                        //         style: TextStyle(color: Colors.white)),
+                        //     onPressed: () async {
+                        //       final file = File(_imageFile!.path);
+                        //       final result = await UploadService.uploadImage(
+                        //           file, context);
+                        //       if (result != null && mounted) {
+                        //         setState(() {
+                        //           _isAnalyzing = true;
+                        //         });
+                        //         // 调用服务端API获取识别结果
+                        //         final data = await Api.getRecognize({
+                        //           'user_id': await UserSession.userId,
+                        //           'plate_id': 1
+                        //         });
+                        //         if (mounted && data != null) {
+                        //           setState(() {
+                        //             _isAnalyzing = false;
+                        //             _isSynced = true;
+                        //           });
+                        //           // 延时3秒返回首页
+                        //           Future.delayed(Duration(seconds: 3), () {
+                        //             if (mounted) {
+                        //               Navigator.of(context).pop(result);
+                        //             }
+                        //           });
+                        //         } else if (mounted) {
+                        //           setState(() => _isAnalyzing = false);
+                        //           ScaffoldMessenger.of(context).showSnackBar(
+                        //             SnackBar(content: Text('分析失败，请重试')),
+                        //           );
+                        //         }
+                        //       }
+                        //     },
+                        //   ),
                       ],
                     ),
                   ),
@@ -274,7 +274,35 @@ class _CameraPageState extends State<CameraPage> {
               ),
               TextButton(
                 child: Text('确认', style: TextStyle(color: Colors.white)),
-                onPressed: () => Navigator.of(context).pop(_imageFile!.path),
+                onPressed: () async {
+                  final file = File(_imageFile!.path);
+                  final result = await UploadService.uploadImage(file, context);
+                  if (result != null && mounted) {
+                    setState(() {
+                      _isAnalyzing = true;
+                    });
+                    // 调用服务端API获取识别结果
+                    final data = await Api.getRecognize(
+                        {'user_id': await UserSession.userId, 'plate_id': 1});
+                    if (mounted && data != null) {
+                      setState(() {
+                        _isAnalyzing = false;
+                        _isSynced = true;
+                      });
+                      // 延时3秒返回首页
+                      Future.delayed(Duration(seconds: 3), () {
+                        if (mounted) {
+                          Navigator.of(context).pop(result);
+                        }
+                      });
+                    } else if (mounted) {
+                      setState(() => _isAnalyzing = false);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('分析失败，请重试')),
+                      );
+                    }
+                  }
+                },
               ),
             ],
           )
