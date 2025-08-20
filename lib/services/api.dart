@@ -375,12 +375,14 @@ class Api {
   }
 
   //获取图像识别结果（会耗费很多时间）
-  static Future<dynamic> getRecognize(Map<String, dynamic> request) async {
+  static Future<dynamic> getRecognize(
+      Map<String, dynamic> request, Map<String, dynamic> params) async {
     print('请求参数: $request');
     try {
       final response = await _handleRequest(
         ApiConfig.getRecognize,
         pathParams: request,
+        queryParams: params,
       );
       return response;
     } catch (e) {

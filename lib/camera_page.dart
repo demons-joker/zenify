@@ -276,14 +276,16 @@ class _CameraPageState extends State<CameraPage> {
                 child: Text('确认', style: TextStyle(color: Colors.white)),
                 onPressed: () async {
                   final file = File(_imageFile!.path);
-                  final result = await UploadService.uploadImage(file, context);
+                  final dynamic result =
+                      await UploadService.uploadImage(file, context);
                   if (result != null && mounted) {
                     setState(() {
                       _isAnalyzing = true;
                     });
                     // 调用服务端API获取识别结果
                     final data = await Api.getRecognize(
-                        {'user_id': await UserSession.userId, 'plate_id': 1});
+                        {'user_id': await UserSession.userId, 'plate_id': 1},
+                        {'image_url': result['image_url']});
                     if (mounted && data != null) {
                       setState(() {
                         _isAnalyzing = false;
