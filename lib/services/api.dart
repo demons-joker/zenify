@@ -382,7 +382,7 @@ class Api {
       final response = await _handleRequest(
         ApiConfig.getRecognize,
         pathParams: request,
-        queryParams: params,
+        body: params,
       );
       return response;
     } catch (e) {

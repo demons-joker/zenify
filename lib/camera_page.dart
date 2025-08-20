@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
@@ -283,9 +285,12 @@ class _CameraPageState extends State<CameraPage> {
                       _isAnalyzing = true;
                     });
                     // 调用服务端API获取识别结果
+                    print(
+                        'jsonDecode(result): ${jsonDecode(result)['image_url']}');
                     final data = await Api.getRecognize(
                         {'user_id': await UserSession.userId, 'plate_id': 1},
-                        {'image_url': result['image_url']});
+                        {'image_url': jsonDecode(result)['image_url']});
+                    print('getRecognizedata: $data');
                     if (mounted && data != null) {
                       setState(() {
                         _isAnalyzing = false;
