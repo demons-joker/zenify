@@ -136,22 +136,9 @@ class _CameraPageState extends State<CameraPage> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: Icon(Icons.arrow_back_ios_new, color: Colors.white),
-            onPressed: () => Navigator.of(context).pop(),
+            icon: Icon(Icons.arrow_back_ios_new, color: _isAnalyzing ? Colors.white.withOpacity(0.5) : Colors.white),
+            onPressed: _isAnalyzing ? null : () => Navigator.of(context).pop(),
           ),
-          title: _showPreview && _imageFile != null
-              ? TextButton(
-                  child: Text('使用照片', style: TextStyle(color: Colors.white)),
-                  onPressed: () async {
-                    final file = File(_imageFile!.path);
-                    final result =
-                        await UploadService.uploadImage(file, context);
-                    if (result != null && mounted) {
-                      Navigator.of(context).pop(result);
-                    }
-                  },
-                )
-              : null,
         ),
         body: _isInitializing
             ? Center(child: CircularProgressIndicator())
@@ -167,59 +154,6 @@ class _CameraPageState extends State<CameraPage> {
                     Positioned.fill(
                       child: CameraPreview(_cameraController!),
                     ),
-
-                  // Top controls
-                  Positioned(
-                    top: MediaQuery.of(context).padding.top + 16,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.close, color: Colors.white),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                        // if (_showPreview && _imageFile != null)
-                        //   TextButton(
-                        //     child: Text('使用照片',
-                        //         style: TextStyle(color: Colors.white)),
-                        //     onPressed: () async {
-                        //       final file = File(_imageFile!.path);
-                        //       final result = await UploadService.uploadImage(
-                        //           file, context);
-                        //       if (result != null && mounted) {
-                        //         setState(() {
-                        //           _isAnalyzing = true;
-                        //         });
-                        //         // 调用服务端API获取识别结果
-                        //         final data = await Api.getRecognize({
-                        //           'user_id': await UserSession.userId,
-                        //           'plate_id': 1
-                        //         });
-                        //         if (mounted && data != null) {
-                        //           setState(() {
-                        //             _isAnalyzing = false;
-                        //             _isSynced = true;
-                        //           });
-                        //           // 延时3秒返回首页
-                        //           Future.delayed(Duration(seconds: 3), () {
-                        //             if (mounted) {
-                        //               Navigator.of(context).pop(result);
-                        //             }
-                        //           });
-                        //         } else if (mounted) {
-                        //           setState(() => _isAnalyzing = false);
-                        //           ScaffoldMessenger.of(context).showSnackBar(
-                        //             SnackBar(content: Text('分析失败，请重试')),
-                        //           );
-                        //         }
-                        //       }
-                        //     },
-                        //   ),
-                      ],
-                    ),
-                  ),
 
                   // Bottom controls
                   Positioned(
@@ -271,45 +205,58 @@ class _CameraPageState extends State<CameraPage> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               TextButton(
-                child: Text('重拍', style: TextStyle(color: Colors.white)),
-                onPressed: _retakePhoto,
+                child: Text('重拍',
+                    style: TextStyle(
+                        color: _isAnalyzing
+                            ? Colors.white.withOpacity(0.5)
+                            : Colors.white)),
+                onPressed: _isAnalyzing ? null : _retakePhoto,
               ),
               TextButton(
-                child: Text('确认', style: TextStyle(color: Colors.white)),
-                onPressed: () async {
-                  final file = File(_imageFile!.path);
-                  final dynamic result =
-                      await UploadService.uploadImage(file, context);
-                  if (result != null && mounted) {
-                    setState(() {
-                      _isAnalyzing = true;
-                    });
-                    // 调用服务端API获取识别结果
-                    print(
-                        'jsonDecode(result): ${jsonDecode(result)['image_url']}');
-                    final data = await Api.getRecognize(
-                        {'user_id': await UserSession.userId, 'plate_id': 1},
-                        {'image_url': jsonDecode(result)['image_url']});
-                    print('getRecognizedata: $data');
-                    if (mounted && data != null) {
-                      setState(() {
-                        _isAnalyzing = false;
-                        _isSynced = true;
-                      });
-                      // 延时3秒返回首页
-                      Future.delayed(Duration(seconds: 3), () {
-                        if (mounted) {
-                          Navigator.of(context).pop(result);
+                child: Text('确认',
+                    style: TextStyle(
+                        color: _isAnalyzing
+                            ? Colors.white.withOpacity(0.5)
+                            : Colors.white)),
+                onPressed: _isAnalyzing
+                    ? null
+                    : () async {
+                        final file = File(_imageFile!.path);
+                        final dynamic result =
+                            await UploadService.uploadImage(file, context);
+                        if (result != null && mounted) {
+                          setState(() {
+                            _isAnalyzing = true;
+                          });
+                          // 调用服务端API获取识别结果
+                          print(
+                              'jsonDecode(result): ${jsonDecode(result)['image_url']}');
+                          final data = await Api.getRecognize({
+                            'user_id': await UserSession.userId,
+                            'plate_id': 1
+                          }, {
+                            'image_url': jsonDecode(result)['image_url']
+                          });
+                          print('getRecognizedata: $data');
+                          if (mounted && data != null) {
+                            setState(() {
+                              _isAnalyzing = false;
+                              _isSynced = true;
+                            });
+                            // 延时3秒返回首页
+                            Future.delayed(Duration(seconds: 3), () {
+                              if (mounted) {
+                                Navigator.of(context).pop(result);
+                              }
+                            });
+                          } else if (mounted) {
+                            setState(() => _isAnalyzing = false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('分析失败，请重试')),
+                            );
+                          }
                         }
-                      });
-                    } else if (mounted) {
-                      setState(() => _isAnalyzing = false);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('分析失败，请重试')),
-                      );
-                    }
-                  }
-                },
+                      },
               ),
             ],
           )

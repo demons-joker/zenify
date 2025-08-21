@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:window_size/window_size.dart';
+import 'package:zenify/ai_chat_page.dart';
 import 'dart:io' show Platform;
 
 import 'package:zenify/camera_page.dart';
@@ -84,6 +85,7 @@ class _MainPageState extends State<MainPage> {
   final List<Widget> _pages = [
     HomePage(), // 首页
     Container(), // 拍照按钮占位，实际不会显示
+    AIChatPage(), // AI聊天页面
     ReportPage(), // 我的报告
     ProfilePage(), // 个人中心
   ];
@@ -162,9 +164,10 @@ class _MainPageState extends State<MainPage> {
               Icon(IconFont.daohangxuanzhongshouye)),
           _buildNavItem(1, Icon(IconFont.daohangweixuanzhongPaizhao),
               Icon(IconFont.daohangxuanzhongPaizhao)),
-          _buildNavItem(2, Icon(IconFont.daohangweixuanzhongTongji),
+          _buildNavItem(2, Icon(IconFont.genghuan1), Icon(IconFont.genghuan1)),
+          _buildNavItem(3, Icon(IconFont.daohangweixuanzhongTongji),
               Icon(IconFont.daohangxuanzhongTongji)),
-          _buildNavItem(3, Icon(IconFont.daohangweixuanzhongWode),
+          _buildNavItem(4, Icon(IconFont.daohangweixuanzhongWode),
               Icon(IconFont.daohangxuanzhongWode)),
         ],
       ),
@@ -179,6 +182,9 @@ class _MainPageState extends State<MainPage> {
         if (index == 1) {
           // 拍照按钮点击处理
           _openCameraPage();
+        } else if (index == 2) {
+          // 拍照按钮点击处理
+          _openAiChartPage();
         } else {
           // 其他导航项点击处理
           setState(() {
@@ -205,6 +211,27 @@ class _MainPageState extends State<MainPage> {
       context,
       MaterialPageRoute(
         builder: (context) => CameraPage(),
+      ),
+    ).then((_) {
+      // 拍照页面关闭后恢复导航栏
+      if (mounted) {
+        setState(() {
+          _showBottomNavBar = true;
+        });
+      }
+    });
+  }
+
+  // 打开拍照页面
+  void _openAiChartPage() {
+    setState(() {
+      _showBottomNavBar = false; // 隐藏导航栏
+    });
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AIChatPage(),
       ),
     ).then((_) {
       // 拍照页面关闭后恢复导航栏
