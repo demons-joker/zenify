@@ -9,36 +9,130 @@ class AIChatPage extends StatefulWidget {
   State<AIChatPage> createState() => _AIChatPageState();
 }
 
-class _AIChatPageState extends State<AIChatPage> {
+class _AIChatPageState extends State<AIChatPage>
+    with SingleTickerProviderStateMixin {
   final List<Message> _messages = [];
   final TextEditingController _textController = TextEditingController();
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _fadeAnimation =
+        Tween<double>(begin: 0.0, end: 1.0).animate(_animationController);
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final latestAiMessage = _messages.lastWhere((msg) => !msg.isUser,
+        orElse: () => Message(text: '', isUser: false));
+    final latestUserMessage = _messages.lastWhere((msg) => msg.isUser,
+        orElse: () => Message(text: '', isUser: true));
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('zenify AI Chat'),
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                return ChatBubble(
-                  message: message,
-                  isUser: message.isUser,
-                );
-              },
+      body: Container(
+        color: Colors.white,
+        child: Column(
+          children: [
+            // AI回复区域
+            Expanded(
+              flex: 3,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 500),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, -0.5),
+                        end: Offset.zero,
+                      ).animate(CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeInOut,
+                      )),
+                      child: child,
+                    ),
+                  );
+                },
+                switchOutCurve: Curves.easeInOut,
+                switchInCurve: Curves.easeInOut,
+                child: latestAiMessage.text.isEmpty
+                    ? Container(key: const ValueKey('empty-ai'))
+                    : ChatBubble(
+                        key: ValueKey(latestAiMessage.text),
+                        message: latestAiMessage,
+                        isUser: false,
+                      ),
+              ),
             ),
-          ),
-          _buildInputField(),
-        ],
+            // 动画表情
+            Expanded(
+              flex: 3,
+              child: Center(
+                child: Container(
+                  height: 400,
+                  width: 400,
+                  child: Center(
+                    child: Image.asset(
+                      'assets/images/zenify.gif',
+                      fit: BoxFit.contain,
+                      height: 400,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // 用户问题区域
+            Expanded(
+              flex: 2,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 500),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, -0.5),
+                        end: Offset.zero,
+                      ).animate(CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeInOut,
+                      )),
+                      child: child,
+                    ),
+                  );
+                },
+                switchOutCurve: Curves.easeInOut,
+                switchInCurve: Curves.easeInOut,
+                child: latestUserMessage.text.isEmpty
+                    ? Container(key: const ValueKey('empty-user'))
+                    : ChatBubble(
+                        key: ValueKey(latestUserMessage.text),
+                        message: latestUserMessage,
+                        isUser: true,
+                      ),
+              ),
+            ),
+            _buildInputField(),
+          ],
+        ),
       ),
     );
   }
@@ -131,26 +225,14 @@ class ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+    return Center(
       child: Container(
         margin: const EdgeInsets.all(8),
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isUser ? Colors.blue : Colors.grey[300],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              backgroundImage:
-                  isUser ? null : const AssetImage('assets/app_icon.png'),
-              child: isUser ? const Icon(Icons.person) : null,
-            ),
-            const SizedBox(height: 4),
-            Text(message.text),
-          ],
+        child: Text(
+          message.text,
+          style: const TextStyle(fontSize: 24),
+          textAlign: TextAlign.center,
         ),
       ),
     );
