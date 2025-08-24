@@ -160,11 +160,11 @@ class _MainPageState extends State<MainPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildNavItem(0, Icon(IconFont.daohangweixuanzhongshouye),
-              Icon(IconFont.daohangxuanzhongshouye)),
+          _buildNavItem(0, Icon(IconFont.home), Icon(IconFont.home2)),
           _buildNavItem(1, Icon(IconFont.daohangweixuanzhongPaizhao),
               Icon(IconFont.daohangxuanzhongPaizhao)),
-          _buildNavItem(2, Icon(IconFont.genghuan1), Icon(IconFont.genghuan1)),
+          _buildNavItem(2, Icon(IconFont.daohangweixuanzhongshouye),
+              Icon(IconFont.daohangxuanzhongshouye)),
           _buildNavItem(3, Icon(IconFont.daohangweixuanzhongTongji),
               Icon(IconFont.daohangxuanzhongTongji)),
           _buildNavItem(4, Icon(IconFont.daohangweixuanzhongWode),

@@ -10,7 +10,7 @@ class ApiService {
     ApiEndpoint endpoint, {
     Map<String, dynamic>? pathParams,
     Map<String, dynamic>? queryParams,
-    Map<String, dynamic>? body,
+    dynamic body,
     Map<String, String>? headers,
   }) async {
     try {

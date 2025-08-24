@@ -149,7 +149,7 @@ class Api {
   // 统一请求处理
   static Future<dynamic> _handleRequest(
     ApiEndpoint endpoint, {
-    Map<String, dynamic>? body,
+    dynamic body,
     Map<String, dynamic>? queryParams,
     Map<String, dynamic>? pathParams,
     Map<String, dynamic>? header,
@@ -388,6 +388,22 @@ class Api {
     } catch (e) {
       print('获取图像识别结果（会耗费很多时间）失败: $e');
       throw Exception('获取图像识别结果（会耗费很多时间）失败: $e');
+    }
+  }
+
+  //ai机器人
+  static Future<dynamic> chartToAi(List request) async {
+    print('请求参数: $request');
+    try {
+      final response = await _handleRequest(
+        ApiConfig.aiChart,
+        body: request,
+      );
+      print('chartToAi: $response');
+      return response;
+    } catch (e) {
+      print('获取ai机器人消息失败: $e');
+      throw Exception('获取ai机器人消息失败: $e');
     }
   }
 }

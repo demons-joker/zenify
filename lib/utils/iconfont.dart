@@ -4,6 +4,8 @@ class IconFont {
   static const String fontFamily = 'iconfont';
 
   // 导航相关图标
+  static const IconData home = IconData(0xe62d, fontFamily: fontFamily);
+  static const IconData home2 = IconData(0xe639, fontFamily: fontFamily);
   static const IconData daohangxuanzhongshouye =
       IconData(0xe62f, fontFamily: fontFamily);
   static const IconData biaoqing1 = IconData(0xe615, fontFamily: fontFamily);

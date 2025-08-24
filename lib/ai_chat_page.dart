@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:zenify/models/message.dart';
+import 'package:zenify/services/api.dart';
 
 class AIChatPage extends StatefulWidget {
   const AIChatPage({super.key});
@@ -82,15 +83,39 @@ class _AIChatPageState extends State<AIChatPage> {
   }
 
   void _getAIResponse(String query) async {
-    // 模拟AI回复
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      // 准备消息列表
+      final messages = _messages
+          .map((msg) => {
+                'role': msg.isUser ? 'user' : 'assistant',
+                'content': msg.text,
+              })
+          .toList();
 
-    setState(() {
-      _messages.add(Message(
-        text: '这是AI的回复',
-        isUser: false,
-      ));
-    });
+      // 调用AI接口
+      final response = await Api.chartToAi(
+        messages,
+      );
+      print('_getAIResponse: $response');
+
+      if (mounted) {
+        setState(() {
+          _messages.add(Message(
+            text: response['message'] ?? 'AI回复解析失败',
+            isUser: false,
+          ));
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _messages.add(Message(
+            text: '获取AI回复失败，请重试',
+            isUser: false,
+          ));
+        });
+      }
+    }
   }
 }
 

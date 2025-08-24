@@ -8,8 +8,8 @@ class ApiEndpoint {
 }
 
 class ApiConfig {
-  static const String baseUrl = "https://www.maididi.com";
-  // static const String baseUrl = "http://localhost:8000";
+  // static const String baseUrl = "https://www.maididi.com";
+  static const String baseUrl = "http://localhost:8000";
   static const String apiVersion = "/api/v1";
   static const int connectTimeout = 30000;
   static const int receiveTimeout = 30000;
@@ -184,6 +184,12 @@ class ApiConfig {
   //获取图像识别结果（会耗费很多时间）
   static const getRecognize = ApiEndpoint(
     '$apiVersion/users/{user_id}/plates/{plate_id}/recognize',
+    HttpMethod.post,
+  );
+
+  //获取图像识别结果（会耗费很多时间）
+  static const aiChart = ApiEndpoint(
+    '$apiVersion/chat',
     HttpMethod.post,
   );
 }
