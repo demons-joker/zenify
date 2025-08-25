@@ -14,6 +14,7 @@ class _AIChatPageState extends State<AIChatPage>
   final List<Message> _messages = [];
   final TextEditingController _textController = TextEditingController();
   late AnimationController _animationController;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -27,19 +28,15 @@ class _AIChatPageState extends State<AIChatPage>
   @override
   void dispose() {
     _animationController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final latestAiMessage = _messages.lastWhere((msg) => !msg.isUser,
-        orElse: () => Message(text: '', isUser: false));
-    final latestUserMessage = _messages.lastWhere((msg) => msg.isUser,
-        orElse: () => Message(text: '', isUser: true));
-
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xFFFBFBFB),
+        backgroundColor: Colors.transparent,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
@@ -49,92 +46,36 @@ class _AIChatPageState extends State<AIChatPage>
         color: Color(0xFFFBFBFB),
         child: Column(
           children: [
-            // AI回复区域
-            Expanded(
-              flex: 2,
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 500),
-                  transitionBuilder:
-                      (Widget child, Animation<double> animation) {
-                    return FadeTransition(
-                      opacity: animation,
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0, -0.5),
-                          end: Offset.zero,
-                        ).animate(CurvedAnimation(
-                          parent: animation,
-                          curve: Curves.easeInOut,
-                        )),
-                        child: child,
-                      ),
-                    );
-                  },
-                  switchOutCurve: Curves.easeInOut,
-                  switchInCurve: Curves.easeInOut,
-                  child: latestAiMessage.text.isEmpty
-                      ? Container(key: const ValueKey('empty-ai'))
-                      : ChatBubble(
-                          key: ValueKey(latestAiMessage.text),
-                          message: latestAiMessage,
-                          isUser: false,
-                        ),
-                ),
-              ),
-            ),
-            // 动画表情
-            Expanded(
-              flex: 4,
+            // 顶部GIF动画区域
+            SizedBox(
+              height: 300,
               child: Center(
-                child: SizedBox(
-                  height: 400,
-                  width: 400,
-                  child: Center(
-                    child: Image.asset(
-                      'assets/images/zenify_new.gif',
-                      fit: BoxFit.contain,
-                      height: 500,
-                      color: Colors.white,
-                      colorBlendMode: BlendMode.dstATop,
-                    ),
-                  ),
+                child: Image.asset(
+                  'assets/images/zenify_new.gif',
+                  fit: BoxFit.contain,
+                  height: 300,
+                  color: Colors.white,
+                  colorBlendMode: BlendMode.dstATop,
                 ),
               ),
             ),
-            // 用户问题区域
+            // 问答滚动区域
             Expanded(
-              flex: 2,
               child: SingleChildScrollView(
+                controller: _scrollController,
                 physics: const BouncingScrollPhysics(),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 500),
-                  transitionBuilder:
-                      (Widget child, Animation<double> animation) {
-                    return FadeTransition(
-                      opacity: animation,
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0, -0.5),
-                          end: Offset.zero,
-                        ).animate(CurvedAnimation(
-                          parent: animation,
-                          curve: Curves.easeInOut,
-                        )),
-                        child: child,
-                      ),
-                    );
-                  },
-                  switchOutCurve: Curves.easeInOut,
-                  switchInCurve: Curves.easeInOut,
-                  child: latestUserMessage.text.isEmpty
-                      ? Container(key: const ValueKey('empty-user'))
-                      : ChatBubble(
-                          key: ValueKey(latestUserMessage.text),
-                          message: latestUserMessage,
-                          isUser: true,
-                        ),
+                padding: const EdgeInsets.only(bottom: 60),
+                child: Column(
+                  children: _messages
+                      .map((msg) => AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 500),
+                            child: ChatBubble(
+                              key: ValueKey(msg.text + msg.isUser.toString()),
+                              message: msg,
+                              isUser: msg.isUser,
+                            ),
+                          ))
+                      .toList(),
                 ),
               ),
             ),
@@ -179,6 +120,15 @@ class _AIChatPageState extends State<AIChatPage>
       ));
       _textController.clear();
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
 
     // TODO: 调用AI服务获取回复
     _getAIResponse(text);
@@ -221,6 +171,15 @@ class _AIChatPageState extends State<AIChatPage>
               isUser: false,
             );
           });
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_scrollController.hasClients) {
+              _scrollController.animateTo(
+                _scrollController.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            }
+          });
         }
       }
     } catch (e) {
@@ -248,16 +207,60 @@ class ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.all(8),
-        padding: const EdgeInsets.all(12),
-        child: Text(
-          message.text,
-          style: const TextStyle(fontSize: 18),
-          textAlign: TextAlign.center,
+    return Row(
+      mainAxisAlignment:
+          isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!isUser)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: CircleAvatar(
+              radius: 16,
+              backgroundImage: AssetImage('assets/images/ai_logo.png'),
+            ),
+          ),
+        ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.75,
+          ),
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+            decoration: BoxDecoration(
+              gradient: isUser
+                  ? null
+                  : LinearGradient(
+                      colors: [
+                        Color(0xFFFFD7FB),
+                        Color(0xFFFCF1FF),
+                        Color(0xFFC2F6FF)
+                      ],
+                      stops: [0.0158, 0.4957, 1.0521],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+              color: isUser ? Color(0xFFF2F2F2) : null,
+              borderRadius: BorderRadius.all(Radius.circular(10)),
+            ),
+            child: Text(
+              message.text,
+              style: TextStyle(
+                  fontSize: 16,
+                  color: isUser ? Color(0xFF222222) : Color(0xFF535353)),
+              textAlign: TextAlign.start,
+            ),
+          ),
         ),
-      ),
+        if (isUser)
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: CircleAvatar(
+              radius: 16,
+              backgroundImage: AssetImage('assets/images/ai_logo.png'),
+            ),
+          ),
+      ],
     );
   }
 }
