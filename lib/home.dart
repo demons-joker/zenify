@@ -89,12 +89,20 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _switchRandomRecipe() {
-    if (allRecipes.isNotEmpty) {
-      final random = Random();
-      final newRecipe = allRecipes[random.nextInt(allRecipes.length)];
-      setState(() => currentRecipe = newRecipe);
-      // _updateFoodsFromRecipe(newRecipe);
+  Future<void> _switchRandomRecipe(dynamic meal) async {
+    print('_switchRandomRecipe:  $meal');
+    try {
+      await Api.replaceFoods({
+        'user_id': await UserSession.userId
+      }, {
+        "plan_id": meal['foods'][0]['plan_id'],
+        "day_number": meal['foods'][0]['day_number'],
+        "meal_type": meal['meal_type']
+      });
+      if (!mounted) return;
+      _fetchCurrentUserFoods();
+    } catch (e) {
+      print('获取食物失败: $e');
     }
   }
 
@@ -269,12 +277,11 @@ class _HomePageState extends State<HomePage> {
   // 5. 动态生成餐点卡片列表
   List<Widget> _buildPlanMealCards(BuildContext context) {
     return currentFoods.map((meal) {
-      print('meal: $meal');
+      print('_buildPlanMealCards: $meal');
       MealType? mealType = MealTypeExtension.fromString(meal['meal_type']);
       return Column(
         children: [
-          _buildCurrentMealsCard(
-              context, mealType?.displayName ?? '早餐', meal['foods']),
+          _buildCurrentMealsCard(context, mealType?.displayName ?? '早餐', meal),
           const SizedBox(height: 20),
         ],
       );
@@ -283,7 +290,9 @@ class _HomePageState extends State<HomePage> {
 
   // 6. 当前餐食Card (优化后)
   Widget _buildCurrentMealsCard(
-      BuildContext context, String category, List<dynamic> foods) {
+      BuildContext context, String category, dynamic meal) {
+    print('_buildCurrentMealsCard: $meal');
+    List<dynamic> foods = meal['foods'] ?? [];
     if (foods.isEmpty) {
       return Center(
         child: Padding(
@@ -354,11 +363,11 @@ class _HomePageState extends State<HomePage> {
             right: 0,
             child: IconButton(
               icon: Icon(
-                IconFont.genghuan,
+                IconFont.genghuan1,
                 size: 45,
                 color: Color.fromARGB(255, 243, 109, 14),
               ),
-              onPressed: _switchRandomRecipe,
+              onPressed: () => _switchRandomRecipe(meal),
             ),
           ),
         ],

@@ -391,29 +391,31 @@ class Api {
     }
   }
 
-  //ai机器人
-  static Future<dynamic> chartToAi(List request) async {
-    print('请求参数: $request');
-    try {
-      final response = await _handleRequest(
-        ApiConfig.aiChart,
-        body: request,
-      );
-      print('chartToAi: $response');
-      return response;
-    } catch (e) {
-      print('获取ai机器人消息失败: $e');
-      throw Exception('获取ai机器人消息失败: $e');
-    }
-  }
+  // //ai机器人
+  // static Future<dynamic> chartToAi(List request) async {
+  //   print('请求参数: $request');
+  //   try {
+  //     final response = await _handleRequest(
+  //       ApiConfig.aiChart,
+  //       body: request,
+  //     );
+  //     print('chartToAi: $response');
+  //     return response;
+  //   } catch (e) {
+  //     print('获取ai机器人消息失败: $e');
+  //     throw Exception('获取ai机器人消息失败: $e');
+  //   }
+  // }
 
   //整餐切换
-  static Future<dynamic> replaceFoods(Map<String, dynamic> request) async {
+  static Future<dynamic> replaceFoods(
+      Map<String, dynamic> request, Map<String, dynamic> body) async {
     print('请求参数: $request');
     try {
       final response = await _handleRequest(
         ApiConfig.replaceFoods,
         pathParams: request,
+        body: body,
       );
       print('replaceFoods: $response');
       return response;

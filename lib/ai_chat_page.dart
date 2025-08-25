@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:zenify/models/message.dart';
-import 'package:zenify/services/api.dart';
+import 'package:zenify/services/ai_stream.dart';
 
 class AIChatPage extends StatefulWidget {
   const AIChatPage({super.key});
@@ -14,7 +14,6 @@ class _AIChatPageState extends State<AIChatPage>
   final List<Message> _messages = [];
   final TextEditingController _textController = TextEditingController();
   late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
@@ -23,8 +22,6 @@ class _AIChatPageState extends State<AIChatPage>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _fadeAnimation =
-        Tween<double>(begin: 0.0, end: 1.0).animate(_animationController);
   }
 
   @override
@@ -42,58 +39,65 @@ class _AIChatPageState extends State<AIChatPage>
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Color(0xFFFBFBFB),
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: Container(
-        color: Colors.white,
+        color: Color(0xFFFBFBFB),
         child: Column(
           children: [
             // AI回复区域
             Expanded(
-              flex: 3,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 500),
-                transitionBuilder: (Widget child, Animation<double> animation) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0, -0.5),
-                        end: Offset.zero,
-                      ).animate(CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeInOut,
-                      )),
-                      child: child,
-                    ),
-                  );
-                },
-                switchOutCurve: Curves.easeInOut,
-                switchInCurve: Curves.easeInOut,
-                child: latestAiMessage.text.isEmpty
-                    ? Container(key: const ValueKey('empty-ai'))
-                    : ChatBubble(
-                        key: ValueKey(latestAiMessage.text),
-                        message: latestAiMessage,
-                        isUser: false,
+              flex: 2,
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 500),
+                  transitionBuilder:
+                      (Widget child, Animation<double> animation) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, -0.5),
+                          end: Offset.zero,
+                        ).animate(CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeInOut,
+                        )),
+                        child: child,
                       ),
+                    );
+                  },
+                  switchOutCurve: Curves.easeInOut,
+                  switchInCurve: Curves.easeInOut,
+                  child: latestAiMessage.text.isEmpty
+                      ? Container(key: const ValueKey('empty-ai'))
+                      : ChatBubble(
+                          key: ValueKey(latestAiMessage.text),
+                          message: latestAiMessage,
+                          isUser: false,
+                        ),
+                ),
               ),
             ),
             // 动画表情
             Expanded(
-              flex: 3,
+              flex: 4,
               child: Center(
-                child: Container(
+                child: SizedBox(
                   height: 400,
                   width: 400,
                   child: Center(
                     child: Image.asset(
-                      'assets/images/zenify.gif',
+                      'assets/images/zenify_new.gif',
                       fit: BoxFit.contain,
-                      height: 400,
+                      height: 500,
+                      color: Colors.white,
+                      colorBlendMode: BlendMode.dstATop,
                     ),
                   ),
                 ),
@@ -102,32 +106,36 @@ class _AIChatPageState extends State<AIChatPage>
             // 用户问题区域
             Expanded(
               flex: 2,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 500),
-                transitionBuilder: (Widget child, Animation<double> animation) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0, -0.5),
-                        end: Offset.zero,
-                      ).animate(CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeInOut,
-                      )),
-                      child: child,
-                    ),
-                  );
-                },
-                switchOutCurve: Curves.easeInOut,
-                switchInCurve: Curves.easeInOut,
-                child: latestUserMessage.text.isEmpty
-                    ? Container(key: const ValueKey('empty-user'))
-                    : ChatBubble(
-                        key: ValueKey(latestUserMessage.text),
-                        message: latestUserMessage,
-                        isUser: true,
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 500),
+                  transitionBuilder:
+                      (Widget child, Animation<double> animation) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, -0.5),
+                          end: Offset.zero,
+                        ).animate(CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeInOut,
+                        )),
+                        child: child,
                       ),
+                    );
+                  },
+                  switchOutCurve: Curves.easeInOut,
+                  switchInCurve: Curves.easeInOut,
+                  child: latestUserMessage.text.isEmpty
+                      ? Container(key: const ValueKey('empty-user'))
+                      : ChatBubble(
+                          key: ValueKey(latestUserMessage.text),
+                          message: latestUserMessage,
+                          isUser: true,
+                        ),
+                ),
               ),
             ),
             _buildInputField(),
@@ -176,6 +184,8 @@ class _AIChatPageState extends State<AIChatPage>
     _getAIResponse(text);
   }
 
+  String _currentAiResponse = '';
+
   void _getAIResponse(String query) async {
     try {
       // 准备消息列表
@@ -186,27 +196,40 @@ class _AIChatPageState extends State<AIChatPage>
               })
           .toList();
 
-      // 调用AI接口
-      final response = await Api.chartToAi(
-        messages,
-      );
-      print('_getAIResponse: $response');
+      // 初始化流式回复
+      setState(() {
+        _currentAiResponse = '';
+        _messages.add(Message(
+          text: '',
+          isUser: false,
+        ));
+      });
 
-      if (mounted) {
-        setState(() {
-          _messages.add(Message(
-            text: response['message'] ?? 'AI回复解析失败',
-            isUser: false,
-          ));
-        });
+      // 调用流式接口
+      final client = StreamApiClient();
+      final stream = client.streamPost(
+        body: messages,
+      );
+
+      await for (final chunk in stream) {
+        print('Received chunk: $chunk');
+        if (mounted) {
+          setState(() {
+            _currentAiResponse += chunk;
+            _messages.last = Message(
+              text: _currentAiResponse,
+              isUser: false,
+            );
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _messages.add(Message(
+          _messages.last = Message(
             text: '获取AI回复失败，请重试',
             isUser: false,
-          ));
+          );
         });
       }
     }
@@ -231,7 +254,7 @@ class ChatBubble extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: Text(
           message.text,
-          style: const TextStyle(fontSize: 24),
+          style: const TextStyle(fontSize: 18),
           textAlign: TextAlign.center,
         ),
       ),

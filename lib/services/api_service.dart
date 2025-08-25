@@ -63,7 +63,6 @@ class ApiService {
   }
 
   static dynamic _handleResponse(http.Response response) {
-    print('_handleResponse:$response');
     switch (response.statusCode) {
       case 200:
       case 201:
