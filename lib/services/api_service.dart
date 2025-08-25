@@ -14,10 +14,6 @@ class ApiService {
     Map<String, String>? headers,
   }) async {
     try {
-      print('queryParams: $queryParams');
-      print('pathParams: $pathParams');
-      print('body: $body');
-      print('headers: $headers');
       String processedPath = endpoint.path;
       pathParams?.forEach((key, value) {
         processedPath = processedPath.replaceAll('{$key}', value.toString());

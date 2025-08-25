@@ -192,4 +192,9 @@ class ApiConfig {
     '$apiVersion/chat',
     HttpMethod.post,
   );
+  //整餐切换
+  static const replaceFoods = ApiEndpoint(
+    '$apiVersion/users/{user_id}/replace/foods',
+    HttpMethod.put,
+  );
 }

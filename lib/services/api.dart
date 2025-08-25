@@ -406,4 +406,20 @@ class Api {
       throw Exception('获取ai机器人消息失败: $e');
     }
   }
+
+  //整餐切换
+  static Future<dynamic> replaceFoods(Map<String, dynamic> request) async {
+    print('请求参数: $request');
+    try {
+      final response = await _handleRequest(
+        ApiConfig.replaceFoods,
+        pathParams: request,
+      );
+      print('replaceFoods: $response');
+      return response;
+    } catch (e) {
+      print('整餐切换失败: $e');
+      throw Exception('整餐切换失败: $e');
+    }
+  }
 }

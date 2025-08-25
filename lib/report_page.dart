@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:zenify/components/common_card.dart';
@@ -222,18 +224,62 @@ class _ReportPageState extends State<ReportPage> {
               const SizedBox(height: 20),
 
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Icon(
                     IconFont.biaoqing1,
-                    size: 30,
+                    size: 100,
                     color: Color(0XFF292929),
                   ),
-                  Text(
-                    '皮肤美容',
-                    style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: text2Color),
+                  Container(
+                    width: 150,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(
+                        color: const Color(0xFFBFBFBF),
+                        width: 1,
+                        style: BorderStyle.solid,
+                      ),
+                      color: const Color(0xFFF8F8F8),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color.fromRGBO(0, 0, 0, 0.05),
+                          blurRadius: 16.8,
+                          offset: Offset(2.265, 3),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(15),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(
+                          sigmaX: 11.324,
+                          sigmaY: 11.324,
+                        ),
+                        child: ListView(
+                          shrinkWrap: true,
+                          padding: const EdgeInsets.all(18),
+                          children: const [
+                            Text('微量元素含量',
+                                style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black)),
+                            Text('膳食纤维：0mg',
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w400,
+                                    color: Color(0xFF868686))),
+                            Text('膳食纤维：0mg',
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w400,
+                                    color: Color(0xFF868686))),
+                          ],
+                        ),
+                      ),
+                    ),
                   )
                 ],
               ),

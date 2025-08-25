@@ -29,9 +29,11 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _fetchRecipes() async {
     try {
+      if (!mounted) return;
       setState(() => isLoading = true);
       final response = await Api.getCurrentUserRecipes(
           {'user_id': await UserSession.userId});
+      if (!mounted) return;
       setState(() {
         currentRecipe = (response.containsKey('recipe'))
             ? Recipe.fromJson(response['recipe'])
@@ -40,6 +42,7 @@ class _HomePageState extends State<HomePage> {
         isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => isLoading = false);
       print('获取home食谱失败: $e');
     }
@@ -49,6 +52,7 @@ class _HomePageState extends State<HomePage> {
     try {
       final response =
           await Api.getCurrentUserFoods({'user_id': await UserSession.userId});
+      if (!mounted) return;
       setState(() {
         currentFoods = response;
         print('currentFoods: $currentFoods');
