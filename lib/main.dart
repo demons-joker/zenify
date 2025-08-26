@@ -10,6 +10,7 @@ import 'package:zenify/profile_page.dart';
 import 'package:zenify/login.dart';
 import 'package:zenify/services/user_session.dart';
 import 'package:zenify/utils/iconfont.dart';
+import 'package:flutter/services.dart';
 
 void _setWindowSize() {
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
@@ -35,6 +36,11 @@ void main() {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+      ),
+    );
     return MaterialApp(
       title: 'Zenify App',
       theme: ThemeData(

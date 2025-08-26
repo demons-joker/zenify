@@ -3,18 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:zenify/report_random_word_cloud.dart';
 import 'package:zenify/report_page.dart';
 import 'package:zenify/utils/iconfont.dart';
-import 'package:flutter/services.dart';
 
 class Report extends StatelessWidget {
   const Report({super.key});
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-      ),
-    );
     final words = [
       {'text': '甜瘾依赖型', 'highlight': true},
       {'text': '肉食者', 'highlight': false},
