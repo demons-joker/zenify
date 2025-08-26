@@ -39,6 +39,10 @@ class _AIChatPageState extends State<AIChatPage>
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Color(0xFFFBFBFB),
+        elevation: 0, // 禁用阴影和滚动效果
+        toolbarHeight: kToolbarHeight, // 固定高度
+        scrolledUnderElevation: 0, // 禁用滚动时的高亮效果
+        surfaceTintColor: Colors.transparent, // 禁用表面色调效果
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
@@ -86,24 +90,32 @@ class _AIChatPageState extends State<AIChatPage>
   }
 
   Widget _buildInputField() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _textController,
-              decoration: const InputDecoration(
-                hintText: '输入消息...',
-                border: OutlineInputBorder(),
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8.0, 8.0, 4.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _textController,
+                decoration: const InputDecoration(
+                  hintText: '输入消息...',
+                  border: OutlineInputBorder(),
+                  contentPadding:
+                      EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                ),
               ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.send),
-            onPressed: _sendMessage,
-          ),
-        ],
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.send),
+              onPressed: _sendMessage,
+              padding: EdgeInsets.zero,
+              constraints: BoxConstraints(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -237,7 +249,7 @@ class ChatBubble extends StatelessWidget {
           text: '${line.substring(3)}\n',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ));
-      } else if (line.startsWith('###')) {
+      } else if (line.startsWith('### ')) {
         spans.add(TextSpan(
           text: '${line.substring(4)}\n',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
