@@ -11,9 +11,8 @@ class Report extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Color(0xFF111111),
-        statusBarIconBrightness: Brightness.light,
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
       ),
     );
     final words = [
