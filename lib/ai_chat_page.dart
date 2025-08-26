@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:zenify/models/message.dart';
 import 'package:zenify/services/ai_stream.dart';
+import 'dart:async';
 
 class AIChatPage extends StatefulWidget {
   const AIChatPage({super.key});
@@ -29,6 +30,7 @@ class _AIChatPageState extends State<AIChatPage>
   void dispose() {
     _animationController.dispose();
     _scrollController.dispose();
+    _typingTimer?.cancel();
     super.dispose();
   }
 
@@ -36,7 +38,7 @@ class _AIChatPageState extends State<AIChatPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Color(0xFFFBFBFB),
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
@@ -48,7 +50,7 @@ class _AIChatPageState extends State<AIChatPage>
           children: [
             // 顶部GIF动画区域
             SizedBox(
-              height: 300,
+              height: 200,
               child: Center(
                 child: Image.asset(
                   'assets/images/zenify_new.gif',
@@ -67,13 +69,10 @@ class _AIChatPageState extends State<AIChatPage>
                 padding: const EdgeInsets.only(bottom: 60),
                 child: Column(
                   children: _messages
-                      .map((msg) => AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 500),
-                            child: ChatBubble(
-                              key: ValueKey(msg.text + msg.isUser.toString()),
-                              message: msg,
-                              isUser: msg.isUser,
-                            ),
+                      .map((msg) => ChatBubble(
+                            key: ValueKey(msg.text + msg.isUser.toString()),
+                            message: msg,
+                            isUser: msg.isUser,
                           ))
                       .toList(),
                 ),
@@ -130,11 +129,13 @@ class _AIChatPageState extends State<AIChatPage>
       }
     });
 
-    // TODO: 调用AI服务获取回复
     _getAIResponse(text);
   }
 
   String _currentAiResponse = '';
+  String _displayText = '';
+  int _charIndex = 0;
+  Timer? _typingTimer;
 
   void _getAIResponse(String query) async {
     try {
@@ -149,8 +150,10 @@ class _AIChatPageState extends State<AIChatPage>
       // 初始化流式回复
       setState(() {
         _currentAiResponse = '';
+        _displayText = '思考中...';
+        _charIndex = 0;
         _messages.add(Message(
-          text: '',
+          text: '思考中...',
           isUser: false,
         ));
       });
@@ -165,21 +168,10 @@ class _AIChatPageState extends State<AIChatPage>
         print('Received chunk: $chunk');
         if (mounted) {
           setState(() {
-            _currentAiResponse += chunk;
-            _messages.last = Message(
-              text: _currentAiResponse,
-              isUser: false,
-            );
+            // 自动添加换行符（如果chunk以标点结尾）
+            _currentAiResponse += '$chunk\n';
           });
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_scrollController.hasClients) {
-              _scrollController.animateTo(
-                _scrollController.position.maxScrollExtent,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-              );
-            }
-          });
+          _startTypingEffect();
         }
       }
     } catch (e) {
@@ -193,9 +185,83 @@ class _AIChatPageState extends State<AIChatPage>
       }
     }
   }
+
+  void _startTypingEffect() {
+    _typingTimer?.cancel();
+    _charIndex = 0;
+    _typingTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+      if (_charIndex < _currentAiResponse.length) {
+        setState(() {
+          _displayText = _currentAiResponse.substring(0, _charIndex + 1);
+          _messages.last = Message(
+            text: _displayText,
+            isUser: false,
+          );
+          _charIndex++;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_scrollController.hasClients) {
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        });
+      } else {
+        timer.cancel();
+      }
+    });
+  }
 }
 
 class ChatBubble extends StatelessWidget {
+  List<InlineSpan> _parseMessageText(String text) {
+    // 调试日志（保留原始换行）
+    final spans = <InlineSpan>[];
+    // 按行处理并保留空行
+    final lines = text.split('\n');
+    for (final line in lines) {
+      if (line.isEmpty) {
+        spans.add(TextSpan(text: '\n'));
+        continue;
+      }
+
+      if (line.startsWith('# ')) {
+        spans.add(TextSpan(
+          text: '${line.substring(2)}\n',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ));
+      } else if (line.startsWith('## ')) {
+        spans.add(TextSpan(
+          text: '${line.substring(3)}\n',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ));
+      } else if (line.startsWith('###')) {
+        spans.add(TextSpan(
+          text: '${line.substring(4)}\n',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ));
+      } else {
+        // 处理加粗标记
+        final parts = line.split('**');
+        for (int i = 0; i < parts.length; i++) {
+          if (parts[i].isEmpty) continue;
+          spans.add(TextSpan(
+            text: parts[i],
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: i.isOdd ? FontWeight.bold : FontWeight.normal,
+            ),
+          ));
+        }
+        spans.add(TextSpan(text: '\n'));
+      }
+    }
+
+    return spans;
+  }
+
   final Message message;
   final bool isUser;
 
@@ -207,60 +273,66 @@ class ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment:
-          isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (!isUser)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: CircleAvatar(
-              radius: 16,
-              backgroundImage: AssetImage('assets/images/ai_logo.png'),
+    return Container(
+      padding: EdgeInsets.all(16),
+      child: Row(
+        mainAxisAlignment:
+            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!isUser)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: CircleAvatar(
+                radius: 16,
+                backgroundImage: AssetImage('assets/images/ai_logo.png'),
+              ),
+            ),
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.7,
+            ),
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+              padding: EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 0),
+              decoration: BoxDecoration(
+                gradient: isUser
+                    ? null
+                    : LinearGradient(
+                        colors: [
+                          Color(0xFFFFD7FB),
+                          Color(0xFFFCF1FF),
+                          Color(0xFFC2F6FF)
+                        ],
+                        stops: [0.0158, 0.4957, 1.0521],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                color: isUser ? Color(0xFFF2F2F2) : null,
+                borderRadius: BorderRadius.all(Radius.circular(10)),
+              ),
+              child: Text.rich(
+                TextSpan(
+                  children: _parseMessageText(message.text),
+                  style: TextStyle(
+                      color: isUser
+                          ? Color(0xFF535353)
+                          : Color(0xFF222222)), // 调整行高
+                ),
+                textAlign: TextAlign.start,
+              ),
             ),
           ),
-        ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.75,
-          ),
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-            decoration: BoxDecoration(
-              gradient: isUser
-                  ? null
-                  : LinearGradient(
-                      colors: [
-                        Color(0xFFFFD7FB),
-                        Color(0xFFFCF1FF),
-                        Color(0xFFC2F6FF)
-                      ],
-                      stops: [0.0158, 0.4957, 1.0521],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
-              color: isUser ? Color(0xFFF2F2F2) : null,
-              borderRadius: BorderRadius.all(Radius.circular(10)),
+          if (isUser)
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: CircleAvatar(
+                radius: 16,
+                backgroundImage: AssetImage('assets/images/ai_logo.png'),
+              ),
             ),
-            child: Text(
-              message.text,
-              style: TextStyle(
-                  fontSize: 16,
-                  color: isUser ? Color(0xFF222222) : Color(0xFF535353)),
-              textAlign: TextAlign.start,
-            ),
-          ),
-        ),
-        if (isUser)
-          Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: CircleAvatar(
-              radius: 16,
-              backgroundImage: AssetImage('assets/images/ai_logo.png'),
-            ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }
