@@ -5,7 +5,7 @@ import 'dart:io' show Platform;
 
 import 'package:zenify/camera_page.dart';
 import 'package:zenify/home.dart';
-import 'package:zenify/report_page.dart';
+import 'package:zenify/report.dart';
 import 'package:zenify/profile_page.dart';
 import 'package:zenify/login.dart';
 import 'package:zenify/services/user_session.dart';
@@ -86,7 +86,7 @@ class _MainPageState extends State<MainPage> {
     HomePage(), // 首页
     Container(), // 拍照按钮占位，实际不会显示
     AIChatPage(), // AI聊天页面
-    ReportPage(), // 我的报告
+    Report(), // 我的报告
     ProfilePage(), // 个人中心
   ];
 
