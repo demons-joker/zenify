@@ -48,7 +48,8 @@ class _LeftArrowPainter extends CustomPainter {
 }
 
 class ReportPage extends StatefulWidget {
-  const ReportPage({super.key});
+  final dynamic mealRecordId;
+  const ReportPage({super.key, this.mealRecordId});
 
   @override
   State<ReportPage> createState() => _ReportPageState();
@@ -57,6 +58,8 @@ class ReportPage extends StatefulWidget {
 class _ReportPageState extends State<ReportPage> {
   MealRecord? mealRecordsData;
   num totalScore = 0;
+
+  dynamic get mealRecordId => widget.mealRecordId;
   dynamic totalCal = '';
   List<NutrientData> nData = [
     NutrientData(name: "蛋白质", value: 30, color: Colors.blue),
@@ -85,12 +88,16 @@ class _ReportPageState extends State<ReportPage> {
   }
 
   Future<void> _fetchMealRecords() async {
+    final Map<String, dynamic> params = {
+      'user_id': await UserSession.userId,
+      'plate_id': 1,
+    };
+    print('mealRecordId: $mealRecordId');
+    if (mealRecordId != null) {
+      params['meal_record_id'] = mealRecordId;
+    }
     try {
-      final data = await Api.getMealRecordsDetail({
-        'user_id': await UserSession.userId,
-        'plate_id': 1,
-        'meal_record_id': 1
-      });
+      final data = await Api.getMealRecordsDetail(params);
       print('mealRecordsData: $data');
       setState(() {
         if (data != null) {
@@ -199,6 +206,14 @@ class _ReportPageState extends State<ReportPage> {
                           'nDataitem: ${item.name} ${item.value} ${item.color}');
                       final total =
                           nData.fold(0.0, (sum, item) => sum + item.value);
+                      if (total == 0) {
+                        return PieChartSectionData(
+                          color: item.color,
+                          value: 0,
+                          showTitle: false,
+                          radius: 90,
+                        );
+                      }
                       final percentage = double.parse(
                           (item.value / total * 100).toStringAsFixed(2));
                       print('percentage: $percentage');
@@ -285,15 +300,15 @@ class _ReportPageState extends State<ReportPage> {
               ),
               // // 词云块
               // RandomWordCloud(words: words),
-              const SizedBox(height: 30),
+              const SizedBox(height: 42),
               _buildWhiteListCard(), // 添加本餐
-              const SizedBox(height: 30),
+              const SizedBox(height: 42),
               _buildNutrientAnalysisCard(),
-              const SizedBox(height: 30),
+              const SizedBox(height: 42),
               _buildHealthAdviceCard(),
-              const SizedBox(height: 30),
+              const SizedBox(height: 42),
               _buildDietSuggestionCard(),
-              const SizedBox(height: 30),
+              const SizedBox(height: 42),
               _buildDietSuggestionCard(),
             ],
           ),
@@ -440,7 +455,7 @@ class _ReportPageState extends State<ReportPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Divider(color: Colors.grey),
-              SizedBox(height: 10),
+              SizedBox(height: 16),
               // 第二部分：图片展示
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
@@ -456,22 +471,23 @@ class _ReportPageState extends State<ReportPage> {
                   )
                 ],
               ),
-              SizedBox(height: 10),
+              SizedBox(height: 16),
               CommonCard(
                   imagePath: 'assets/images/egg.jpeg',
-                  statusIcon: Icon(IconFont.daohanglan),
+                  statusIcon: Icon(IconFont.dui),
                   title: '小雨A',
                   subtitle: '详细信息啊啊啊啊啊',
                   text2Color: text2Color),
+              SizedBox(height: 16),
               CommonCard(
                   imagePath: 'assets/images/egg.jpeg',
-                  statusIcon: Icon(IconFont.daohanglan),
+                  statusIcon: Icon(IconFont.cuo),
                   title: '小雨A',
                   subtitle: '详细信息啊啊啊啊啊',
                   text2Color: text2Color),
-              SizedBox(height: 10),
+              SizedBox(height: 16),
               Divider(color: Colors.grey),
-              SizedBox(height: 10),
+              SizedBox(height: 16),
               // 第二部分：图片展示
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
@@ -487,20 +503,20 @@ class _ReportPageState extends State<ReportPage> {
                   )
                 ],
               ),
-              SizedBox(height: 10),
+              SizedBox(height: 16),
               CommonCard(
                   imagePath: 'assets/images/egg.jpeg',
-                  statusIcon: Icon(IconFont.daohanglan),
+                  statusIcon: Icon(IconFont.dui),
                   title: '小雨A',
                   subtitle: '详细信息啊啊啊啊啊',
                   text2Color: text2Color),
               CommonCard(
                   imagePath: 'assets/images/egg.jpeg',
-                  statusIcon: Icon(IconFont.daohanglan),
+                  statusIcon: Icon(IconFont.cuo),
                   title: '小雨A',
                   subtitle: '详细信息啊啊啊啊啊',
                   text2Color: text2Color),
-              SizedBox(height: 10),
+              SizedBox(height: 16),
               //这里需要加一个血糖mmol/l的的echart面积图，
               Container(
                 height: 200,
@@ -590,8 +606,9 @@ class _ReportPageState extends State<ReportPage> {
                   ),
                 ),
               ),
+              SizedBox(height: 20),
               Divider(color: Colors.grey),
-              SizedBox(height: 10),
+              SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -609,13 +626,13 @@ class _ReportPageState extends State<ReportPage> {
               SizedBox(height: 10),
               CommonCard(
                   imagePath: 'assets/images/egg.jpeg',
-                  statusIcon: Icon(IconFont.daohanglan),
+                  statusIcon: Icon(IconFont.dui),
                   title: '小雨A',
                   subtitle: '详细信息啊啊啊啊啊',
                   text2Color: text2Color),
               CommonCard(
                   imagePath: 'assets/images/egg.jpeg',
-                  statusIcon: Icon(IconFont.daohanglan),
+                  statusIcon: Icon(IconFont.cuo),
                   title: '小雨A',
                   subtitle: '详细信息啊啊啊啊啊',
                   text2Color: text2Color),
@@ -640,13 +657,13 @@ class _ReportPageState extends State<ReportPage> {
               SizedBox(height: 10),
               CommonCard(
                   imagePath: 'assets/images/egg.jpeg',
-                  statusIcon: Icon(IconFont.daohanglan),
+                  statusIcon: Icon(IconFont.dui),
                   title: '小雨A',
                   subtitle: '详细信息啊啊啊啊啊',
                   text2Color: text2Color),
               CommonCard(
                   imagePath: 'assets/images/egg.jpeg',
-                  statusIcon: Icon(IconFont.daohanglan),
+                  statusIcon: Icon(IconFont.cuo),
                   title: '小雨A',
                   subtitle: '详细信息啊啊啊啊啊',
                   text2Color: text2Color),
@@ -657,7 +674,7 @@ class _ReportPageState extends State<ReportPage> {
           top: -20,
           left: 10,
           child: Container(
-            padding: EdgeInsets.only(left: 18, right: 18),
+            padding: EdgeInsets.only(left: 18, top: 5, right: 18),
             decoration: BoxDecoration(
               color: Color(0xFFFFFFFF),
               borderRadius: BorderRadius.circular(10),
@@ -759,9 +776,8 @@ class _ReportPageState extends State<ReportPage> {
   Widget _buildTabs() {
     return DefaultTabController(
       // initialIndex: 0, // 默认选中第一个Tab
-      length: 4,
+      length: 6,
       child: Container(
-        width: 280,
         height: 32,
         clipBehavior: Clip.none,
         decoration: BoxDecoration(
@@ -780,7 +796,8 @@ class _ReportPageState extends State<ReportPage> {
                 color: Colors.black,
               ),
               labelColor: Colors.white,
-              unselectedLabelColor: Color.fromRGBO(23, 23, 23, 0.6),
+              unselectedLabelColor:
+                  Color.from(alpha: 0.6, red: 0.09, green: 0.09, blue: 0.09),
               tabs: const [
                 SizedBox(
                   width: 50,
@@ -790,7 +807,17 @@ class _ReportPageState extends State<ReportPage> {
                 SizedBox(
                   width: 50,
                   height: 24,
+                  child: Tab(text: '早加餐'),
+                ),
+                SizedBox(
+                  width: 50,
+                  height: 24,
                   child: Tab(text: '午餐'),
+                ),
+                SizedBox(
+                  width: 50,
+                  height: 24,
+                  child: Tab(text: '午加餐'),
                 ),
                 SizedBox(
                   width: 50,
@@ -800,7 +827,7 @@ class _ReportPageState extends State<ReportPage> {
                 SizedBox(
                   width: 50,
                   height: 24,
-                  child: Tab(text: '加餐'),
+                  child: Tab(text: '晚加餐'),
                 ),
               ],
             ),
@@ -1193,7 +1220,7 @@ class _ReportPageState extends State<ReportPage> {
             top: -20,
             left: 10,
             child: Container(
-              padding: EdgeInsets.only(left: 18, right: 18),
+              padding: EdgeInsets.only(left: 18, top: 5, right: 18),
               decoration: BoxDecoration(
                 color: Color(0xFFEFECEB),
                 borderRadius: BorderRadius.circular(10),
@@ -1217,7 +1244,7 @@ class _ReportPageState extends State<ReportPage> {
             bottom: 44,
             left: 0,
             child: Container(
-              padding: EdgeInsets.only(left: 18, right: 18),
+              padding: EdgeInsets.only(left: 18, top: 5, right: 18),
               decoration: BoxDecoration(
                 color: Color(0xFFEFECEB),
                 borderRadius: BorderRadius.circular(15),
@@ -1455,7 +1482,7 @@ class _ReportPageState extends State<ReportPage> {
           top: -20,
           left: 10,
           child: Container(
-            padding: EdgeInsets.only(left: 18, right: 18),
+            padding: EdgeInsets.only(left: 18, top: 5, right: 18),
             decoration: BoxDecoration(
               color: Color(0xFFEFECEB),
               borderRadius: BorderRadius.circular(10),
@@ -1543,92 +1570,92 @@ class _ReportPageState extends State<ReportPage> {
   }
 
   // 通用文案卡片
-  Widget _buildTextCard({
-    required String title,
-    required List<String> content,
-    required IconData icon,
-  }) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          width: double.infinity,
-          margin: EdgeInsets.only(bottom: 20),
-          decoration: BoxDecoration(
-            color: Color(0xFFEFECEB),
-            borderRadius: BorderRadius.circular(15),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.15),
-                blurRadius: 4,
-                offset: Offset(2, 2),
-                spreadRadius: 1,
-              ),
-              BoxShadow(
-                color: Colors.white.withOpacity(0.1),
-                blurRadius: 4,
-                offset: Offset(-2, -2),
-                spreadRadius: 1,
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 标题
-              Padding(
-                padding: EdgeInsets.only(left: 70, top: 12, bottom: 8),
-                child: Stack(
-                  alignment: Alignment.bottomCenter,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: titleColor,
-                      ),
-                    ),
-                    Container(
-                      height: 2,
-                      width: 100,
-                      margin: EdgeInsets.only(top: 4),
-                      color: titleColor,
-                    ),
-                  ],
-                ),
-              ),
+  // Widget _buildTextCard({
+  //   required String title,
+  //   required List<String> content,
+  //   required IconData icon,
+  // }) {
+  //   return Stack(
+  //     clipBehavior: Clip.none,
+  //     children: [
+  //       Container(
+  //         width: double.infinity,
+  //         margin: EdgeInsets.only(bottom: 20),
+  //         decoration: BoxDecoration(
+  //           color: Color(0xFFEFECEB),
+  //           borderRadius: BorderRadius.circular(15),
+  //           boxShadow: [
+  //             BoxShadow(
+  //               color: Colors.black.withOpacity(0.15),
+  //               blurRadius: 4,
+  //               offset: Offset(2, 2),
+  //               spreadRadius: 1,
+  //             ),
+  //             BoxShadow(
+  //               color: Colors.white.withOpacity(0.1),
+  //               blurRadius: 4,
+  //               offset: Offset(-2, -2),
+  //               spreadRadius: 1,
+  //             ),
+  //           ],
+  //         ),
+  //         child: Column(
+  //           crossAxisAlignment: CrossAxisAlignment.start,
+  //           children: [
+  //             // 标题
+  //             Padding(
+  //               padding: EdgeInsets.only(left: 70, top: 12, bottom: 8),
+  //               child: Stack(
+  //                 alignment: Alignment.bottomCenter,
+  //                 children: [
+  //                   Text(
+  //                     title,
+  //                     style: TextStyle(
+  //                       fontSize: 20,
+  //                       fontWeight: FontWeight.bold,
+  //                       color: titleColor,
+  //                     ),
+  //                   ),
+  //                   Container(
+  //                     height: 2,
+  //                     width: 100,
+  //                     margin: EdgeInsets.only(top: 4),
+  //                     color: titleColor,
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
 
-              // 内容区域
-              Padding(
-                padding: EdgeInsets.only(
-                  left: 20,
-                  right: 20,
-                  bottom: 16,
-                  top: 8,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: content
-                      .map((text) => _buildSuggestionText(text))
-                      .toList(),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Positioned(
-          top: -20,
-          left: 10,
-          child: Icon(
-            icon,
-            size: 60,
-            color: const Color.fromARGB(255, 4, 160, 56),
-          ),
-        ),
-      ],
-    );
-  }
+  //             // 内容区域
+  //             Padding(
+  //               padding: EdgeInsets.only(
+  //                 left: 20,
+  //                 right: 20,
+  //                 bottom: 16,
+  //                 top: 8,
+  //               ),
+  //               child: Column(
+  //                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                 children: content
+  //                     .map((text) => _buildSuggestionText(text))
+  //                     .toList(),
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //       Positioned(
+  //         top: -20,
+  //         left: 10,
+  //         child: Icon(
+  //           icon,
+  //           size: 60,
+  //           color: const Color.fromARGB(255, 4, 160, 56),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 }
 
 // 评分圆形组件

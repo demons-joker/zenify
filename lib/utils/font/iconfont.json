@@ -6,6 +6,13 @@
   "description": "",
   "glyphs": [
     {
+      "icon_id": "45364122",
+      "name": "默认头像 ",
+      "font_class": "KHCFDC_touxiang",
+      "unicode": "e63a",
+      "unicode_decimal": 58938
+    },
+    {
       "icon_id": "45306339",
       "name": "导航选中-【首页】",
       "font_class": "a-daohangxuanzhong-shouye1",

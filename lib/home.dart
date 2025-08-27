@@ -1,11 +1,13 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:zenify/models/enums.dart';
+import 'package:zenify/report_page.dart';
 import 'recipe_list.dart';
 import 'package:zenify/services/api.dart';
 import 'package:zenify/services/user_session.dart';
 import 'package:zenify/utils/iconfont.dart';
 import 'menu_page.dart';
+import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -695,6 +697,7 @@ class _HomePageState extends State<HomePage> {
   // 5. 动态生成餐点卡片列表
   List<Widget> _buildHistoryMealCards() {
     return historyFoods.map((food) {
+      print('_buildHistoryMealCards: $food');
       return Column(
         children: [
           _buildMealsCard(food),
@@ -708,7 +711,8 @@ class _HomePageState extends State<HomePage> {
   Widget _buildMealsCard(dynamic foodObject) {
     List<dynamic> foods = foodObject['foods'];
     final now = DateTime.now();
-    final currentTime = '${now.hour}:${now.minute.toString().padLeft(2, '0')}';
+    final currentTime =
+        DateFormat('HH:mm').format(DateTime.parse(foodObject['start_time']));
 
     String getMealType() {
       if (now.hour >= 5 && now.hour < 10) return '早餐';
@@ -717,136 +721,143 @@ class _HomePageState extends State<HomePage> {
       return '加餐';
     }
 
-    return Stack(children: [
-      Container(
-        width: double.infinity,
-        margin: EdgeInsets.only(top: 40, right: 20, bottom: 20, left: 20),
-        padding: EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.black,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(16),
-            topRight: Radius.circular(10),
-            bottomLeft: Radius.circular(16),
-            bottomRight: Radius.circular(16),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => ReportPage(mealRecordId: foodObject['id'])),
+        );
+      },
+      child: Stack(children: [
+        Container(
+          width: double.infinity,
+          margin: EdgeInsets.only(top: 40, right: 20, bottom: 20, left: 20),
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(10),
+              bottomLeft: Radius.circular(16),
+              bottomRight: Radius.circular(16),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.only(bottom: 16),
+                child: Text(
+                  '${getMealType()} $currentTime',
+                  style: TextStyle(
+                    color: Color(0xFFDEDEDE),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              ...foods.map((meal) => Padding(
+                    padding: EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 45,
+                          height: 45,
+                          decoration: BoxDecoration(
+                            image: DecorationImage(
+                              image:
+                                  NetworkImage(meal['food']['image_url'] ?? ''),
+                              fit: BoxFit.cover,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  meal['food']['name']!,
+                                  style: TextStyle(
+                                    color: Color(0xFFDEDEDE),
+                                    fontSize: 18,
+                                    height: 20 / 18,
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  '${meal['quantity']}${meal['unit']}',
+                                  style: TextStyle(
+                                    color: Color(0xFF7C7C7C),
+                                    fontSize: 16,
+                                    height: 20 / 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '${meal['calories']}kcal',
+                          style: TextStyle(
+                            color: Color(0xFF7C7C7C),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ))
+            ],
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: EdgeInsets.only(bottom: 16),
-              child: Text(
-                '${getMealType()} $currentTime',
-                style: TextStyle(
-                  color: Color(0xFFDEDEDE),
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+        Positioned(
+            top: 30,
+            right: 120,
+            child: Container(
+              width: 80,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(40),
+              ),
+              child: Center(
+                child: Text(
+                  '${foodObject['duration_minutes'] ?? 0}min',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.orange,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-            ...foods
-                .map((meal) => Padding(
-                      padding: EdgeInsets.only(bottom: 12),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 45,
-                            height: 45,
-                            decoration: BoxDecoration(
-                              image: DecorationImage(
-                                image: NetworkImage(
-                                    meal['food']['image_url'] ?? ''),
-                                fit: BoxFit.cover,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          Expanded(
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    meal['food']['name']!,
-                                    style: TextStyle(
-                                      color: Color(0xFFDEDEDE),
-                                      fontSize: 18,
-                                      height: 20 / 18,
-                                    ),
-                                  ),
-                                  SizedBox(height: 2),
-                                  Text(
-                                    '${meal['quantity']}${meal['unit']}',
-                                    style: TextStyle(
-                                      color: Color(0xFF7C7C7C),
-                                      fontSize: 16,
-                                      height: 20 / 16,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          Text(
-                            '${meal['calories']}kcal',
-                            style: TextStyle(
-                              color: Color(0xFF7C7C7C),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ))
-                .toList(),
-          ],
-        ),
-      ),
-      Positioned(
-          top: 30,
-          right: 120,
-          child: Container(
-            width: 80,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(40),
-            ),
-            child: Center(
-              child: Text(
-                '25min',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.orange,
-                  fontWeight: FontWeight.bold,
+            )),
+        Positioned(
+            top: 30,
+            right: 20,
+            child: Container(
+              width: 100,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(40),
+              ),
+              child: Center(
+                child: Text(
+                  '${foodObject['total_calories'] ?? 0}kcal',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.orange,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-          )),
-      Positioned(
-          top: 30,
-          right: 20,
-          child: Container(
-            width: 100,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(40),
-            ),
-            child: Center(
-              child: Text(
-                '400kcal',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.orange,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          )),
-    ]);
+            )),
+      ]),
+    );
   }
 
   // 进度指示器 (保持不变)
