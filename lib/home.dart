@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:zenify/models/enums.dart';
 import 'package:zenify/report_page.dart';
@@ -55,6 +56,7 @@ class _HomePageState extends State<HomePage> {
       final response =
           await Api.getCurrentUserFoods({'user_id': await UserSession.userId});
       if (!mounted) return;
+      await Future.delayed(const Duration(milliseconds: 300)); // 添加短暂延迟避免闪动
       setState(() {
         currentFoods = response;
         print('currentFoods: $currentFoods');
@@ -445,7 +447,8 @@ class _HomePageState extends State<HomePage> {
                     borderRadius: BorderRadius.circular(10),
                     image: realFood['image_url'] != null
                         ? DecorationImage(
-                            image: NetworkImage(realFood['image_url']),
+                            image: CachedNetworkImageProvider(
+                                realFood['image_url']),
                             fit: BoxFit.cover,
                           )
                         : null,

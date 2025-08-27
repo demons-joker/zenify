@@ -56,6 +56,38 @@ class ReportPage extends StatefulWidget {
 }
 
 class _ReportPageState extends State<ReportPage> {
+  List<Widget> _getVitaminsTexts() {
+    if (mealRecordsData == null || mealRecordsData!.foods.isEmpty) {
+      return [];
+    }
+
+    final vitaminsMap = <String, double>{};
+    for (final foodData in mealRecordsData!.foods) {
+      final vitamins = foodData.food.nutritionPer100g.vitamins;
+      for (final vitamin in vitamins) {
+        final amount = double.parse(vitamin.amount.toStringAsFixed(2));
+        if (amount > 0) {
+          vitaminsMap.update(
+            vitamin.name,
+            (value) => value + amount,
+            ifAbsent: () => amount,
+          );
+        }
+      }
+    }
+
+    return vitaminsMap.entries.map((entry) {
+      return Text(
+        '${entry.key}: ${entry.value}mg',
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          color: Color(0xFF868686),
+        ),
+      );
+    }).toList();
+  }
+
   MealRecord? mealRecordsData;
   num totalScore = 0;
 
@@ -95,6 +127,8 @@ class _ReportPageState extends State<ReportPage> {
     print('mealRecordId: $mealRecordId');
     if (mealRecordId != null) {
       params['meal_record_id'] = mealRecordId;
+    } else {
+      params['meal_record_id'] = 1;
     }
     try {
       final data = await Api.getMealRecordsDetail(params);
@@ -248,7 +282,7 @@ class _ReportPageState extends State<ReportPage> {
                     color: Color(0XFF292929),
                   ),
                   Container(
-                    width: 150,
+                    width: 160,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(15),
                       border: Border.all(
@@ -275,22 +309,13 @@ class _ReportPageState extends State<ReportPage> {
                         child: ListView(
                           shrinkWrap: true,
                           padding: const EdgeInsets.all(18),
-                          children: const [
-                            Text('微量元素含量',
+                          children: [
+                            const Text('微量元素含量',
                                 style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
                                     color: Colors.black)),
-                            Text('膳食纤维：0mg',
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w400,
-                                    color: Color(0xFF868686))),
-                            Text('膳食纤维：0mg',
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w400,
-                                    color: Color(0xFF868686))),
+                            ..._getVitaminsTexts(),
                           ],
                         ),
                       ),
@@ -304,12 +329,12 @@ class _ReportPageState extends State<ReportPage> {
               _buildWhiteListCard(), // 添加本餐
               const SizedBox(height: 42),
               _buildNutrientAnalysisCard(),
-              const SizedBox(height: 42),
-              _buildHealthAdviceCard(),
-              const SizedBox(height: 42),
-              _buildDietSuggestionCard(),
-              const SizedBox(height: 42),
-              _buildDietSuggestionCard(),
+              // const SizedBox(height: 42),
+              // _buildHealthAdviceCard(),
+              // const SizedBox(height: 42),
+              // _buildDietSuggestionCard(),
+              // const SizedBox(height: 42),
+              // _buildDietSuggestionCard(),
             ],
           ),
         ),
@@ -318,6 +343,15 @@ class _ReportPageState extends State<ReportPage> {
   }
 
   Widget _buildNutrientAnalysisCard() {
+    if (mealRecordsData == null) {
+      return const SizedBox.shrink();
+    }
+
+    final analysis = mealRecordsData!.nutritionAnalysis;
+    final highQualityProtein = analysis.highQualityProtein;
+    final lowGi = analysis.lowGi;
+    final immunityBoosting = analysis.immunityBoosting;
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -338,71 +372,101 @@ class _ReportPageState extends State<ReportPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '均衡度：',
+                '均衡度：${analysis.balancedMeal ? '均衡' : '不够均衡'}',
                 style: TextStyle(fontSize: 16, color: text2Color),
               ),
               Text(
-                '优质蛋白：',
+                '优质蛋白：${highQualityProtein.isNotEmpty ? '是' : '否'}',
                 style: TextStyle(fontSize: 16, color: text2Color),
               ),
               Text(
-                '膳食纤维情况：',
-                style: TextStyle(fontSize: 16, color: text2Color),
-              ),
-              Text(
-                '微量元素情况：',
+                '膳食纤维情况：${analysis.highFiber.isNotEmpty ? '充足的膳食纤维' : '膳食纤维不足'}',
                 style: TextStyle(fontSize: 16, color: text2Color),
               ),
               SizedBox(height: 10),
               Divider(color: Colors.grey),
               SizedBox(height: 10),
-              // 第二部分：图片展示
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildFoodImage('assets/images/egg.jpeg'),
-                  _buildFoodImage('assets/images/egg.jpeg'),
-                  _buildFoodImage('assets/images/egg.jpeg'),
-                ],
-              ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '低GI的',
-                    style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF595959)),
-                  )
-                ],
-              ),
-              SizedBox(height: 10),
-              Divider(color: Colors.grey),
-              SizedBox(height: 10),
-              // 第二部分：图片展示
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildFoodImage('assets/images/egg.jpeg'),
-                  _buildFoodImage('assets/images/egg.jpeg'),
-                  _buildFoodImage('assets/images/egg.jpeg'),
-                ],
-              ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '提高免疫力的',
-                    style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF595959)),
-                  )
-                ],
-              ),
+              // 优质蛋白图片展示
+              if (highQualityProtein.isNotEmpty)
+                Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: highQualityProtein
+                          .map((food) => _buildFoodImage(food.imageUrl))
+                          .toList(),
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '优质蛋白',
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF595959)),
+                        )
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    Divider(color: Colors.grey),
+                    SizedBox(height: 10),
+                  ],
+                ),
+              // 低GI图片展示
+              if (lowGi.isNotEmpty)
+                Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: lowGi
+                          .map((food) => _buildFoodImage(food.imageUrl))
+                          .toList(),
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '低GI的',
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF595959)),
+                        )
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    Divider(color: Colors.grey),
+                    SizedBox(height: 10),
+                  ],
+                ),
+              // 提高免疫力图片展示
+              if (immunityBoosting.isNotEmpty)
+                Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: immunityBoosting
+                          .map((food) => _buildFoodImage(food.imageUrl))
+                          .toList(),
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '提高免疫力的',
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF595959)),
+                        )
+                      ],
+                    ),
+                  ],
+                ),
             ],
           ),
         ),
@@ -1183,8 +1247,11 @@ class _ReportPageState extends State<ReportPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ...foods.map((food) => _buildFoodItem(food.food.name,
-                            food.calories, '${food?.quantity}${food?.unit}'))
+                        ...foods.map((food) => _buildFoodItem(
+                            food.food.name,
+                            food.calories,
+                            '${food?.quantity}${food?.unit}',
+                            food?.food.imageUrl))
                       ],
                     ),
                   ),
@@ -1244,7 +1311,7 @@ class _ReportPageState extends State<ReportPage> {
             bottom: 44,
             left: 0,
             child: Container(
-              padding: EdgeInsets.only(left: 18, top: 5, right: 18),
+              padding: EdgeInsets.only(left: 18, right: 18),
               decoration: BoxDecoration(
                 color: Color(0xFFEFECEB),
                 borderRadius: BorderRadius.circular(15),
@@ -1272,7 +1339,8 @@ class _ReportPageState extends State<ReportPage> {
   }
 
 // 构建单个菜品项
-  Widget _buildFoodItem(String name, double calories, String weight) {
+  Widget _buildFoodItem(
+      String name, double calories, String weight, String image_url) {
     String percentage =
         '${(calories / mealRecordsData!.totalCalories * 100).toStringAsFixed(0)}%';
     return Expanded(
@@ -1311,7 +1379,7 @@ class _ReportPageState extends State<ReportPage> {
                     borderRadius:
                         BorderRadius.vertical(top: Radius.circular(10)),
                     child: Image.network(
-                      _getRandomFoodImage(),
+                      image_url,
                       width: double.infinity,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => Container(
@@ -1402,14 +1470,14 @@ class _ReportPageState extends State<ReportPage> {
   }
 
 // 获取随机食物图片（示例用）
-  String _getRandomFoodImage() {
-    final images = [
-      'https://img.freepik.com/free-photo/delicious-vietnamese-food-including-pho-ga-noodles-spring-rolls_335224-895.jpg',
-      'https://img.freepik.com/free-photo/top-view-table-full-delicious-food-composition_23-2149141352.jpg',
-      'https://img.freepik.com/free-photo/healthy-vegetables-wooden-table_1150-38014.jpg'
-    ];
-    return images[DateTime.now().millisecond % images.length];
-  }
+  // String _getRandomFoodImage() {
+  //   final images = [
+  //     'https://img.freepik.com/free-photo/delicious-vietnamese-food-including-pho-ga-noodles-spring-rolls_335224-895.jpg',
+  //     'https://img.freepik.com/free-photo/top-view-table-full-delicious-food-composition_23-2149141352.jpg',
+  //     'https://img.freepik.com/free-photo/healthy-vegetables-wooden-table_1150-38014.jpg'
+  //   ];
+  //   return images[DateTime.now().millisecond % images.length];
+  // }
 
   // 膳食调整建议
   Widget _buildDietSuggestionCard() {
