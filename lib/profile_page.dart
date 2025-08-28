@@ -64,11 +64,45 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ],
       ),
-      body: _buildProfileContent(),
+      body: FutureBuilder<Widget>(
+        future: _buildProfileContent(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('加载失败: ${snapshot.error}'));
+          } else if (snapshot.hasData) {
+            return snapshot.data!;
+          } else {
+            return Center(child: Text('未知错误'));
+          }
+        },
+      ),
     );
   }
 
-  Widget _buildProfileContent() {
+  Future<Widget> _buildProfileContent() async {
+    if (await UserSession.isLoggedIn() == false) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('未登录', style: TextStyle(fontSize: 16)),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => Login()),
+                );
+              },
+              child: Text('去登录'),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (_isLoading) {
       return Center(child: CircularProgressIndicator());
     }
