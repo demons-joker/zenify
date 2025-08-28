@@ -310,22 +310,6 @@ class Api {
     }
   }
 
-  // 替换食谱中的食物项
-  static Future<dynamic> replaceRecipeFood(Map<String, dynamic> request) async {
-    print('请求参数: $request');
-    try {
-      final response = await _handleRequest(
-        ApiConfig.replaceRecipeFood,
-        pathParams: request,
-        queryParams: request,
-      );
-      return response;
-    } catch (e) {
-      print('替换食谱中的食物项失败: $e');
-      throw Exception('替换食谱中的食物项失败: $e');
-    }
-  }
-
   // 替换计划中的食物项
   static Future<dynamic> replacePlanFood(Map<String, dynamic> request) async {
     print('请求参数: $request');

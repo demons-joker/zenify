@@ -238,7 +238,7 @@ class _HomePageState extends State<HomePage> {
                   },
                 ),
               ),
-            ).then((_) => _fetchRecipes());
+            ).then((_) => {_fetchRecipes(), _fetchCurrentUserFoods()});
           },
           child: Container(
             width: 171,

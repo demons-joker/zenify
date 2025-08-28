@@ -110,22 +110,22 @@ class Report extends StatelessWidget {
                           ),
                         ),
                         const Spacer(),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => ReportPage()),
-                            );
-                          },
-                          child: const Text(
-                            '详细参数>',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF6F6F6F),
-                            ),
-                          ),
-                        )
+                        // TextButton(
+                        //   onPressed: () {
+                        //     Navigator.push(
+                        //       context,
+                        //       MaterialPageRoute(
+                        //           builder: (context) => ReportPage()),
+                        //     );
+                        //   },
+                        //   child: const Text(
+                        //     '详细参数>',
+                        //     style: TextStyle(
+                        //       fontSize: 14,
+                        //       color: Color(0xFF6F6F6F),
+                        //     ),
+                        //   ),
+                        // )
                       ],
                     ),
                     const SizedBox(height: 16),
