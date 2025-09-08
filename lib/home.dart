@@ -384,40 +384,70 @@ class _HomePageState extends State<HomePage> {
     // 限制最多显示4个食物
     final displayFoods = foods.length > 4 ? foods.sublist(0, 4) : foods;
 
-    if (displayFoods.length <= 3) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: displayFoods
-            .map((food) => Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 5),
-                    child: _buildFoodItem(context, food),
-                  ),
-                ))
-            .toList(),
-      );
-    } else {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: displayFoods
-                .sublist(0, 3)
-                .map((food) => Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 5),
-                        child: _buildFoodItem(context, food),
+    return Column(
+      children: displayFoods.map((food) {
+        final realFood = food['food'];
+        return Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 左侧图片
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  image: realFood['image_url'] != null
+                      ? DecorationImage(
+                          image: CachedNetworkImageProvider(realFood['image_url']),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                  color: Colors.grey[300],
+                ),
+              ),
+              SizedBox(width: 12),
+              // 右侧文案
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      realFood['name'] ?? '未知食物',
+                      style: TextStyle(
+                        color: Color(0xFFBFBFBF),
+                        fontSize: 14,
+                        height: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ))
-                .toList(),
+                    ),
+                    SizedBox(height: 5),
+                    Text(
+                      '${food['quantity'] ?? '0'}g',
+                      style: TextStyle(
+                        color: Color(0xFFE5A454),
+                        fontSize: 12,
+                        height: 1,
+                      ),
+                    ),
+                    SizedBox(height: 5),
+                    Text(
+                      '${food['calories'] ?? '0'} kcal',
+                      style: TextStyle(
+                        color: Color(0xFF7C7C7C),
+                        fontSize: 12,
+                        height: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 20),
-          _buildFoodItem(context, displayFoods[3]),
-        ],
-      );
-    }
+        );
+      }).toList(),
+    );
   }
 
   // 食物项组件 (优化后)
