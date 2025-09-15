@@ -382,7 +382,7 @@ class _HomePageState extends State<HomePage> {
   // 构建食物项行 (优化后)
   Widget _buildFoodItemsRow(BuildContext context, List<dynamic> foods) {
     // 限制最多显示4个食物
-    final displayFoods = foods.length > 4 ? foods.sublist(0, 4) : foods;
+    final displayFoods = foods;
 
     return Column(
       children: displayFoods.map((food) {
@@ -390,21 +390,32 @@ class _HomePageState extends State<HomePage> {
         return Padding(
           padding: EdgeInsets.symmetric(vertical: 8),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // 左侧图片
-              Container(
+              SizedBox(
                 width: 80,
                 height: 80,
-                decoration: BoxDecoration(
+                child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  image: realFood['image_url'] != null
-                      ? DecorationImage(
-                          image: CachedNetworkImageProvider(realFood['image_url']),
+                  child: Stack(
+                    children: [
+                      Container(color: Color(0xFFEAEAEA)),
+                      AnimatedOpacity(
+                        opacity: realFood['image_url'] != null ? 1.0 : 0.0,
+                        duration: Duration(milliseconds: 100),
+                        curve: Curves.easeInOut,
+                        child: CachedNetworkImage(
+                          imageUrl: realFood['image_url'] ?? '',
                           fit: BoxFit.cover,
-                        )
-                      : null,
-                  color: Colors.grey[300],
+                          placeholder: (context, url) =>
+                              Container(color: Color(0xFFEAEAEA)),
+                          errorWidget: (context, url, error) =>
+                              Container(color: Colors.grey[300]),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               SizedBox(width: 12),
@@ -416,7 +427,7 @@ class _HomePageState extends State<HomePage> {
                     Text(
                       realFood['name'] ?? '未知食物',
                       style: TextStyle(
-                        color: Color(0xFFBFBFBF),
+                        color: Color(0xFF000000),
                         fontSize: 14,
                         height: 1,
                         overflow: TextOverflow.ellipsis,
@@ -665,7 +676,7 @@ class _HomePageState extends State<HomePage> {
           Stack(
             alignment: Alignment.center,
             children: [
-              Container(
+              SizedBox(
                 width: 110,
                 height: 110,
                 child: CustomPaint(
@@ -676,16 +687,22 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-              Container(
-                width: 110,
-                height: 110,
-                child: CustomPaint(
-                  painter: _ProgressPainter(
-                    progress: progress,
-                    color: Color(0xFFEA7B3C),
-                    strokeWidth: 5,
-                  ),
-                ),
+              TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0, end: progress),
+                duration: Duration(milliseconds: 300),
+                builder: (context, value, child) {
+                  return SizedBox(
+                    width: 110,
+                    height: 110,
+                    child: CustomPaint(
+                      painter: _ProgressPainter(
+                        progress: value,
+                        color: Color(0xFFEA7B3C),
+                        strokeWidth: 5,
+                      ),
+                    ),
+                  );
+                },
               ),
               _buildProgressIndicator(progress),
               Column(
@@ -795,16 +812,31 @@ class _HomePageState extends State<HomePage> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Container(
+                        SizedBox(
                           width: 45,
                           height: 45,
-                          decoration: BoxDecoration(
-                            image: DecorationImage(
-                              image:
-                                  NetworkImage(meal['food']['image_url'] ?? ''),
-                              fit: BoxFit.cover,
-                            ),
+                          child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
+                            child: Stack(
+                              children: [
+                                Container(color: Color(0xFF000000)),
+                                AnimatedOpacity(
+                                  opacity: meal['food']['image_url'] != null
+                                      ? 1.0
+                                      : 0.0,
+                                  duration: Duration(milliseconds: 100),
+                                  curve: Curves.easeInOut,
+                                  child: CachedNetworkImage(
+                                    imageUrl: meal['food']['image_url'] ?? '',
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) =>
+                                        Container(color: Color(0xFF000000)),
+                                    errorWidget: (context, url, error) =>
+                                        Container(color: Colors.grey[300]),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                         Expanded(
