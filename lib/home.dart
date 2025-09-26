@@ -115,19 +115,25 @@ class _HomePageState extends State<HomePage> {
     if (isLoading) {
       return Center(child: CircularProgressIndicator());
     }
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          _buildTitleRow(),
-          _buildWeekTabs(),
-          _buildTodayText(),
-          _buildRecipeButton(),
-          ..._buildPlanMealCards(context),
-          const SizedBox(height: 20),
-          _buildDividerWithClock(),
-          _buildProgressCard(),
-          ..._buildHistoryMealCards(),
-        ],
+    return RefreshIndicator(
+      onRefresh: () async {
+        await _fetchRecipes();
+        await _fetchCurrentUserFoods();
+      },
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildTitleRow(),
+            _buildWeekTabs(),
+            _buildTodayText(),
+            _buildRecipeButton(),
+            ..._buildPlanMealCards(context),
+            const SizedBox(height: 20),
+            _buildDividerWithClock(),
+            _buildProgressCard(),
+            ..._buildHistoryMealCards(),
+          ],
+        ),
       ),
     );
   }
@@ -539,7 +545,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                           const SizedBox(height: 5),
                           Text(
-                            '${food['calories'] ?? '0'} kcal',
+                            '${(food['calories'] ?? 0).toStringAsFixed(2)} kcal',
                             style: TextStyle(
                               color: Color(0xFF7C7C7C),
                               fontSize: 12,
@@ -867,7 +873,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                         Text(
-                          '${meal['calories']}kcal',
+                          '${(meal['calories'] ?? 0.0).toStringAsFixed(2)}kcal',
                           style: TextStyle(
                             color: Color(0xFF7C7C7C),
                             fontSize: 12,
@@ -912,7 +918,7 @@ class _HomePageState extends State<HomePage> {
               ),
               child: Center(
                 child: Text(
-                  '${foodObject['total_calories'] ?? 0}kcal',
+                  '${(foodObject['total_calories'] ?? 0.0).toStringAsFixed(2)}kcal',
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.orange,

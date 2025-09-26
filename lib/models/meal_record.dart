@@ -142,17 +142,17 @@ class NutritionPer100g {
 
 class Vitamin {
   final String name;
-  final num amount;
+  final num content;
 
   Vitamin({
     required this.name,
-    required this.amount,
+    required this.content,
   });
 
   factory Vitamin.fromJson(Map<String, dynamic> json) {
     return Vitamin(
       name: json['name'],
-      amount: json['amount'],
+      content: json['content'] ?? json['amount'] ?? 0,
     );
   }
 }

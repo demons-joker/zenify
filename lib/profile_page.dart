@@ -163,7 +163,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
-
+ 
   Widget _buildProfileHeader() {
     return Column(
       children: [

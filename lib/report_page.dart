@@ -56,6 +56,8 @@ class ReportPage extends StatefulWidget {
 }
 
 class _ReportPageState extends State<ReportPage> {
+  bool _isLoading = false;
+
   List<Widget> _getVitaminsTexts() {
     if (mealRecordsData == null || mealRecordsData!.foods.isEmpty) {
       return [];
@@ -65,12 +67,12 @@ class _ReportPageState extends State<ReportPage> {
     for (final foodData in mealRecordsData!.foods) {
       final vitamins = foodData.food.nutritionPer100g.vitamins;
       for (final vitamin in vitamins) {
-        final amount = double.parse(vitamin.amount.toStringAsFixed(2));
-        if (amount > 0) {
+        final content = double.parse(vitamin.content.toStringAsFixed(2));
+        if (content > 0) {
           vitaminsMap.update(
             vitamin.name,
-            (value) => value + amount,
-            ifAbsent: () => amount,
+            (value) => value + content,
+            ifAbsent: () => content,
           );
         }
       }
@@ -120,6 +122,9 @@ class _ReportPageState extends State<ReportPage> {
   }
 
   Future<void> _fetchMealRecords() async {
+    setState(() {
+      _isLoading = true;
+    });
     final Map<String, dynamic> params = {
       'user_id': await UserSession.userId,
       'plate_id': 1,
@@ -165,9 +170,13 @@ class _ReportPageState extends State<ReportPage> {
           totalScore = mealRecordsData!.nutritionAnalysis.mealScore * 10;
           totalCal = '${(mealRecordsData!.totalCalories).toInt()}kcal';
         }
+        _isLoading = false;
       });
     } catch (e) {
       debugPrint('获取餐食记录失败: $e');
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -198,7 +207,18 @@ class _ReportPageState extends State<ReportPage> {
           ),
         ),
       ),
-      body: SingleChildScrollView(
+      body: _isLoading
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('分析中，请稍候...'),
+                ],
+              ),
+            )
+          :SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(

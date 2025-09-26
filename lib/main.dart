@@ -5,6 +5,7 @@ import 'dart:io' show Platform;
 
 import 'package:zenify/camera_page.dart';
 import 'package:zenify/home.dart';
+// import 'package:zenify/index.dart';
 import 'package:zenify/report.dart';
 import 'package:zenify/profile_page.dart';
 import 'package:zenify/login.dart';
@@ -89,6 +90,7 @@ class _MainPageState extends State<MainPage> {
 
   // 页面列表
   final List<Widget> _pages = [
+    // IndexPage(), // 首页
     HomePage(), // 首页
     Container(), // 拍照按钮占位，实际不会显示
     AIChatPage(), // AI聊天页面
@@ -111,17 +113,19 @@ class _MainPageState extends State<MainPage> {
                       constraints: BoxConstraints(
                         maxHeight: constraints.maxHeight,
                       ),
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.only(
-                            bottom: kBottomNavigationBarHeight),
-                        child: IntrinsicHeight(
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                                minHeight: constraints.maxHeight),
-                            child: _pages[_currentIndex],
-                          ),
-                        ),
-                      ),
+                      child: _currentIndex == 0
+                          ? HomePage()
+                          : SingleChildScrollView(
+                              padding: const EdgeInsets.only(
+                                  bottom: kBottomNavigationBarHeight),
+                              child: IntrinsicHeight(
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                      minHeight: constraints.maxHeight),
+                                  child: _pages[_currentIndex],
+                                ),
+                              ),
+                            ),
                     );
                   },
                 ),
