@@ -13,7 +13,7 @@ class UploadService {
     try {
       final userId = await UserSession.userId;
       final uri = Uri.parse(
-          '${ApiConfig.baseUrl}/api/v1/users/$userId/plates/1/recognize/upload');
+          '${ApiConfig.baseUrl}/api/mqtt/users/$userId/plates/1/recognize/upload');
       print('uri: $uri');
       final request = http.MultipartRequest('POST', uri);
 
