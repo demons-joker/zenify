@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:zenify/components/food_item_card.dart';
+import 'package:zenify/food_detail_page.dart';
 import 'package:zenify/utils/iconfont.dart';
 
 class IndexPage extends StatefulWidget {
@@ -110,6 +111,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
   }
 
   int _currentTabIndex = 0;
+  int _currentTabIndex2 = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -224,7 +226,432 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                       child: _buildDietTab(),
                     );
                   } else {
-                    return const Center(child: Text('开发中'));
+                    return DefaultTabController(
+                      length: 2,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            '你想吃什么？',
+                            style: TextStyle(
+                              color: Color(0xFF222222),
+                              fontSize: 20,
+                              fontStyle: FontStyle.normal,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 16),
+                          Row(
+                            mainAxisSize: MainAxisSize.max,
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(18),
+                                    color: Color(0xFFE9E9E9),
+                                    border: Border.all(
+                                        color: Color(0xFFE2E2E2), width: 1),
+                                  ),
+                                  width: 178,
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              _currentTabIndex2 = 0;
+                                            });
+                                          },
+                                          child: AnimatedContainer(
+                                            duration:
+                                                Duration(milliseconds: 300),
+                                            curve: Curves.easeInOut,
+                                            height: 36,
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(18),
+                                              color: _currentTabIndex2 == 0
+                                                  ? Color(0xFF222222)
+                                                  : Color(0xFFE9E9E9),
+                                              border: _currentTabIndex2 == 0
+                                                  ? null
+                                                  : Border.all(
+                                                      color: Color(0xFFE2E2E2),
+                                                      width: 1),
+                                            ),
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 10),
+                                            child: Center(
+                                              child: AnimatedDefaultTextStyle(
+                                                duration:
+                                                    Duration(milliseconds: 300),
+                                                style: TextStyle(
+                                                  color: _currentTabIndex2 == 0
+                                                      ? Color(0xFFFCFCFC)
+                                                      : Color(0xFF8F8F8F),
+                                                  fontSize: 14,
+                                                  fontWeight:
+                                                      _currentTabIndex2 == 0
+                                                          ? FontWeight.w500
+                                                          : FontWeight.w400,
+                                                ),
+                                                child: Text('自制餐'),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              _currentTabIndex2 = 1;
+                                            });
+                                          },
+                                          child: AnimatedContainer(
+                                            duration:
+                                                Duration(milliseconds: 300),
+                                            curve: Curves.easeInOut,
+                                            height: 36,
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(18),
+                                              color: _currentTabIndex2 == 1
+                                                  ? Color(0xFF222222)
+                                                  : Color(0xFFE9E9E9),
+                                              border: _currentTabIndex2 == 1
+                                                  ? null
+                                                  : Border.all(
+                                                      color: Color(0xFFE2E2E2),
+                                                      width: 1),
+                                            ),
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 10),
+                                            child: Center(
+                                              child: AnimatedDefaultTextStyle(
+                                                duration:
+                                                    Duration(milliseconds: 300),
+                                                style: TextStyle(
+                                                  color: _currentTabIndex2 == 1
+                                                      ? Color(0xFFFCFCFC)
+                                                      : Color(0xFF8F8F8F),
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w400,
+                                                ),
+                                                child: Text('外食'),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 100),
+                              Container(
+                                width: 40,
+                                height: 40,
+                                child: IconButton(
+                                  icon: Image.asset('assets/images/search.png'),
+                                  onPressed: () {},
+                                ),
+                              ),
+                            ],
+                          ),
+                          //这里新增tab切换的内容
+                          // 自制餐内容
+                          Expanded(
+                              child: SingleChildScrollView(
+                            child: ListView(
+                              shrinkWrap: true,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12),
+                                  margin: const EdgeInsets.only(top: 16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  child: Stack(
+                                    clipBehavior: Clip.none,
+                                    alignment: AlignmentDirectional.topCenter,
+                                    children: [
+                                      //包含多个食物卡片
+                                      Column(
+                                        children: [
+                                          // 第二行：图标和文字
+                                          Container(
+                                            height: 35,
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 16),
+                                            margin: const EdgeInsets.only(
+                                                top: 18, bottom: 16),
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(17),
+                                              border: Border.all(
+                                                color: const Color(0xFFF1F1F1),
+                                                width: 2,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Image.asset(
+                                                        'assets/images/c1.png',
+                                                        width: 24,
+                                                        height: 24),
+                                                    const SizedBox(width: 4),
+                                                    const Text(
+                                                      '10g',
+                                                      style: TextStyle(
+                                                        color:
+                                                            Color(0xFF9A9A9A),
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w400,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Image.asset(
+                                                        'assets/images/c2.png',
+                                                        width: 24,
+                                                        height: 24),
+                                                    const SizedBox(width: 4),
+                                                    const Text(
+                                                      '10g',
+                                                      style: TextStyle(
+                                                        color:
+                                                            Color(0xFF9A9A9A),
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w400,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Image.asset(
+                                                        'assets/images/c3.png',
+                                                        width: 24,
+                                                        height: 24),
+                                                    const SizedBox(width: 4),
+                                                    const Text(
+                                                      '10g',
+                                                      style: TextStyle(
+                                                        color:
+                                                            Color(0xFF9A9A9A),
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w400,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const Text(
+                                                  '600kcal',
+                                                  style: TextStyle(
+                                                    color: Color(0xFF8FB500),
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          // 第三行：图片、文字和按钮
+                                          Container(
+                                            margin: const EdgeInsets.only(
+                                                bottom: 15),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFFFFFFF),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Column(
+                                                    children: [
+                                                      FoodItemCard(
+                                                        name: '娃娃菜',
+                                                        calories: '100kcal',
+                                                        weight: '200g',
+                                                        icon: Image.asset(
+                                                            'assets/images/cj.png',
+                                                            width: 45,
+                                                            height: 45),
+                                                        onEditPressed: () => {},
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      FoodItemCard(
+                                                        name: '娃娃菜',
+                                                        calories: '100kcal',
+                                                        weight: '200g',
+                                                        icon: Image.asset(
+                                                            'assets/images/cj.png',
+                                                            width: 45,
+                                                            height: 45),
+                                                        onEditPressed: () => {},
+                                                      ),
+                                                      // 可以继续添加更多FoodItemCard
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12),
+                                  margin: const EdgeInsets.only(top: 16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  child: Stack(
+                                    clipBehavior: Clip.none,
+                                    alignment: AlignmentDirectional.topCenter,
+                                    children: [
+                                      //包含多个食物卡片
+                                      Column(
+                                        children: [
+                                          // 第二行：图标和文字
+                                          Container(
+                                            height: 35,
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 16),
+                                            margin: const EdgeInsets.only(
+                                                top: 18, bottom: 16),
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(17),
+                                              border: Border.all(
+                                                color: const Color(0xFFF1F1F1),
+                                                width: 2,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Image.asset(
+                                                        'assets/images/c1.png',
+                                                        width: 24,
+                                                        height: 24),
+                                                    const SizedBox(width: 4),
+                                                    const Text(
+                                                      '10g',
+                                                      style: TextStyle(
+                                                        color:
+                                                            Color(0xFF9A9A9A),
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w400,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Image.asset(
+                                                        'assets/images/c2.png',
+                                                        width: 24,
+                                                        height: 24),
+                                                    const SizedBox(width: 4),
+                                                    const Text(
+                                                      '10g',
+                                                      style: TextStyle(
+                                                        color:
+                                                            Color(0xFF9A9A9A),
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w400,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Image.asset(
+                                                        'assets/images/c3.png',
+                                                        width: 24,
+                                                        height: 24),
+                                                    const SizedBox(width: 4),
+                                                    const Text(
+                                                      '10g',
+                                                      style: TextStyle(
+                                                        color:
+                                                            Color(0xFF9A9A9A),
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w400,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const Text(
+                                                  '600kcal',
+                                                  style: TextStyle(
+                                                    color: Color(0xFF8FB500),
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          // 第三行：图片、文字和按钮
+                                          Container(
+                                            margin: const EdgeInsets.only(
+                                                bottom: 15),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFFFFFFF),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Column(
+                                                    children: [
+                                                      FoodItemCard(
+                                                          name: '娃娃菜',
+                                                          calories: '100kcal',
+                                                          weight: '200g',
+                                                          icon: Image.asset(
+                                                              'assets/images/cj.png',
+                                                              width: 45,
+                                                              height: 45)),
+                                                      const SizedBox(height: 8),
+                                                      FoodItemCard(
+                                                          name: '娃娃菜',
+                                                          calories: '100kcal',
+                                                          weight: '200g',
+                                                          icon: Image.asset(
+                                                              'assets/images/cj.png',
+                                                              width: 45,
+                                                              height: 45)),
+                                                      // 可以继续添加更多FoodItemCard
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ))
+                        ],
+                      ),
+                    );
                   }
                 }).toList(),
               ),
@@ -710,10 +1137,41 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
             viewportFraction: 1.0,
           ),
         ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Divider(
+                  color: Color(0xFFCCCCCC),
+                  thickness: 1,
+                  height: 24,
+                  indent: 0,
+                  endIndent: 0),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                children: [
+                  const Icon(IconFont.yisheruzhi, size: 24),
+                  SizedBox(width: 4),
+                  Text("今天吃了"),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Divider(
+                  color: Color(0xFFCCCCCC),
+                  thickness: 1,
+                  height: 24,
+                  indent: 0,
+                  endIndent: 0),
+            ),
+          ],
+        ),
         // 新增功能模块
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          margin: const EdgeInsets.only(top: 16),
+          margin: const EdgeInsets.only(top: 40),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(15),
@@ -857,26 +1315,22 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                           child: Column(
                             children: [
                               FoodItemCard(
-                                name: '娃娃菜',
-                                calories: '100kcal',
-                                weight: '200g',
-                              ),
+                                  name: '娃娃菜',
+                                  calories: '100kcal',
+                                  weight: '200g'),
                               const SizedBox(height: 8),
                               FoodItemCard(
-                                name: '娃娃菜',
-                                calories: '100kcal',
-                                weight: '200g',
-                              ),
+                                  name: '娃娃菜',
+                                  calories: '100kcal',
+                                  weight: '200g'),
                               FoodItemCard(
-                                name: '娃娃菜',
-                                calories: '100kcal',
-                                weight: '200g',
-                              ),
+                                  name: '娃娃菜',
+                                  calories: '100kcal',
+                                  weight: '200g'),
                               FoodItemCard(
-                                name: '西兰花',
-                                calories: '50kcal',
-                                weight: '150g',
-                              ),
+                                  name: '西兰花',
+                                  calories: '50kcal',
+                                  weight: '150g'),
                               // 可以继续添加更多FoodItemCard
                             ],
                           ),

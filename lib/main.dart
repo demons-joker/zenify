@@ -12,7 +12,11 @@ import 'package:zenify/login.dart';
 import 'package:zenify/services/user_session.dart';
 import 'package:zenify/utils/iconfont.dart';
 import 'package:flutter/services.dart';
+import 'package:zenify/screens/onboarding_screen.dart';
 
+import 'core/app_export.dart';
+
+var globalMessengerKey = GlobalKey<ScaffoldMessengerState>();
 void _setWindowSize() {
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     setWindowTitle('Zenify App');
@@ -30,6 +34,7 @@ void _setWindowSize() {
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   _setWindowSize();
   runApp(MyApp());
 }
@@ -44,17 +49,28 @@ class MyApp extends StatelessWidget {
     );
     return MaterialApp(
       title: 'Zenify App',
+      initialRoute: AppRoutes.initialRoute,
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        fontFamily: 'iconfont',
+        fontFamily: 'Plus Jakarta Sans',
         scaffoldBackgroundColor: Color(0xFFF6F6F6),
       ),
+      routes: AppRoutes.routes,
       // ignore: unnecessary_null_comparison
-      home: UserSession.userId != null ? MainPage() : Login(),
+      // home:
+      //     UserSession.userId != null ? OnboardingScreen() : OnboardingScreen(),
       debugShowCheckedModeBanner: false,
       navigatorObservers: [
         _AppLifecycleObserver(),
       ],
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(1.0)),
+          child: child!,
+        );
+      },
     );
   }
 }

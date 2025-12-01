@@ -24,6 +24,9 @@ dependencies:
   intl: ^0.20.2
   cached_network_image: ^3.3.0
   carousel_slider: ^5.1.1
+  flutter_animate: ^4.5.2
+  gradient_borders: ^1.0.2
+  flutter_svg: ^2.0.9
 
 dev_dependencies:
   flutter_test:
@@ -36,6 +39,14 @@ flutter:
   assets:
     - assets/images/
   fonts:
-    - family: iconfont
+    - family: Plus Jakarta Sans
       fonts:
-        - asset: assets/fonts/iconfont.ttf
+        - asset: assets/fonts/PlusJakartaSans-Regular.ttf
+        - asset: assets/fonts/PlusJakartaSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/PlusJakartaSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/PlusJakartaSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/PlusJakartaSans-ExtraBold.ttf
+          weight: 800
