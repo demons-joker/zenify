@@ -284,6 +284,16 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                     width: 40.h,
                     height: 40.h,
                     fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: Colors.grey.shade300,
+                      width: 40.h,
+                      height: 40.h,
+                      child: Icon(
+                        Icons.person,
+                        color: Colors.white,
+                        size: 20.h,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -489,12 +499,13 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                     ),
                   ],
                 ),
-                
+
                 SizedBox(height: 20.h),
-                
+
                 // 进度总结
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16.h, vertical: 12.h),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 16.h, vertical: 12.h),
                   decoration: BoxDecoration(
                     color: Color(0xFF779600).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12.h),
@@ -580,7 +591,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
     required Color bgColor,
   }) {
     final progress = current / target;
-    
+
     return Container(
       padding: EdgeInsets.all(12.h),
       decoration: BoxDecoration(
@@ -620,7 +631,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
             ),
           ),
           SizedBox(height: 8.h),
-          
+
           // 像素风格食物名称
           Text(
             name.toUpperCase(),
@@ -632,7 +643,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
             ),
           ),
           SizedBox(height: 8.h),
-          
+
           // 像素风格进度条
           Container(
             height: 8.h,
@@ -652,7 +663,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
             ),
           ),
           SizedBox(height: 6.h),
-          
+
           // 像素风格数字
           Text(
             '$current/$target',
@@ -663,9 +674,9 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
               letterSpacing: 0.5,
             ),
           ),
-          
+
           SizedBox(height: 4.h),
-          
+
           // 像素风格百分比
           Container(
             padding: EdgeInsets.symmetric(horizontal: 6.h, vertical: 2.h),
@@ -686,8 +697,6 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
       ),
     );
   }
-
-
 
   // RECOMMEND 推荐区域
   Widget _buildRecommendSection() {
@@ -759,7 +768,6 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
   Widget _buildRecommendCard() {
     return Container(
       width: double.infinity,
-      height: 380.h,
       decoration: BoxDecoration(
         color: Colors.black,
         borderRadius: BorderRadius.circular(20.h),
@@ -798,6 +806,14 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                     child: Image.asset(
                       'assets/images/figma/plate_jimeng.png',
                       fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Color(0xFF454A30),
+                        child: Icon(
+                          Icons.restaurant,
+                          color: Colors.white,
+                          size: 40.h,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -835,11 +851,14 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
           ),
           SizedBox(height: 16.h),
           // 食物类别
-          _buildFoodCategory('High-Protein Foods', 'assets/images/figma/collect_meat.png'),
+          _buildFoodCategory(
+              'High-Protein Foods', 'assets/images/figma/collect_meat.png'),
           SizedBox(height: 12.h),
-          _buildFoodCategory('Vegetables', 'assets/images/figma/collect_veg.png'),
+          _buildFoodCategory(
+              'Vegetables', 'assets/images/figma/collect_veg.png'),
           SizedBox(height: 12.h),
-          _buildFoodCategory('High-Carb Foods', 'assets/images/figma/collect_starch.png'),
+          _buildFoodCategory(
+              'High-Carb Foods', 'assets/images/figma/collect_starch.png'),
 
           Spacer(),
 
@@ -910,6 +929,11 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                 iconPath,
                 width: 24.h,
                 height: 24.h,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: 24.h,
+                  height: 24.h,
+                  color: Colors.grey.shade400,
+                ),
               ),
               SizedBox(width: 12.h),
               Text(
