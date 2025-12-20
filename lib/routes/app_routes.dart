@@ -26,6 +26,7 @@ import '../presentation/ai_chat/ai_chat_page.dart';
 // Report pages
 import '../presentation/report/report.dart';
 import '../presentation/report/report_page.dart';
+import '../presentation/report/report_detail.dart';
 // Profile page
 import '../presentation/profile/profile_page.dart';
 // Menu page
@@ -40,14 +41,17 @@ class AppRoutes {
   static const String userProfileSetupScreen = '/user_profile_setup_screen';
   static const String goalSelectionScreen = '/goal_selection_screen';
   static const String thirdQuestionScreen = '/third_question_screen';
-  static const String preferenceSelectionScreen = '/preference_selection_screen';
-  static const String foodSourceSelectionScreen = '/food_source_selection_screen';
+  static const String preferenceSelectionScreen =
+      '/preference_selection_screen';
+  static const String foodSourceSelectionScreen =
+      '/food_source_selection_screen';
   static const String foodDislikeScreen = '/food_dislike_screen';
   static const String eatingStyleScreen = '/eating_style_screen';
   static const String eatingRoutineScreen = '/eating_routine_screen';
   static const String allergyScreen = '/allergy_screen';
   static const String activityLevelScreen = '/activity_level_screen';
-  static const String registrationCompleteScreen = '/registration_complete_screen';
+  static const String registrationCompleteScreen =
+      '/registration_complete_screen';
   static const String appNavigationScreen = '/app_navigation_screen';
   static const String initialRoute = '/';
 
@@ -63,6 +67,7 @@ class AppRoutes {
   static const String aiChatPage = '/ai_chat';
   static const String reportPage = '/report';
   static const String profilePage = '/profile';
+  static const String reportDetail = '/report_detail';
 
   // Legacy pages (with required parameters - use navigation helper methods)
   static const String menuPage = '/menu';
@@ -95,6 +100,7 @@ class AppRoutes {
         cameraPage: (context) => CameraPage(),
         aiChatPage: (context) => AIChatPage(),
         reportPage: (context) => Report(),
+        reportDetail: (context) => ReportDetailPage(),
         profilePage: (context) => ProfilePage(),
       };
 
