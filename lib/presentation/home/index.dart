@@ -860,7 +860,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
           _buildFoodCategory(
               'High-Carb Foods', 'assets/images/figma/collect_starch.png'),
 
-          Spacer(),
+          SizedBox(height: 16.h),
 
           // 评分和操作按钮
           Row(
