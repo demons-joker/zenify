@@ -9,8 +9,8 @@ class ApiEndpoint {
 
 class ApiConfig {
   // static const String baseUrl = "https://www.maididi.com";
-  static const String baseUrl = "http://127.0.0.1:8000";
-  // static const String baseUrl = "http://118.195.149.172:8000";
+  // static const String baseUrl = "http://127.0.0.1:8000";
+  static const String baseUrl = "http://118.195.149.172:8000";
 
   static const String apiVersion = "/api/v1";
   static const String mqttVersion = "/api/mqtt";
@@ -189,6 +189,25 @@ class ApiConfig {
   //整餐切换
   static const replaceFoods = ApiEndpoint(
     '$apiVersion/users/{user_id}/replace/foods',
+    HttpMethod.put,
+  );
+
+  // 用户资料相关接口
+  // 创建或更新用户资料
+  static const createOrUpdateUserProfile = ApiEndpoint(
+    '$apiVersion/users/{user_id}/profile',
+    HttpMethod.post,
+  );
+
+  // 获取用户资料
+  static const getUserProfile = ApiEndpoint(
+    '$apiVersion/users/{user_id}/profile',
+    HttpMethod.get,
+  );
+
+  // 更新用户资料
+  static const updateUserProfile = ApiEndpoint(
+    '$apiVersion/users/{user_id}/profile',
     HttpMethod.put,
   );
 }
