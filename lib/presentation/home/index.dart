@@ -784,70 +784,87 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
         children: [
           // 中央分格餐盘（圆形）和评分 badge
           SizedBox(height: 8.h),
-          Center(
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: 180.h,
-                  height: 180.h,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.transparent,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.12),
-                        blurRadius: 12.h,
-                        offset: Offset(0, 6.h),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              // 根据可用宽度动态计算圆盘直径，保持在一个合理的最小/最大范围内
+              final maxWidth = constraints.maxWidth.isFinite
+                  ? constraints.maxWidth
+                  : MediaQuery.of(context).size.width;
+              final plateDiameter = min(220.h, max(120.h, maxWidth * 0.45));
+              final badgeSize = (plateDiameter * 0.27).clamp(32.h, 56.h);
+
+              return Center(
+                child: SizedBox(
+                  width: plateDiameter,
+                  height: plateDiameter,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: plateDiameter,
+                        height: plateDiameter,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.transparent,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.12),
+                              blurRadius: 12.h,
+                              offset: Offset(0, 6.h),
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/images/figma/plate_jimeng.png',
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                              color: Color(0xFF454A30),
+                              child: Icon(
+                                Icons.restaurant,
+                                color: Colors.white,
+                                size: 40.h,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        right: -(badgeSize / 2) + 8.h,
+                        top: -(badgeSize / 2) + 8.h,
+                        child: Container(
+                          width: badgeSize,
+                          height: badgeSize,
+                          decoration: BoxDecoration(
+                            color: Color(0xFFC8FD00),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.12),
+                                blurRadius: 6.h,
+                                offset: Offset(0, 2.h),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              '85',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize:
+                                    (badgeSize * 0.4).clamp(12.fSize, 20.fSize),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      'assets/images/figma/plate_jimeng.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: Color(0xFF454A30),
-                        child: Icon(
-                          Icons.restaurant,
-                          color: Colors.white,
-                          size: 40.h,
-                        ),
-                      ),
-                    ),
-                  ),
                 ),
-                Positioned(
-                  right: -8.h,
-                  top: -8.h,
-                  child: Container(
-                    width: 48.h,
-                    height: 48.h,
-                    decoration: BoxDecoration(
-                      color: Color(0xFFC8FD00),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.12),
-                          blurRadius: 6.h,
-                          offset: Offset(0, 2.h),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        '85',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 18.fSize,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              );
+            },
           ),
           SizedBox(height: 16.h),
           // 食物类别
