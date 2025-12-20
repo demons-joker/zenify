@@ -88,7 +88,10 @@ class AppRoutes {
         registration: (context) => RegistrationFlow(),
         // Legacy pages
         mainPage: (context) => MainPage(),
-        home: (context) => HomePage(),
+        // Set app default/home route to the updated IndexPage
+        // Map the root and '/home' to the new IndexPage
+        initialRoute: (context) => IndexPage(),
+        home: (context) => IndexPage(),
         indexPage: (context) => IndexPage(),
         cameraPage: (context) => CameraPage(),
         aiChatPage: (context) => AIChatPage(),
