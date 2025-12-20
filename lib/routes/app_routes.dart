@@ -92,7 +92,6 @@ class AppRoutes {
         // Map '/home' and '/index' to the new IndexPage
         home: (context) => IndexPage(),
         indexPage: (context) => IndexPage(),
-        indexPage: (context) => IndexPage(),
         cameraPage: (context) => CameraPage(),
         aiChatPage: (context) => AIChatPage(),
         reportPage: (context) => Report(),
