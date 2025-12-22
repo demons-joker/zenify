@@ -17,7 +17,6 @@ import '../presentation/auth/login.dart';
 import '../presentation/registration/registration_flow.dart';
 import '../presentation/main_page.dart';
 // Home pages
-import '../presentation/home/home.dart';
 import '../presentation/home/index.dart';
 // Camera page
 import '../presentation/camera/camera_page.dart';
@@ -91,7 +90,7 @@ class AppRoutes {
         // Auth pages
         login: (context) => Login(),
         registration: (context) => RegistrationFlow(),
-        // Legacy pages
+        // Legacy pages 
         mainPage: (context) => MainPage(),
         // Set app default/home route to the updated IndexPage
         // Map '/home' and '/index' to the new IndexPage

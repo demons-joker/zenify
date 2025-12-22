@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:zenify/presentation/app_navigation_screen/app_navigation_screen.dart';
 import 'package:zenify/presentation/main_page.dart';
+
 import 'package:zenify/services/user_session.dart';
 import 'package:flutter/services.dart';
 
@@ -89,9 +90,12 @@ class MyApp extends StatelessWidget {
 
           final needsRegistration = false;
           // final needsRegistration = snapshot.data ?? true;
+          // If user doesn't need registration, navigate to the updated home (IndexPage)
           return needsRegistration ? AppNavigationScreen() : MainPage();
         },
       ),
+      // For quick preview: start the app directly on the Report Detail page.
+      // Change back to AppRoutes.initialRoute when you're done previewing.
       initialRoute: AppRoutes.initialRoute,
       routes: AppRoutes.routes,
       builder: (context, child) {

@@ -1,10 +1,6 @@
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:carousel_slider/carousel_slider.dart';
-import 'package:zenify/components/food_item_card.dart';
-import 'package:zenify/utils/iconfont.dart';
 import '../../core/app_export.dart';
 import '../../widgets/custom_image_view.dart';
 
@@ -151,64 +147,10 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildNutrientRing({
-    required String iconPath,
-    required int value,
-    required String label,
-  }) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 24,
-          height: 24,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // 圆环背景
-              CustomPaint(
-                size: const Size(24, 24),
-                painter: _RingPainter(
-                  color: const Color(0xFF343822),
-                  strokeWidth: 3,
-                  value: 1.0,
-                ),
-              ),
-              // 圆环进度条
-              CustomPaint(
-                size: const Size(24, 24),
-                painter: _RingPainter(
-                  color: const Color(0xFFD7EC9C),
-                  strokeWidth: 3,
-                  value: _ringAnimation.value,
-                ),
-              ),
-              // 图标
-              Image.asset(
-                iconPath,
-                width: 16,
-                height: 16,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFFA4A4A4),
-            fontSize: 12,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-      ],
-    );
-  }
-
   // 顶部区域
   Widget _buildTopHeader() {
     return Container(
-      height: 98.h,
+      height: 50.h,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -219,14 +161,14 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
           ],
         ),
       ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 20.h),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // 左边：EAT/ATE tab 切换
-            Row(
+      child: Stack(
+        children: [
+          // 左边：EAT/ATE tab 切换
+          Positioned(
+            left: 20.h,
+            top: 0,
+            bottom: 0,
+            child: Row(
               children: _tabs.asMap().entries.map((entry) {
                 final index = entry.key;
                 final tab = entry.value;
@@ -259,47 +201,62 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                 );
               }).toList(),
             ),
-            // 中间：头像
-            GestureDetector(
-              onTap: () {
-                // 头像功能
-              },
-              child: Container(
-                width: 40.h,
-                height: 40.h,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20.h),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.25),
-                      offset: Offset(0, 1.h),
-                      blurRadius: 1.h,
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20.h),
-                  child: Image.asset(
-                    'assets/images/figma/avatar_center.png',
-                    width: 40.h,
-                    height: 40.h,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: Colors.grey.shade300,
-                      width: 40.h,
-                      height: 40.h,
-                      child: Icon(
-                        Icons.person,
-                        color: Colors.white,
-                        size: 20.h,
+          ),
+          // 中间：头像 - 绝对居中
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: GestureDetector(
+                onTap: () {
+                  // 头像功能
+                },
+                child: Container(
+                  width: 40.h,
+                  height: 40.h,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20.h),
+                    border: Border.all(color: Colors.white, width: 2.h),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        offset: Offset(0, 2.h),
+                        blurRadius: 4.h,
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18.h),
+                    child: Image.asset(
+                      'assets/images/profile_avatar.png',
+                      width: 36.h,
+                      height: 36.h,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.grey.shade300,
+                        width: 36.h,
+                        height: 36.h,
+                        child: Icon(
+                          Icons.person,
+                          color: Colors.white,
+                          size: 18.h,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
             ),
-            // 右边：菜单按钮
-            GestureDetector(
+          ),
+          // 右边：菜单按钮
+          Positioned(
+            right: 20.h,
+            top: 0,
+            bottom: 0,
+            child: GestureDetector(
               onTap: () {
                 // 菜单功能
               },
@@ -313,8 +270,8 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -379,18 +336,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
   Widget _buildCollectSection() {
     return Container(
       // margin: EdgeInsets.symmetric(horizontal: 20.h),
-      padding: EdgeInsets.all(24.h),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24.h),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x0A000000),
-            offset: Offset(0, 4.h),
-            blurRadius: 16.h,
-          ),
-        ],
-      ),
+      padding: EdgeInsets.only(top: 20.h, bottom: 20.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -402,16 +348,29 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                 'COLLECT',
                 style: TextStyle(
                   color: Colors.black,
-                  fontSize: 28.fSize,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 20.fSize,
+                  fontFamily: 'PressStart2P',
+                  fontWeight: FontWeight.normal,
                 ),
               ),
-              Text(
-                'Weekly Update',
-                style: TextStyle(
-                  color: Color(0xFF779600),
-                  fontSize: 14.fSize,
-                  fontWeight: FontWeight.w600,
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.h),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(45.h),
+                  border: Border.all(
+                    color: Color(0xFF4C4C4C),
+                    width: 1.h,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    'Weekly Update',
+                    style: TextStyle(
+                      color: Color(0xFF4C4C4C),
+                      fontSize: 14.fSize,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -419,46 +378,9 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
           SizedBox(height: 24.h),
 
           // 食物收集统计卡片
-          Container(
-            padding: EdgeInsets.all(20.h),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFF8FFF8),
-                  Color(0xFFF0F7F0),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20.h),
-              border: Border.all(
-                color: Color(0xFFE8F5E8),
-                width: 1.h,
-              ),
-            ),
+          SizedBox(
             child: Column(
               children: [
-                // 标题行
-                Row(
-                  children: [
-                    Icon(
-                      Icons.eco,
-                      color: Color(0xFF779600),
-                      size: 20.h,
-                    ),
-                    SizedBox(width: 8.h),
-                    Text(
-                      '本周食物种类收集',
-                      style: TextStyle(
-                        color: Color(0xFF2D3416),
-                        fontSize: 16.fSize,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 20.h),
-
                 // 三种食物统计
                 Row(
                   children: [
@@ -499,49 +421,6 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                     ),
                   ],
                 ),
-
-                SizedBox(height: 20.h),
-
-                // 进度总结
-                Container(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 16.h, vertical: 12.h),
-                  decoration: BoxDecoration(
-                    color: Color(0xFF779600).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12.h),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '总进度',
-                        style: TextStyle(
-                          color: Color(0xFF2D3416),
-                          fontSize: 14.fSize,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      SizedBox(width: 8.h),
-                      Text(
-                        '15/25',
-                        style: TextStyle(
-                          color: Color(0xFF779600),
-                          fontSize: 16.fSize,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(width: 4.h),
-                      Text(
-                        '(60%)',
-                        style: TextStyle(
-                          color: Color(0xFF779600),
-                          fontSize: 12.fSize,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
@@ -550,30 +429,23 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
 
           // Tips 文字
           Container(
-            padding: EdgeInsets.all(16.h),
+            padding: EdgeInsets.all(10.h),
             decoration: BoxDecoration(
-              color: Color(0xFFFFF8E1),
-              borderRadius: BorderRadius.circular(12.h),
+              borderRadius: BorderRadius.circular(45.h), // 90px的一半
+              color: Color(0x33000000), // rgba(0, 0, 0, 0.20)
             ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.lightbulb,
-                  color: Color(0xFFFFA726),
-                  size: 20.h,
+            child: Center(
+              child: Text(
+                'Tips: The more diverse types of food, more comprehensive nutrition.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFF707070),
+                  fontSize: 17.fSize,
+                  fontWeight: FontWeight.w400,
+                  height: 22.0 / 17.0, // line-height 22px / font-size 17px
+                  letterSpacing: -0.08,
                 ),
-                SizedBox(width: 12.h),
-                Expanded(
-                  child: Text(
-                    '建议：多样化饮食可以获得更全面的营养，尽量每周达到推荐的食物种类数量。',
-                    style: TextStyle(
-                      color: Color(0xFF5D4037),
-                      fontSize: 13.fSize,
-                      height: 1.4,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ],
@@ -581,7 +453,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
     );
   }
 
-  // 食物收集卡片 - 像素风格
+  // 食物收集卡片 - 黑色像素风格
   Widget _buildFoodCollectCard({
     required String icon,
     required String name,
@@ -590,107 +462,95 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
     required Color color,
     required Color bgColor,
   }) {
-    final progress = current / target;
+    String displayName;
+    String imagePath;
+
+    // 根据名称设置显示名称和图片路径
+    switch (name) {
+      case '蔬菜':
+        displayName = 'Vegetables';
+        imagePath = 'assets/images/cai.png';
+        break;
+      case '主食':
+        displayName = 'High-Carb';
+        imagePath = 'assets/images/fan.png';
+        break;
+      case '肉食':
+        displayName = 'High-Protein';
+        imagePath = 'assets/images/rou.png';
+        break;
+      default:
+        displayName = name;
+        imagePath = 'assets/images/cai.png';
+    }
 
     return Container(
-      padding: EdgeInsets.all(12.h),
+      width: 113,
+      height: 96,
       decoration: BoxDecoration(
-        color: bgColor,
-        border: Border.all(
-          color: color,
-          width: 3.h,
-        ),
+        color: Color(0xFF000000),
+        borderRadius: BorderRadius.circular(26),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            offset: Offset(4.h, 4.h),
-            blurRadius: 0,
-          ),
-          BoxShadow(
-            color: Colors.white.withOpacity(0.8),
-            offset: Offset(-2.h, -2.h),
-            blurRadius: 0,
+            color: Color(0x1A8C8C8C), // rgba(140, 140, 140, 0.10)
+            offset: Offset(6, 6),
+            blurRadius: 15,
+            spreadRadius: -3,
           ),
         ],
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // 像素风格图标容器
-          Container(
-            width: 40.h,
-            height: 40.h,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
-              border: Border.all(color: color, width: 2.h),
-            ),
-            child: Center(
-              child: Text(
-                icon,
-                style: TextStyle(fontSize: 24.h),
-              ),
-            ),
-          ),
-          SizedBox(height: 8.h),
+          // 第一行：英文名称
+          // Text(
+          //   displayName,
+          //   style: TextStyle(
+          //     color: Colors.white,
+          //     fontSize: 8,
+          //     fontFamily: 'PressStart2P',
+          //   ),
+          // ),
+          // SizedBox(height: 8),
 
-          // 像素风格食物名称
-          Text(
-            name.toUpperCase(),
-            style: TextStyle(
-              color: Colors.black87,
-              fontSize: 10.fSize,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.0,
-            ),
-          ),
-          SizedBox(height: 8.h),
-
-          // 像素风格进度条
-          Container(
-            height: 8.h,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              border: Border.all(color: Colors.black87, width: 1.h),
-            ),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: progress.clamp(0.0, 1.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: color,
-                  border: Border.all(color: Colors.black, width: 0.5.h),
+          // 第二行：图片
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: Image.asset(
+              imagePath,
+              width: 40,
+              height: 40,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => Container(
+                width: 40,
+                height: 40,
+                color: Colors.grey.shade600,
+                child: Icon(
+                  Icons.error_outline,
+                  color: Colors.white,
+                  size: 16,
                 ),
               ),
             ),
           ),
-          SizedBox(height: 6.h),
+          SizedBox(height: 8),
 
-          // 像素风格数字
-          Text(
-            '$current/$target',
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 10.fSize,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.5,
-            ),
-          ),
-
-          SizedBox(height: 4.h),
-
-          // 像素风格百分比
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 6.h, vertical: 2.h),
-            decoration: BoxDecoration(
-              color: color,
-              border: Border.all(color: Colors.black, width: 1.h),
-            ),
-            child: Text(
-              '${(progress * 100).toInt()}%',
+          // 第三行：分数【0/9】
+          RichText(
+            text: TextSpan(
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 8.fSize,
-                fontWeight: FontWeight.w900,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
+              children: [
+                TextSpan(
+                  text: '$current ',
+                  style: TextStyle(color: Color(0xFFC8FD00)),
+                ),
+                TextSpan(text: '/ $target'),
+              ],
             ),
           ),
         ],
@@ -709,8 +569,9 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
             'RECOMMEND',
             style: TextStyle(
               color: Colors.black,
-              fontSize: 24.fSize,
-              fontWeight: FontWeight.bold,
+              fontSize: 20.fSize,
+              fontFamily: 'PressStart2P',
+              fontWeight: FontWeight.normal,
             ),
           ),
           SizedBox(height: 16.h),
