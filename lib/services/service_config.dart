@@ -186,6 +186,8 @@ class ApiConfig {
   );
   //获取图像识别结果（会耗费很多时间）
   static const aiChart = '$apiVersion/chat';
+  //获取图像识别结果（会耗费很多时间）
+  static const aiChartWithFile = '$apiVersion/chat/with-file';
   //整餐切换
   static const replaceFoods = ApiEndpoint(
     '$apiVersion/users/{user_id}/replace/foods',

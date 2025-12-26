@@ -1,4 +1,4 @@
-import 'dart:math';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import '../../core/app_export.dart';
@@ -36,8 +36,8 @@ class _RingPainter extends CustomPainter {
 
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
-      -pi / 2,
-      2 * pi,
+      -math.pi / 2,
+      2 * math.pi,
       false,
       backgroundPaint,
     );
@@ -49,8 +49,8 @@ class _RingPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    final startAngle = -pi / 2;
-    final sweepAngle = -pi * 2 * value;
+    final startAngle = -math.pi / 2;
+    final sweepAngle = -math.pi * 2 * value;
 
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
@@ -75,6 +75,8 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
   late Animation<double> _ringAnimation;
   String _selectedMealType = 'BREAKFAST';
   final List<String> _mealTypes = ['BREAKFAST', 'LUNCH', 'DINNER', 'OTHER'];
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearchVisible = false;
 
   @override
   void initState() {
@@ -107,6 +109,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
     _tabController.dispose();
     _animationController.dispose();
     _ringAnimationController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -462,33 +465,28 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
     required Color color,
     required Color bgColor,
   }) {
-    String displayName;
     String imagePath;
 
     // 根据名称设置显示名称和图片路径
     switch (name) {
       case '蔬菜':
-        displayName = 'Vegetables';
-        imagePath = 'assets/images/cai.png';
+        imagePath = 'assets/images/cai_unlock.png';
         break;
       case '主食':
-        displayName = 'High-Carb';
-        imagePath = 'assets/images/fan.png';
+        imagePath = 'assets/images/fan_unlock.png';
         break;
       case '肉食':
-        displayName = 'High-Protein';
-        imagePath = 'assets/images/rou.png';
+        imagePath = 'assets/images/rou_unlock.png';
         break;
       default:
-        displayName = name;
-        imagePath = 'assets/images/cai.png';
+        imagePath = 'assets/images/cai_unlock.png';
     }
 
     return Container(
       width: 113,
       height: 96,
       decoration: BoxDecoration(
-        color: Color(0xFF000000),
+        color: Colors.black,
         borderRadius: BorderRadius.circular(26),
         boxShadow: [
           BoxShadow(
@@ -499,58 +497,58 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
           ),
         ],
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Stack(
         children: [
-          // 第一行：英文名称
-          // Text(
-          //   displayName,
-          //   style: TextStyle(
-          //     color: Colors.white,
-          //     fontSize: 8,
-          //     fontFamily: 'PressStart2P',
-          //   ),
-          // ),
-          // SizedBox(height: 8),
-
-          // 第二行：图片
-          SizedBox(
-            width: 40,
-            height: 40,
-            child: Image.asset(
-              imagePath,
-              width: 40,
-              height: 40,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => Container(
-                width: 40,
-                height: 40,
-                color: Colors.grey.shade600,
-                child: Icon(
-                  Icons.error_outline,
-                  color: Colors.white,
-                  size: 16,
+          // 整个卡片的背景图片
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(26),
+              child: Image.asset(
+                imagePath,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: Colors.grey.shade600,
+                  child: Icon(
+                    Icons.error_outline,
+                    color: Colors.white,
+                    size: 40,
+                  ),
                 ),
               ),
             ),
           ),
-          SizedBox(height: 8),
-
-          // 第三行：分数【0/9】
-          RichText(
-            text: TextSpan(
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-              children: [
-                TextSpan(
-                  text: '$current ',
-                  style: TextStyle(color: Color(0xFFC8FD00)),
+          // 底部半透明背景，用于显示分数
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              height: 35, // 底部分数区域高度
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(26),
+                  bottomRight: Radius.circular(26),
                 ),
-                TextSpan(text: '/ $target'),
-              ],
+                color: Colors.black.withOpacity(0.7), // 半透明黑色背景
+              ),
+              child: Center(
+                child: RichText(
+                  text: TextSpan(
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: '$current ',
+                        style: TextStyle(color: Color(0xFFC8FD00)),
+                      ),
+                      TextSpan(text: '/ $target'),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -560,8 +558,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
 
   // RECOMMEND 推荐区域
   Widget _buildRecommendSection() {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20.h),
+    return SizedBox(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -589,32 +586,29 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
 
   // 餐食类型选择器
   Widget _buildMealTypeSelector() {
-    return Container(
-      height: 44.h,
-      decoration: BoxDecoration(
-        color: Color(0xFFF5F5F5),
-        borderRadius: BorderRadius.circular(22.h),
-      ),
+    return SizedBox(
+      height: 45.h,
       child: Row(
         children: _mealTypes.map((mealType) {
           final isSelected = mealType == _selectedMealType;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _selectedMealType = mealType),
-              child: Container(
-                margin: EdgeInsets.all(4.h),
-                decoration: BoxDecoration(
-                  color: isSelected ? Colors.black : Colors.transparent,
-                  borderRadius: BorderRadius.circular(18.h),
-                ),
-                child: Center(
-                  child: Text(
-                    mealType,
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Color(0xFF666666),
-                      fontSize: 12.fSize,
-                      fontWeight: FontWeight.w500,
-                    ),
+          return GestureDetector(
+            onTap: () => setState(() => _selectedMealType = mealType),
+            child: Container(
+              margin: EdgeInsets.all(4.h),
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(90),
+                border: isSelected
+                    ? Border.all(color: Color(0xFF000000), width: 1)
+                    : Border.all(color: Colors.transparent, width: 1),
+              ),
+              child: Center(
+                child: Text(
+                  mealType,
+                  style: TextStyle(
+                    color: isSelected ? Colors.black : Color(0xFFA9A9A9),
+                    fontSize: 14.fSize,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ),
@@ -627,166 +621,356 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
 
   // 推荐卡片
   Widget _buildRecommendCard() {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(20.h),
-        boxShadow: [
-          BoxShadow(
-              color: Color(0x33000000),
-              offset: Offset(0, 4.h),
-              blurRadius: 12.h),
-        ],
-      ),
-      padding: EdgeInsets.all(20.h),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 中央分格餐盘（圆形）和评分 badge
-          SizedBox(height: 8.h),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              // 根据可用宽度动态计算圆盘直径，保持在一个合理的最小/最大范围内
-              final maxWidth = constraints.maxWidth.isFinite
-                  ? constraints.maxWidth
-                  : MediaQuery.of(context).size.width;
-              final plateDiameter = min(220.h, max(120.h, maxWidth * 0.45));
-              final badgeSize = (plateDiameter * 0.27).clamp(32.h, 56.h);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 获取可用宽度，确保是正方形
+        final maxWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.of(context).size.width - 40; // 减去左右padding
 
-              return Center(
-                child: SizedBox(
-                  width: plateDiameter,
-                  height: plateDiameter,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Container(
-                        width: plateDiameter,
-                        height: plateDiameter,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.transparent,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.12),
-                              blurRadius: 12.h,
-                              offset: Offset(0, 6.h),
-                            ),
-                          ],
-                        ),
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/images/figma/plate_jimeng.png',
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
+        final cardSize = maxWidth;
+
+        return Container(
+          width: cardSize,
+          height: cardSize,
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(20.h),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0x33000000),
+                offset: Offset(0, 4.h),
+                blurRadius: 12.h,
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              // 上部分内容（占90.h高度）
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: cardSize - 90.h,
+                child: Stack(
+                  children: [
+                    // 中央分格餐盘（圆形）
+                    Center(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final plateDiameter = math.min(
+                                  constraints.maxWidth * 0.6,
+                                  constraints.maxHeight * 0.8) -
+                              20; // 缩小5像素
+
+                          return SizedBox(
+                            width: plateDiameter,
+                            height: plateDiameter,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
                                 Container(
-                              color: Color(0xFF454A30),
-                              child: Icon(
-                                Icons.restaurant,
-                                color: Colors.white,
-                                size: 40.h,
-                              ),
+                                  width: plateDiameter,
+                                  height: plateDiameter,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.transparent,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.12),
+                                        blurRadius: 12.h,
+                                        offset: Offset(0, 6.h),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ClipOval(
+                                    child: Image.asset(
+                                      'assets/images/plate.png',
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              Container(
+                                        color: Color(0xFF454A30),
+                                        child: Icon(
+                                          Icons.restaurant,
+                                          color: Colors.white,
+                                          size: 40.h,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ),
+                          );
+                        },
                       ),
-                      Positioned(
-                        right: -(badgeSize / 2) + 8.h,
-                        top: -(badgeSize / 2) + 8.h,
-                        child: Container(
-                          width: badgeSize,
-                          height: badgeSize,
-                          decoration: BoxDecoration(
-                            color: Color(0xFFC8FD00),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.12),
-                                blurRadius: 6.h,
-                                offset: Offset(0, 2.h),
-                              ),
-                            ],
-                          ),
-                          child: Center(
-                            child: Text(
-                              '85',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize:
-                                    (badgeSize * 0.4).clamp(12.fSize, 20.fSize),
-                                fontWeight: FontWeight.bold,
+                    ),
+                    // 食材类型标签和引导线（在整个上半部分区域）
+                    _buildFoodTypeLabels(cardSize),
+                  ],
+                ),
+              ),
+
+              // 下部分内容（90.h高度）
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 90.h,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20.h),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // 左侧 Collect 按钮
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 40.h,
+                            height: 40.h,
+                            child: Image.asset(
+                              'assets/images/collect.png',
+                              width: 40.h,
+                              height: 40.h,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                width: 40.h,
+                                height: 40.h,
+                                color: Colors.grey.shade600,
+                                child: Icon(
+                                  Icons.collections,
+                                  color: Colors.white,
+                                  size: 20.h,
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                          SizedBox(height: 4.h),
+                          Text(
+                            'Collect',
+                            style: TextStyle(
+                              color: Color(0xFF908070),
+                              fontSize: 14.fSize,
+                              fontWeight: FontWeight.w400,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                      // 右侧 Change 按钮
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 40.h,
+                            height: 40.h,
+                            child: Image.asset(
+                              'assets/images/change.png',
+                              width: 40.h,
+                              height: 40.h,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                width: 40.h,
+                                height: 40.h,
+                                color: Colors.grey.shade600,
+                                child: Icon(
+                                  Icons.refresh,
+                                  color: Colors.white,
+                                  size: 20.h,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 4.h),
+                          Text(
+                            'Change',
+                            style: TextStyle(
+                              color: Color(0xFF908070),
+                              fontSize: 14.fSize,
+                              fontWeight: FontWeight.w400,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-              );
-            },
-          ),
-          SizedBox(height: 16.h),
-          // 食物类别
-          _buildFoodCategory(
-              'High-Protein Foods', 'assets/images/figma/collect_meat.png'),
-          SizedBox(height: 12.h),
-          _buildFoodCategory(
-              'Vegetables', 'assets/images/figma/collect_veg.png'),
-          SizedBox(height: 12.h),
-          _buildFoodCategory(
-              'High-Carb Foods', 'assets/images/figma/collect_starch.png'),
+              ),
 
-          SizedBox(height: 16.h),
-
-          // 评分和操作按钮
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '85',
-                style: TextStyle(
-                  color: Color(0xFFC8FD00),
-                  fontSize: 48.fSize,
-                  fontWeight: FontWeight.bold,
+              // 分数【85】显示在左上角14:14位置
+              Positioned(
+                right: 14.h,
+                top: 14.h,
+                child: Container(
+                  width: 48.h,
+                  height: 48.h,
+                  decoration: BoxDecoration(
+                    color: Color(0xFFC8FD00),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.12),
+                        blurRadius: 6.h,
+                        offset: Offset(0, 2.h),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      '85',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 20.fSize,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-              Row(
-                children: [
-                  Container(
-                    width: 44.h,
-                    height: 44.h,
-                    decoration: BoxDecoration(
-                      color: Color(0xFF779600),
-                      borderRadius: BorderRadius.circular(22.h),
-                    ),
-                    child: Icon(
-                      Icons.favorite_border,
-                      color: Colors.white,
-                      size: 24.h,
-                    ),
-                  ),
-                  SizedBox(width: 12.h),
-                  Container(
-                    width: 44.h,
-                    height: 44.h,
-                    decoration: BoxDecoration(
-                      color: Color(0xFF454A30),
-                      borderRadius: BorderRadius.circular(22.h),
-                    ),
-                    child: Icon(
-                      Icons.refresh,
-                      color: Colors.white,
-                      size: 24.h,
-                    ),
-                  ),
-                ],
+
+              // 虚线分割线
+              Positioned(
+                left: 20.h,
+                right: 20.h,
+                top: cardSize - 90.h,
+                child: CustomPaint(
+                  size: Size(cardSize - 40.h, 1),
+                  painter: DashedLinePainter(),
+                ),
               ),
             ],
           ),
-        ],
-      ),
+        );
+      },
+    );
+  }
+
+  // 构建食材类型标签和引导线
+  Widget _buildFoodTypeLabels(double cardSize) {
+    final containerWidth = cardSize; // 使用卡片总宽度
+    final containerHeight = cardSize - 90.h; // 上半部分高度
+    final foodTypes = [
+      {
+        'name': 'Vegetables',
+        'textPosition': Offset(18.h, containerHeight * 0.3 - 50), // 向上移动5px
+      },
+      {
+        'name': 'High-Carb Foods',
+        'textPosition': Offset(18.h, containerHeight * 0.7 + 50), // 向下移动5px
+      },
+      {
+        'name': 'High-Protein Foods',
+        'textPosition': Offset(
+            containerWidth - 180.h, containerHeight * 0.7 + 50), // 向下移动5px
+      },
+    ];
+
+    return Stack(
+      children: foodTypes.map((foodType) {
+        final textPosition = foodType['textPosition'] as Offset;
+
+        // 根据食材类型决定对齐方式和位置
+        final isVegetables = foodType['name'] == 'Vegetables';
+        final isHighProtein = foodType['name'] == 'High-Protein Foods';
+        final textHeight = 18.fSize; // 文字高度
+        final iconSize = 24.h; // 图标大小
+
+        return Stack(
+          children: [
+            // 食材类型文字
+            Positioned(
+              left: isHighProtein
+                  ? null
+                  : textPosition.dx, // High-Protein Foods右对齐，其他左对齐
+              right: isHighProtein ? 18.h : null, // High-Protein Foods距离右边框18px
+              top: textPosition.dy,
+              child: Text(
+                foodType['name'] as String,
+                style: TextStyle(
+                  color: Color(0xFFDEC1A4),
+                  fontSize: 18.fSize,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: isHighProtein ? TextAlign.right : TextAlign.left,
+              ),
+            ),
+            // Change图标按钮
+            Positioned(
+              left: isHighProtein
+                  ? null
+                  : textPosition.dx, // High-Protein Foods右对齐，其他左对齐
+              right: isHighProtein ? 18.h : null, // High-Protein Foods距离右边框18px
+              top: isVegetables
+                  ? textPosition.dy + textHeight + 4.h // Vegetables图标在文字下方
+                  : textPosition.dy - iconSize - 4.h, // 其他图标在文字上方
+              child: GestureDetector(
+                onTap: () {
+                  // 更换食材类型功能
+                },
+                child: SizedBox(
+                  width: 24.h,
+                  height: 24.h,
+                  child: Image.asset(
+                    'assets/images/icon-change.png',
+                    width: 24.h,
+                    height: 24.h,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      width: 24.h,
+                      height: 24.h,
+                      color: Colors.grey.shade600,
+                      child: Icon(
+                        Icons.refresh,
+                        color: Colors.white,
+                        size: 12.h,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  // 紧凑版食物类别组件
+  Widget _buildCompactFoodCategory(String title, String imageAsset) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 24.h,
+          height: 24.h,
+          child: Image.asset(
+            imageAsset,
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: Color(0xFF454A30),
+              child: Icon(
+                Icons.restaurant,
+                color: Colors.white,
+                size: 12.h,
+              ),
+            ),
+          ),
+        ),
+        SizedBox(height: 4.h),
+        Text(
+          title.split(' ')[0], // 只显示第一个单词
+          style: TextStyle(
+            color: Color(0xFFA9A9A9),
+            fontSize: 10.fSize,
+            fontWeight: FontWeight.w400,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 
@@ -846,8 +1030,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
 
   // MY PLAN 我的计划区域
   Widget _buildMyPlanSection() {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20.h),
+    return SizedBox(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -855,26 +1038,136 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
             'MY PLAN',
             style: TextStyle(
               color: Colors.black,
+              fontFamily: 'PressStart2P',
               fontSize: 24.fSize,
               fontWeight: FontWeight.bold,
             ),
           ),
           SizedBox(height: 16.h),
 
-          // 2x3 网格
-          GridView.builder(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12.h,
-              mainAxisSpacing: 12.h,
-              childAspectRatio: 0.75,
+          // 2x3 网格包装在边框容器中
+          Container(
+            padding: EdgeInsets.all(20.h),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(33.h),
+              border: Border.all(
+                color: Color(0xFFFFFFFF),
+                width: 2.h,
+              ),
+              gradient: LinearGradient(
+                begin: Alignment(0.83, -0.55), // 131deg
+                colors: [
+                  Color(0xFFFFF9F6), // 16.08%
+                  Color(0xFFF2F5F6), // 83.14%
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0x26000000), // rgba(0, 0, 0, 0.15)
+                  offset: Offset(2, 2),
+                  blurRadius: 15,
+                  spreadRadius: -3,
+                ),
+              ],
             ),
-            itemCount: 6,
-            itemBuilder: (context, index) {
-              return _buildPlanCard(index);
-            },
+            child: Column(
+              children: [
+                // 搜索行
+                if (_isSearchVisible)
+                  Container(
+                    margin: EdgeInsets.only(bottom: 16.h),
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Search...',
+                        prefixIcon:
+                            Icon(Icons.search, color: Color(0xFF666666)),
+                        suffixIcon: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _isSearchVisible = false;
+                              _searchController.clear();
+                            });
+                          },
+                          child: Icon(Icons.close, color: Color(0xFF666666)),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20.h),
+                          borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20.h),
+                          borderSide: BorderSide(color: Color(0xFF4C4C4C)),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 16.h,
+                          vertical: 12.h,
+                        ),
+                      ),
+                      onChanged: (value) {
+                        setState(() {});
+                      },
+                    ),
+                  )
+                else
+                  Container(
+                    margin: EdgeInsets.only(bottom: 16.h),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        // 搜索放大镜按钮
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _isSearchVisible = true;
+                            });
+                          },
+                          child: Container(
+                            width: 40.h,
+                            height: 40.h,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20.h),
+                              border: Border.all(
+                                color: Color(0xFFE0E0E0),
+                                width: 1.h,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Color(0x0D000000),
+                                  offset: Offset(0, 2.h),
+                                  blurRadius: 4.h,
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.search,
+                              color: Color(0xFF666666),
+                              size: 20.h,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                // 网格内容
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12.h,
+                    mainAxisSpacing: 12.h,
+                    childAspectRatio: 0.75,
+                  ),
+                  itemCount: _getFilteredPlans().length,
+                  itemBuilder: (context, index) {
+                    return _buildPlanCard(
+                        _getFilteredPlans()[index]['originalIndex']);
+                  },
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -941,7 +1234,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
         children: [
           // 图片区域
           Expanded(
-            flex: 3,
+            flex: 4,
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
@@ -997,15 +1290,15 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: 2.h),
-                  Text(
-                    'by ${plan['user']}',
-                    style: TextStyle(
-                      color: Color(0xFF666666),
-                      fontSize: 10.fSize,
-                    ),
-                  ),
-                  Spacer(),
+                  SizedBox(height: 4.h),
+                  // Text(
+                  //   'by ${plan['user']}',
+                  //   style: TextStyle(
+                  //     color: Color(0xFF666666),
+                  //     fontSize: 10.fSize,
+                  //   ),
+                  // ),
+                  // Spacer(),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -1042,6 +1335,63 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
     );
   }
 
+  // 获取筛选后的计划列表
+  List<Map<String, dynamic>> _getFilteredPlans() {
+    final allPlans = [
+      {
+        'name': 'Paleo diet',
+        'user': 'Alice',
+        'score': 'B+',
+        'image': 'assets/images/figma/plate_jimeng.png',
+        'originalIndex': 0
+      },
+      {
+        'name': 'Keto diet',
+        'user': 'Bob',
+        'score': 'A-',
+        'image': 'assets/images/figma/plan_dish1.png',
+        'originalIndex': 1
+      },
+      {
+        'name': 'Vegan diet',
+        'user': 'Carol',
+        'score': 'C+',
+        'image': 'assets/images/figma/plate_jimeng.png',
+        'originalIndex': 2
+      },
+      {
+        'name': 'Mediterranean',
+        'user': 'David',
+        'score': 'A',
+        'image': 'assets/images/figma/plan_dish1.png',
+        'originalIndex': 3
+      },
+      {
+        'name': 'Low carb',
+        'user': 'Eve',
+        'score': 'B',
+        'image': 'assets/images/figma/plate_jimeng.png',
+        'originalIndex': 4
+      },
+      {
+        'name': 'High protein',
+        'user': 'Frank',
+        'score': 'A+',
+        'image': 'assets/images/figma/plan_dish1.png',
+        'originalIndex': 5
+      },
+    ];
+
+    if (_searchController.text.isEmpty) {
+      return allPlans;
+    }
+
+    final searchTerm = _searchController.text.toLowerCase();
+    return allPlans.where((plan) {
+      return plan['name'].toString().toLowerCase().contains(searchTerm);
+    }).toList();
+  }
+
   // 获取等级颜色
   Color _getGradeColor(String grade) {
     switch (grade) {
@@ -1061,4 +1411,72 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
         return Color(0xFF666666);
     }
   }
+}
+
+// 虚线引导线绘制器
+class DashedLineGuidePainter extends CustomPainter {
+  final Offset start;
+  final Offset end;
+
+  DashedLineGuidePainter({
+    required this.start,
+    required this.end,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Color(0xFFDEC1A4)
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+
+    final dashWidth = 3.0;
+    final dashSpace = 3.0;
+
+    final distance = (end - start).distance;
+    final direction = (end - start) / distance;
+
+    double currentLength = 0.0;
+
+    while (currentLength < distance) {
+      final segmentLength = math.min(dashWidth, distance - currentLength);
+      final segmentStart = start + direction * currentLength;
+      final segmentEnd = start + direction * (currentLength + segmentLength);
+
+      canvas.drawLine(segmentStart, segmentEnd, paint);
+      currentLength += dashWidth + dashSpace;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// 虚线绘制器
+class DashedLinePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Color(0xFF666666)
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+
+    final dashWidth = 5.0;
+    final dashSpace = 5.0;
+    double startX = 0;
+    final endX = size.width;
+
+    while (startX < endX) {
+      canvas.drawLine(
+        Offset(startX, size.height / 2),
+        Offset(startX + dashWidth < endX ? startX + dashWidth : endX,
+            size.height / 2),
+        paint,
+      );
+      startX += dashWidth + dashSpace;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
