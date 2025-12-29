@@ -372,6 +372,8 @@ class _AIChatPageState extends State<AIChatPage>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // 文件预览区域
+                if (_selectedFiles.isNotEmpty) _buildFilePreview(),
                 if (_showBottomPanel) _buildBottomPanel(),
                 _buildInputField(),
               ],
@@ -619,23 +621,31 @@ class _AIChatPageState extends State<AIChatPage>
                         top: 0,
                         right: 0,
                         child: Container(
-                          width: 16,
-                          height: 16,
+                          width: 18,
+                          height: 18,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.red,
+                            color: Color(0xFF00FF41),
                             border: Border.all(
-                              color: Colors.white,
+                              color: Colors.black,
                               width: 2,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color(0xFF00FF41).withOpacity(0.6),
+                                blurRadius: 4,
+                                spreadRadius: 1,
+                              ),
+                            ],
                           ),
                           child: Center(
                             child: Text(
-                              '${_selectedFiles.length}',
+                              _selectedFiles.length > 9 ? '9+' : '${_selectedFiles.length}',
                               style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                                fontSize: 8,
+                                fontWeight: FontWeight.w900,
+                                fontFamily: 'PressStart2P',
                               ),
                             ),
                           ),
@@ -656,7 +666,7 @@ class _AIChatPageState extends State<AIChatPage>
     return Container(
       margin: EdgeInsets.only(left: 20, right: 20, bottom: 10),
       child: Container(
-        height: 150,
+        height: 180,
         decoration: BoxDecoration(
           color: Color(0xFF1a1a1a),
           borderRadius: BorderRadius.circular(12),
@@ -678,102 +688,176 @@ class _AIChatPageState extends State<AIChatPage>
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(25),
-          child: Row(
+          padding: const EdgeInsets.all(20),
+          child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              // 拍照选项
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _showBottomPanel = false;
-                  });
-                  _takePhoto();
-                },
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Color(0xFF00FF41).withOpacity(0.5),
-                          width: 1,
+              // 第一行：图片相关
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // 拍照选项
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _showBottomPanel = false;
+                      });
+                      _takePhoto();
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Color(0xFF00FF41).withOpacity(0.5),
+                              width: 1,
+                            ),
+                            gradient: LinearGradient(
+                              colors: [
+                                Color(0xFF00FF41).withOpacity(0.1),
+                                Colors.transparent,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.camera_alt,
+                            color: Color(0xFF00FF41),
+                            size: 24,
+                          ),
                         ),
-                        gradient: LinearGradient(
-                          colors: [
-                            Color(0xFF00FF41).withOpacity(0.1),
-                            Colors.transparent,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                        const SizedBox(height: 8),
+                        Text(
+                          '拍照',
+                          style: TextStyle(
+                            color: Color(0xFF00FF41),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                      child: Icon(
-                        Icons.camera_alt,
-                        color: Color(0xFF00FF41),
-                        size: 28,
-                      ),
+                      ],
                     ),
-                    const SizedBox(height: 10),
-                    Text(
-                      '拍照',
-                      style: TextStyle(
-                        color: Color(0xFF00FF41),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  ),
+                  // 相册选项
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _showBottomPanel = false;
+                      });
+                      _selectFromGallery();
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Color(0xFF00FF41).withOpacity(0.5),
+                              width: 1,
+                            ),
+                            gradient: LinearGradient(
+                              colors: [
+                                Color(0xFF00FF41).withOpacity(0.1),
+                                Colors.transparent,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.photo_library,
+                            color: Color(0xFF00FF41),
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '相册',
+                          style: TextStyle(
+                            color: Color(0xFF00FF41),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  // 文档选项
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _showBottomPanel = false;
+                      });
+                      _selectDocuments();
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Color(0xFF00FF41).withOpacity(0.5),
+                              width: 1,
+                            ),
+                            gradient: LinearGradient(
+                              colors: [
+                                Color(0xFF00FF41).withOpacity(0.1),
+                                Colors.transparent,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.description,
+                            color: Color(0xFF00FF41),
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '文档',
+                          style: TextStyle(
+                            color: Color(0xFF00FF41),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              // 相册选项
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _showBottomPanel = false;
-                  });
-                  _selectFromGallery();
-                },
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Color(0xFF00FF41).withOpacity(0.5),
-                          width: 1,
-                        ),
-                        gradient: LinearGradient(
-                          colors: [
-                            Color(0xFF00FF41).withOpacity(0.1),
-                            Colors.transparent,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.photo_library,
-                        color: Color(0xFF00FF41),
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      '相册',
-                      style: TextStyle(
-                        color: Color(0xFF00FF41),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+              // 第二行：提示信息
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Color(0xFF00FF41).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Color(0xFF00FF41).withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  '支持图片、音频、视频、文档等多种文件类型（单个文件最大10MB）',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF00FF41).withOpacity(0.8),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
               ),
             ],
@@ -787,15 +871,19 @@ class _AIChatPageState extends State<AIChatPage>
     final text = _textController.text.trim();
     if (text.isEmpty && _selectedFiles.isEmpty) return;
 
+    // 保存文件列表的副本，在清空之前使用
+    final filesToSend = List<File>.from(_selectedFiles);
+    
     setState(() {
       _messages.add(Message(
         text: text,
         isUser: true,
-        files: List.from(_selectedFiles), // 复制文件列表
+        files: filesToSend, // 使用保存的文件列表副本
       ));
       _textController.clear();
-      _clearSelectedFiles(); // 清空文件选择
+      _selectedFiles.clear(); // 清空原始文件列表
     });
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -806,7 +894,7 @@ class _AIChatPageState extends State<AIChatPage>
       }
     });
 
-    _getAIResponseWithFiles(text, List<File>.from(_selectedFiles));
+    _getAIResponseWithFiles(text, filesToSend); // 使用保存的文件列表
   }
 
   String _currentAiResponse = '';
@@ -839,55 +927,72 @@ class _AIChatPageState extends State<AIChatPage>
       // 调用新的带文件流式接口
       final client = StreamApiClient();
 
-      // 构建文件数据
-      final fileDataList = files.map((file) {
-        final fileName = file.path.split('/').last;
-        final bytes = file.readAsBytesSync();
-        final base64 = base64Encode(bytes);
-        
-        // 根据文件扩展名确定类型和MIME
-        String fileType = 'file';
-        String mimeType = 'application/octet-stream';
-        final extension = fileName.toLowerCase().split('.').last;
-        
-        switch (extension) {
-          case 'jpg':
-          case 'jpeg':
-            fileType = 'image';
-            mimeType = 'image/jpeg';
-            break;
-          case 'png':
-            fileType = 'image';
-            mimeType = 'image/png';
-            break;
-          case 'gif':
-            fileType = 'image';
-            mimeType = 'image/gif';
-            break;
-          case 'pdf':
-            fileType = 'document';
-            mimeType = 'application/pdf';
-            break;
-          case 'doc':
-          case 'docx':
-            fileType = 'document';
-            mimeType = 'application/msword';
-            break;
-          case 'txt':
-            fileType = 'document';
-            mimeType = 'text/plain';
-            break;
-        }
-        
-        return {
-          'name': fileName,
-          'size': bytes.length,
-          'type': fileType,
-          'mime_type': mimeType,
-          'data': 'data:$mimeType;base64,$base64',
-        };
-      }).toList();
+      // 如果有文件，构建文件数据
+      List<Map<String, dynamic>> fileDataList = [];
+      if (files.isNotEmpty) {
+        fileDataList = files.map((file) {
+          final fileName = file.path.split('/').last;
+          final bytes = file.readAsBytesSync();
+          final base64 = base64Encode(bytes);
+          
+          // 根据文件扩展名确定类型和MIME
+          String fileType = 'file';
+          String mimeType = 'application/octet-stream';
+          final extension = fileName.toLowerCase().split('.').last;
+          
+          switch (extension) {
+            case 'jpg':
+            case 'jpeg':
+              fileType = 'image';
+              mimeType = 'image/jpeg';
+              break;
+            case 'png':
+              fileType = 'image';
+              mimeType = 'image/png';
+              break;
+            case 'gif':
+              fileType = 'image';
+              mimeType = 'image/gif';
+              break;
+            case 'pdf':
+              fileType = 'document';
+              mimeType = 'application/pdf';
+              break;
+            case 'doc':
+            case 'docx':
+              fileType = 'document';
+              mimeType = 'application/msword';
+              break;
+            case 'txt':
+              fileType = 'document';
+              mimeType = 'text/plain';
+              break;
+            case 'mp3':
+            case 'wav':
+            case 'ogg':
+              fileType = 'audio';
+              mimeType = 'audio/mpeg';
+              break;
+            case 'mp4':
+            case 'avi':
+            case 'mov':
+              fileType = 'video';
+              mimeType = 'video/mp4';
+              break;
+          }
+          
+          return {
+            'name': fileName,
+            'size': bytes.length,
+            'type': fileType,
+            'mime_type': mimeType,
+            'data': 'data:$mimeType;base64,$base64',
+          };
+        }).toList();
+      }
 
+      print('Making request with ${fileDataList.length} files');
+      
       final stream = client.streamPostWithFiles(
         messages: messages,
         fileDataList: fileDataList,
@@ -897,15 +1002,15 @@ class _AIChatPageState extends State<AIChatPage>
         print('Received chunk: $chunk');
         if (mounted) {
           setState(() {
-            // 自动添加换行符（如果chunk以标点结尾）
-            _currentAiResponse += '$chunk\n';
+            // 累积响应内容，不自动添加换行符
+            _currentAiResponse += chunk;
           });
           _startTypingEffect();
         }
       }
     } catch (e) {
       print('AI response error: $e');
-      if (mounted) {
+      if (mounted && _messages.isNotEmpty) {
         setState(() {
           _messages.last = Message(
             text: '获取AI回复失败，请重试：$e',
@@ -1106,6 +1211,144 @@ class _AIChatPageState extends State<AIChatPage>
         );
       }
     }
+  }
+
+  // 选择文档
+  Future<void> _selectDocuments() async {
+    try {
+      // 由于Flutter没有内置的文档选择器，这里提供基础实现
+      // 在实际项目中，你可能需要使用file_picker等包
+      final ImagePicker picker = ImagePicker();
+      final XFile? videoFile = await picker.pickVideo(source: ImageSource.gallery);
+
+      if (videoFile != null) {
+        final File file = File(videoFile.path);
+        
+        // 检查文件大小（10MB限制）
+        final fileSize = await file.length();
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        
+        if (fileSize > maxSize) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('文件大小超过10MB限制，请选择较小的文件'),
+                backgroundColor: Colors.red.withOpacity(0.8),
+              ),
+            );
+          }
+          return;
+        }
+        
+        setState(() {
+          _selectedFiles.add(file);
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('已选择视频文件：${file.path.split('/').last}'),
+              backgroundColor: Colors.green.withOpacity(0.8),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('选择文档失败: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('选择文档失败: $e'),
+            backgroundColor: Colors.red.withOpacity(0.8),
+          ),
+        );
+      }
+    }
+  }
+
+  // 构建文件预览区域
+  Widget _buildFilePreview() {
+    return Container(
+      margin: EdgeInsets.fromLTRB(20, 10, 20, 0),
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Color(0xFF1a1a1a),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Color(0xFF00FF41).withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '已选择文件 (${_selectedFiles.length})',
+                style: TextStyle(
+                  color: Color(0xFF00FF41),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              GestureDetector(
+                onTap: _clearSelectedFiles,
+                child: Icon(
+                  Icons.close,
+                  color: Colors.red.withOpacity(0.8),
+                  size: 16,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          // 文件列表
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _selectedFiles.map((file) {
+              final fileName = file.path.split('/').last;
+              final isImage = fileName.toLowerCase().endsWith('.jpg') || 
+                           fileName.toLowerCase().endsWith('.jpeg') || 
+                           fileName.toLowerCase().endsWith('.png');
+              
+              return Container(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Color(0xFF00FF41).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: Color(0xFF00FF41).withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isImage ? Icons.image : Icons.description,
+                      color: Color(0xFF00FF41),
+                      size: 14,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      fileName.length > 15 ? '${fileName.substring(0, 12)}...' : fileName,
+                      style: TextStyle(
+                        color: Color(0xFF00FF41),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
   }
 
   // 清空选中的文件

@@ -9,8 +9,8 @@ class ApiEndpoint {
 
 class ApiConfig {
   // static const String baseUrl = "https://www.maididi.com";
-  // static const String baseUrl = "http://127.0.0.1:8000";
-  static const String baseUrl = "http://118.195.149.172:8000";
+  static const String baseUrl = "http://127.0.0.1:8000";
+  // static const String baseUrl = "http://118.195.149.172:8000";
 
   static const String apiVersion = "/api/v1";
   static const String mqttVersion = "/api/mqtt";
@@ -211,5 +211,24 @@ class ApiConfig {
   static const updateUserProfile = ApiEndpoint(
     '$apiVersion/users/{user_id}/profile',
     HttpMethod.put,
+  );
+
+  // 设备相关接口
+  // 绑定设备
+  static const bindDevice = ApiEndpoint(
+    '$apiVersion/plates/bind',
+    HttpMethod.post,
+  );
+
+  // 获取用户绑定的设备列表
+  static const getUserDevices = ApiEndpoint(
+    '$apiVersion/plates/user/my-devices',
+    HttpMethod.get,
+  );
+
+  // 解绑设备
+  static const unbindDevice = ApiEndpoint(
+    '$apiVersion/plates/unbind',
+    HttpMethod.post,
   );
 }

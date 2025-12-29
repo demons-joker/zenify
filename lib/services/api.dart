@@ -98,15 +98,23 @@ class UserInfo {
   final int id;
   final String name;
   final String email;
+  final String phone;
   final String fullName;
+  final String source;
+  final DateTime createdAt;
   final bool isActive;
+  final List<DeviceInfo> devices;
 
   UserInfo({
     required this.id,
     required this.name,
     required this.email,
+    required this.phone,
     required this.fullName,
+    required this.source,
+    required this.createdAt,
     required this.isActive,
+    required this.devices,
   });
 
   factory UserInfo.fromJson(Map<String, dynamic> json) {
@@ -114,8 +122,52 @@ class UserInfo {
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
       email: json['email'] ?? '',
+      phone: json['phone'] ?? '',
       fullName: json['full_name'] ?? json['fullName'] ?? '',
+      source: json['source'] ?? '',
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
       isActive: json['is_active'] ?? json['isActive'] ?? false,
+      devices: json['devices'] != null
+          ? (json['devices'] as List)
+              .map<DeviceInfo>((device) =>
+                  DeviceInfo.fromJson(device as Map<String, dynamic>))
+              .toList()
+          : [],
+    );
+  }
+}
+
+class DeviceInfo {
+  final int id;
+  final String deviceId;
+  final DateTime? lastLoginAt;
+  final bool isOnline;
+  final String name;
+  final DateTime createdAt;
+
+  DeviceInfo({
+    required this.id,
+    required this.deviceId,
+    this.lastLoginAt,
+    required this.isOnline,
+    required this.name,
+    required this.createdAt,
+  });
+
+  factory DeviceInfo.fromJson(Map<String, dynamic> json) {
+    return DeviceInfo(
+      id: json['id'] ?? 0,
+      deviceId: json['device_id'] ?? '',
+      lastLoginAt: json['last_login_at'] != null
+          ? DateTime.parse(json['last_login_at'])
+          : null,
+      isOnline: json['is_online'] ?? false,
+      name: json['name'] ?? '未知设备',
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
     );
   }
 }
@@ -135,6 +187,7 @@ class Api {
   static Future<Map<String, String>> _getAuthHeaders() async {
     if (_cachedAuthHeaders != null) return _cachedAuthHeaders!;
     final token = await UserSession.token;
+    print('Token: $token');
     if (token != null) {
       _cachedAuthHeaders = {
         ..._defaultHeaders,
@@ -152,16 +205,18 @@ class Api {
     dynamic body,
     Map<String, dynamic>? queryParams,
     Map<String, dynamic>? pathParams,
-    Map<String, dynamic>? header,
+    Map<String, String>? header,
   }) async {
     try {
       final headers = await _getAuthHeaders();
+      final combinedHeaders = {...headers, ...?header};
+      print('请求头: $combinedHeaders');
       final response = await ApiService.request(
         endpoint,
         body: body,
         queryParams: queryParams,
         pathParams: pathParams,
-        headers: {...headers, ...?header},
+        headers: combinedHeaders,
       );
       // 如果需要，可以在这里统一处理响应数据
       return response;
@@ -406,6 +461,56 @@ class Api {
     } catch (e) {
       print('整餐切换失败: $e');
       throw Exception('整餐切换失败: $e');
+    }
+  }
+
+  // 设备相关API
+  // 绑定设备
+  static Future<dynamic> bindDevice(String deviceId) async {
+    print('绑定设备请求参数: {"device_id": "$deviceId"}');
+    try {
+      final response = await _handleRequest(
+        ApiConfig.bindDevice,
+        body: {'device_id': deviceId},
+      );
+      print('绑定设备成功: $response');
+      return response;
+    } catch (e) {
+      print('绑定设备失败: $e');
+      throw Exception('绑定设备失败: $e');
+    }
+  }
+
+  // 获取用户绑定的设备列表
+  static Future<List<dynamic>> getUserDevices() async {
+    try {
+      final response = await _handleRequest(
+        ApiConfig.getUserDevices,
+      );
+      print('获取用户设备列表成功: $response');
+      if (response is List) {
+        return response;
+      }
+      return [];
+    } catch (e) {
+      print('获取用户设备列表失败: $e');
+      throw Exception('获取用户设备列表失败: $e');
+    }
+  }
+
+  // 解绑设备
+  static Future<dynamic> unbindDevice(String deviceId) async {
+    print('解绑设备请求参数: device_id=$deviceId');
+    try {
+      final response = await _handleRequest(
+        ApiConfig.unbindDevice,
+        body: {'device_id': deviceId},
+      );
+      print('解绑设备成功: $response');
+      return response;
+    } catch (e) {
+      print('解绑设备失败: $e');
+      throw Exception('解绑设备失败: $e');
     }
   }
 }

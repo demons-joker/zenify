@@ -28,8 +28,10 @@ class ApiService {
 
       final request = http.Request(_methodToString(endpoint.method), uri)
         ..headers.addAll(_headers)
+        ..headers.addAll(headers ?? {})
         ..body = body != null ? jsonEncode(body) : ''
         ..followRedirects = true;
+      print('headers: ${request.headers}');
 
       final response = await _client
           .send(request)

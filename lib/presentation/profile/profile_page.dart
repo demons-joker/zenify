@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:zenify/services/api.dart';
 import 'package:zenify/services/user_session.dart';
 import 'package:zenify/routes/app_routes.dart';
+import 'package:zenify/presentation/qr_scanner/qr_scanner_page.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -43,6 +44,100 @@ class _ProfilePageState extends State<ProfilePage> {
           _isLoading = false;
           _errorMessage = '获取用户信息失败: ${e.toString()}';
         });
+      }
+    }
+  }
+
+  Future<void> _scanAndBindDevice() async {
+    try {
+      final result = await Navigator.push<String>(
+        context,
+        MaterialPageRoute(builder: (context) => QRScannerPage()),
+      );
+
+      if (result != null && result.isNotEmpty) {
+        _bindDevice(result);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('扫描失败: ${e.toString()}'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _bindDevice(String deviceId) async {
+    try {
+      await Api.bindDevice(deviceId);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('设备绑定成功'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        // 重新加载用户信息（包含设备信息）
+        _loadUserInfo();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('设备绑定失败: ${e.toString()}'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _unbindDevice(DeviceInfo device) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('确认解绑'),
+        content: Text('确定要解绑设备"${device.name}"吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('确定'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await Api.unbindDevice(device.deviceId);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('设备解绑成功'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          // 重新加载用户信息（包含设备信息）
+          _loadUserInfo();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('设备解绑失败: ${e.toString()}'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     }
   }
@@ -150,17 +245,167 @@ class _ProfilePageState extends State<ProfilePage> {
           _buildProfileHeader(),
           SizedBox(height: 32),
 
-          // 用户详细信息卡片
-          _buildUserInfoSection(),
+          // // 用户详细信息卡片
+          // _buildUserInfoSection(),
+          // SizedBox(height: 24),
+
+          // 设备管理部分
+          _buildDeviceSection(),
           SizedBox(height: 24),
 
-          // 操作按钮
+          // // 操作按钮
           // _buildActionButtons(),
         ],
       ),
     );
   }
- 
+
+  Widget _buildDeviceSection() {
+    final devices = _userInfo?.devices ?? [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '设备管理',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        SizedBox(height: 16),
+        if (devices.isEmpty)
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.devices,
+                  size: 48,
+                  color: Colors.grey[400],
+                ),
+                SizedBox(height: 12),
+                Text(
+                  '暂无绑定设备',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: Icon(Icons.qr_code_scanner),
+                    label: Text('扫描二维码绑定设备'),
+                    onPressed: _scanAndBindDevice,
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ...devices
+              .map((device) => Container(
+                    margin: EdgeInsets.only(bottom: 12),
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.green.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.devices,
+                          color: Colors.green,
+                          size: 24,
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                device.name,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                '设备ID: ${device.deviceId}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                '在线状态: ${device.isOnline ? "在线" : "离线"}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: device.isOnline
+                                      ? Colors.green
+                                      : Colors.grey[600],
+                                ),
+                              ),
+                              if (device.lastLoginAt != null) ...[
+                                SizedBox(height: 2),
+                                Text(
+                                  '最后登录: ${_formatDateTime(device.lastLoginAt!)}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.link_off, color: Colors.red),
+                          onPressed: () => _unbindDevice(device),
+                          tooltip: '解绑设备',
+                        ),
+                      ],
+                    ),
+                  ))
+              .toList(),
+        // if (devices.isNotEmpty)
+        //   Padding(
+        //     padding: EdgeInsets.only(top: 12),
+        //     child: SizedBox(
+        //       width: double.infinity,
+        //       child: OutlinedButton.icon(
+        //         icon: Icon(Icons.add),
+        //         label: Text('添加更多设备'),
+        //         onPressed: _scanAndBindDevice,
+        //         style: OutlinedButton.styleFrom(
+        //           padding: EdgeInsets.symmetric(vertical: 12),
+        //         ),
+        //       ),
+        //     ),
+        //   ),
+      ],
+    );
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
   Widget _buildProfileHeader() {
     return Column(
       children: [
@@ -217,9 +462,16 @@ class _ProfilePageState extends State<ProfilePage> {
         Divider(height: 1),
         _buildInfoItem('电子邮箱', _userInfo!.email),
         Divider(height: 1),
+        _buildInfoItem('手机号码', _userInfo!.phone),
+        Divider(height: 1),
         _buildInfoItem('全名', _userInfo!.fullName),
         Divider(height: 1),
-        // _buildInfoItem('账号状态', _userInfo!.isActive ? '已激活' : '未激活'),
+        _buildInfoItem('来源', _userInfo!.source),
+        Divider(height: 1),
+        _buildInfoItem('账号状态', _userInfo!.isActive ? '已激活' : '未激活'),
+        Divider(height: 1),
+        _buildInfoItem('注册时间', _formatDateTime(_userInfo!.createdAt)),
+        Divider(height: 1),
       ],
     );
   }
