@@ -136,7 +136,10 @@ class _CameraPageState extends State<CameraPage> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: Icon(Icons.arrow_back_ios_new, color: _isAnalyzing ? Colors.white.withOpacity(0.5) : Colors.white),
+            icon: Icon(Icons.arrow_back_ios_new,
+                color: _isAnalyzing
+                    ? Colors.white.withOpacity(0.5)
+                    : Colors.white),
             onPressed: _isAnalyzing ? null : () => Navigator.of(context).pop(),
           ),
         ),
@@ -233,7 +236,7 @@ class _CameraPageState extends State<CameraPage> {
                               'jsonDecode(result): ${jsonDecode(result)['image_url']}');
                           final data = await Api.getRecognize({
                             'user_id': await UserSession.userId,
-                            'plate_id': 1
+                            'plate_id': await UserSession.plateId
                           }, {
                             'image_url': jsonDecode(result)['image_url']
                           });

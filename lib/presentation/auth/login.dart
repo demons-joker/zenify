@@ -45,6 +45,7 @@ class _Login extends State<Login> {
             password: _passwordController.text,
           ),
         );
+        print('loginresponse: $response');
 
         // 保存登录响应数据
         await UserSession.saveLoginResponse(response);

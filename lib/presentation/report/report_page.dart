@@ -127,7 +127,7 @@ class _ReportPageState extends State<ReportPage> {
     });
     final Map<String, dynamic> params = {
       'user_id': await UserSession.userId,
-      'plate_id': 1,
+      'plate_id': await UserSession.plateId
     };
     print('mealRecordId: $mealRecordId');
     if (mealRecordId != null) {
@@ -218,147 +218,148 @@ class _ReportPageState extends State<ReportPage> {
                 ],
               ),
             )
-          :SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              //     '详细信息',
-              //     style: TextStyle(
-              //       fontSize: 18,
-              //       fontWeight: FontWeight.bold,
-              //     ),
-              //   ),
-              // ],
-              //   ),
-              // ),
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    //     '详细信息',
+                    //     style: TextStyle(
+                    //       fontSize: 18,
+                    //       fontWeight: FontWeight.bold,
+                    //     ),
+                    //   ),
+                    // ],
+                    //   ),
+                    // ),
 
-              // Tabs行
-              _buildTabs(),
+                    // Tabs行
+                    _buildTabs(),
 
-              const SizedBox(height: 30),
-              // 文案内容
-              _buildKcalCard(),
-              const SizedBox(height: 30),
-              // // 卡路里统计块
-              // _buildCalorieBlock(),
+                    const SizedBox(height: 30),
+                    // 文案内容
+                    _buildKcalCard(),
+                    const SizedBox(height: 30),
+                    // // 卡路里统计块
+                    // _buildCalorieBlock(),
 
-              // const SizedBox(height: 20),
+                    // const SizedBox(height: 20),
 
-              // 营养成分分析块
-              SizedBox(
-                height: 200,
-                child: PieChart(
-                  PieChartData(
-                    centerSpaceRadius: 0,
-                    sectionsSpace: 2, // 扇区间距（可选）
-                    startDegreeOffset: -90, // 从12点钟方向开始
-                    sections: nData.map<PieChartSectionData>((item) {
-                      print(
-                          'nDataitem: ${item.name} ${item.value} ${item.color}');
-                      final total =
-                          nData.fold(0.0, (sum, item) => sum + item.value);
-                      if (total == 0) {
-                        return PieChartSectionData(
-                          color: item.color,
-                          value: 0,
-                          showTitle: false,
-                          radius: 90,
-                        );
-                      }
-                      final percentage = double.parse(
-                          (item.value / total * 100).toStringAsFixed(2));
-                      print('percentage: $percentage');
-                      return PieChartSectionData(
-                        color: item.color,
-                        value: percentage,
-                        showTitle: false,
-                        radius: 90,
-                        titleStyle: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                    // 营养成分分析块
+                    SizedBox(
+                      height: 200,
+                      child: PieChart(
+                        PieChartData(
+                          centerSpaceRadius: 0,
+                          sectionsSpace: 2, // 扇区间距（可选）
+                          startDegreeOffset: -90, // 从12点钟方向开始
+                          sections: nData.map<PieChartSectionData>((item) {
+                            print(
+                                'nDataitem: ${item.name} ${item.value} ${item.color}');
+                            final total = nData.fold(
+                                0.0, (sum, item) => sum + item.value);
+                            if (total == 0) {
+                              return PieChartSectionData(
+                                color: item.color,
+                                value: 0,
+                                showTitle: false,
+                                radius: 90,
+                              );
+                            }
+                            final percentage = double.parse(
+                                (item.value / total * 100).toStringAsFixed(2));
+                            print('percentage: $percentage');
+                            return PieChartSectionData(
+                              color: item.color,
+                              value: percentage,
+                              showTitle: false,
+                              radius: 90,
+                              titleStyle: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              // 外部标签（带延伸线）
+                              badgeWidget: _buildLegendItem(item),
+                              badgePositionPercentageOffset:
+                                  1.2, // 标签位置（1.0 = 边缘）
+                            );
+                          }).toList(),
                         ),
-                        // 外部标签（带延伸线）
-                        badgeWidget: _buildLegendItem(item),
-                        badgePositionPercentageOffset: 1.2, // 标签位置（1.0 = 边缘）
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Icon(
-                    IconFont.biaoqing1,
-                    size: 100,
-                    color: Color(0XFF292929),
-                  ),
-                  Container(
-                    width: 160,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(
-                        color: const Color(0xFFBFBFBF),
-                        width: 1,
-                        style: BorderStyle.solid,
                       ),
-                      color: const Color(0xFFF8F8F8),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color.fromRGBO(0, 0, 0, 0.05),
-                          blurRadius: 16.8,
-                          offset: Offset(2.265, 3),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Icon(
+                          IconFont.biaoqing1,
+                          size: 100,
+                          color: Color(0XFF292929),
                         ),
+                        Container(
+                          width: 160,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(15),
+                            border: Border.all(
+                              color: const Color(0xFFBFBFBF),
+                              width: 1,
+                              style: BorderStyle.solid,
+                            ),
+                            color: const Color(0xFFF8F8F8),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color.fromRGBO(0, 0, 0, 0.05),
+                                blurRadius: 16.8,
+                                offset: Offset(2.265, 3),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(15),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(
+                                sigmaX: 11.324,
+                                sigmaY: 11.324,
+                              ),
+                              child: ListView(
+                                shrinkWrap: true,
+                                padding: const EdgeInsets.all(18),
+                                children: [
+                                  const Text('微量元素含量',
+                                      style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.black)),
+                                  ..._getVitaminsTexts(),
+                                ],
+                              ),
+                            ),
+                          ),
+                        )
                       ],
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(15),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(
-                          sigmaX: 11.324,
-                          sigmaY: 11.324,
-                        ),
-                        child: ListView(
-                          shrinkWrap: true,
-                          padding: const EdgeInsets.all(18),
-                          children: [
-                            const Text('微量元素含量',
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black)),
-                            ..._getVitaminsTexts(),
-                          ],
-                        ),
-                      ),
-                    ),
-                  )
-                ],
+                    // // 词云块
+                    // RandomWordCloud(words: words),
+                    const SizedBox(height: 42),
+                    _buildWhiteListCard(), // 添加本餐
+                    const SizedBox(height: 42),
+                    _buildNutrientAnalysisCard(),
+                    // const SizedBox(height: 42),
+                    // _buildHealthAdviceCard(),
+                    // const SizedBox(height: 42),
+                    // _buildDietSuggestionCard(),
+                    // const SizedBox(height: 42),
+                    // _buildDietSuggestionCard(),
+                  ],
+                ),
               ),
-              // // 词云块
-              // RandomWordCloud(words: words),
-              const SizedBox(height: 42),
-              _buildWhiteListCard(), // 添加本餐
-              const SizedBox(height: 42),
-              _buildNutrientAnalysisCard(),
-              // const SizedBox(height: 42),
-              // _buildHealthAdviceCard(),
-              // const SizedBox(height: 42),
-              // _buildDietSuggestionCard(),
-              // const SizedBox(height: 42),
-              // _buildDietSuggestionCard(),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 

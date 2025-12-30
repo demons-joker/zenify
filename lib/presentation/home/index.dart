@@ -124,8 +124,8 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
           // 顶部区域：左边tab切换、中间logo、右边菜单
           _buildTopHeader(),
 
-          // // 周日期选择器
-          // _buildWeekSelector(),
+          //           // 周日期选择器
+          _buildWeekSelector(),
 
           // 内容区域
           Expanded(
@@ -139,7 +139,9 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                       child: _buildDietTab(),
                     );
                   } else {
-                    return const Center(child: Text('开发中'));
+                    return SingleChildScrollView(
+                      child: _buildAteTab(),
+                    );
                   }
                 }).toList(),
               ),
@@ -331,6 +333,251 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
 
           SizedBox(height: 80.h), // 底部导航栏空间
         ],
+      ),
+    );
+  }
+
+  // ATE tab内容
+  Widget _buildAteTab() {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // 早餐组
+          _buildMealSection('BREAKFAST', [
+            {
+              'imageUrl': 'assets/images/plate_example.png',
+              'title': 'Oatmeal with berries and honey',
+              'isLiked': false,
+            },
+          ]),
+
+          SizedBox(height: 24.h),
+
+          // 中餐组
+          _buildMealSection('LUNCH', [
+            {
+              'imageUrl': 'assets/images/plate_example2.png',
+              'title': 'Black pepper steak, baked potatoes, tomatoes...',
+              'isLiked': false,
+            },
+            {
+              'imageUrl': 'assets/images/plate_example.png',
+              'title': 'Grilled salmon with vegetables and rice',
+              'isLiked': true,
+            },
+            {
+              'imageUrl': 'assets/images/plate_example3.png',
+              'title': 'Chicken stir-fry with noodles',
+              'isLiked': false,
+            },
+          ]),
+
+          SizedBox(height: 24.h),
+
+          // 晚餐组
+          _buildMealSection('DINNER', [
+            {
+              'imageUrl': 'assets/images/plate_example3.png',
+              'title': 'Grilled chicken with roasted vegetables',
+              'isLiked': true,
+            },
+          ]),
+
+          SizedBox(height: 24.h),
+
+          // 加餐组
+          _buildMealSection('OTHER', [
+            {
+              'imageUrl': 'assets/images/plate_example2.png',
+              'title': 'Greek yogurt with nuts and fruits',
+              'isLiked': false,
+            },
+          ]),
+
+          SizedBox(height: 80.h), // 底部导航栏空间
+        ],
+      ),
+    );
+  }
+
+  // 餐食分组组件
+  Widget _buildMealSection(String title, List<Map<String, dynamic>> foods) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 标题
+        Text(
+          title,
+          style: TextStyle(
+            color: Color(0xFF0B0B0B),
+            fontSize: 24.fSize,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+
+        SizedBox(height: 16.h),
+
+        // 食物卡片列表
+        Column(
+          children: foods.asMap().entries.map((entry) {
+            final index = entry.key;
+            final food = entry.value;
+            return Padding(
+              padding:
+                  EdgeInsets.only(bottom: index < foods.length - 1 ? 16.h : 0),
+              child: _buildFoodCard(
+                imageUrl: food['imageUrl']!,
+                title: food['title']!,
+                isLiked: food['isLiked']!,
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  // 食物卡片组件
+  Widget _buildFoodCard({
+    required String imageUrl,
+    required String title,
+    required bool isLiked,
+  }) {
+    return Container(
+      height: 114.h, // 114px高度
+      decoration: BoxDecoration(
+        color: Color(0xFFF6F6F6),
+        borderRadius: BorderRadius.circular(12.h),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            offset: Offset(0, 2.h),
+            blurRadius: 8.h,
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(12.h),
+        child: Row(
+          children: [
+            // 左边正方形图片
+            Container(
+              width: 90.h,
+              height: 90.h,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8.h),
+                color: Colors.grey[200],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8.h),
+                child: Image.asset(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: Colors.grey[300],
+                    child: Icon(
+                      Icons.restaurant,
+                      color: Colors.grey[600],
+                      size: 32.h,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            SizedBox(width: 10.h), // 距离右边10px
+
+            // 右边剩余区域
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 第一行：收藏按钮、标签、编辑按钮
+                  Row(
+                    children: [
+                      // 收藏爱心按钮
+                      Container(
+                        width: 32.h,
+                        height: 32.h,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              // 这里可以切换收藏状态
+                            });
+                          },
+                          child: Icon(
+                            isLiked ? Icons.favorite : Icons.favorite_border,
+                            color: isLiked
+                                ? Color.fromARGB(255, 214, 37, 37)
+                                : Color(0xFF747474),
+                            size: 20.h,
+                          ),
+                        ),
+                      ),
+
+                      SizedBox(width: 8.h),
+
+                      // Balanced diet 标签
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 16.h, vertical: 5.h),
+                        decoration: BoxDecoration(
+                          color: Color(0xFFE1EC7C),
+                          borderRadius: BorderRadius.circular(90),
+                        ),
+                        child: Text(
+                          'Balanced diet',
+                          style: TextStyle(
+                            color: Color(0xFF747474),
+                            fontSize: 16.fSize,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+
+                      Spacer(),
+
+                      // 编辑按钮
+                      Container(
+                        width: 32.h,
+                        height: 32.h,
+                        child: GestureDetector(
+                          onTap: () {
+                            // 编辑功能
+                          },
+                          child: Icon(
+                            Icons.edit,
+                            color: Color(0xFF747474),
+                            size: 20.h,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: 8.h),
+
+                  // 第二行：文案内容
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        color: Color(0xFF646464),
+                        fontSize: 16.fSize,
+                        fontWeight: FontWeight.w500,
+                        height:
+                            22.0 / 16.0, // line-height 22px / font-size 16px
+                        letterSpacing: 0.121,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

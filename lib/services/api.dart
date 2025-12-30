@@ -248,7 +248,6 @@ class Api {
   // 获取用户信息
   static Future<dynamic> getUserInfo() async {
     final userId = await UserSession.userId;
-    print('$userId,用户未登录');
     if (userId == null) {
       throw Exception('用户未登录');
     }

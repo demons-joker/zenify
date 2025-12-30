@@ -12,6 +12,7 @@ class UserSession {
   static const String _sourceKey = 'source';
   static const String _createdAtKey = 'created_at';
   static const String _isActiveKey = 'is_active';
+  static const String _plateIdKey = 'plate_id';
 
   static Future<SharedPreferences> get _prefs async =>
       await SharedPreferences.getInstance();
@@ -33,6 +34,12 @@ class UserSession {
     await prefs.setString(_sourceKey, userInfo['source'] ?? '');
     await prefs.setString(_createdAtKey, userInfo['created_at'] ?? '');
     await prefs.setBool(_isActiveKey, userInfo['is_active'] ?? false);
+
+    // 保存 device_ids 中的第一个值为 plate_id
+    final deviceIds = userInfo['device_ids'];
+    if (deviceIds != null && deviceIds is List && deviceIds.isNotEmpty) {
+      await prefs.setInt(_plateIdKey, deviceIds[0]);
+    }
   }
 
   // 获取访问令牌
@@ -95,6 +102,12 @@ class UserSession {
     return prefs.getBool(_isActiveKey);
   }
 
+  // 获取 plate_id
+  static Future<int?> get plateId async {
+    final prefs = await _prefs;
+    return prefs.getInt(_plateIdKey);
+  }
+
   // 获取完整用户信息
   static Future<UserInfo?> getUserInfo() async {
     final prefs = await _prefs;
@@ -131,6 +144,7 @@ class UserSession {
     await prefs.remove(_emailKey);
     await prefs.remove(_fullNameKey);
     await prefs.remove(_isActiveKey);
+    await prefs.remove(_plateIdKey);
   }
 
   // 检查是否已登录
