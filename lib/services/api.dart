@@ -512,4 +512,22 @@ class Api {
       throw Exception('解绑设备失败: $e');
     }
   }
+
+  // 获取分析详情列表
+  static Future<List<dynamic>> getRecognitions(params) async {
+    try {
+      final response = await _handleRequest(
+        ApiConfig.getRecognitions,
+        queryParams: params,
+      );
+      print('获取用户设备列表成功: $response');
+      if (response is List) {
+        return response;
+      }
+      return [];
+    } catch (e) {
+      print('获取用户设备列表失败: $e');
+      throw Exception('获取用户设备列表失败: $e');
+    }
+  }
 }

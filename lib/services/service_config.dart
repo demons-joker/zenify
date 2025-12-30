@@ -13,6 +13,8 @@ class ApiConfig {
   // static const String baseUrl = "http://118.195.149.172:8000";
 
   static const String apiVersion = "/api/v1";
+  static const String mqttBrokerAddress = "118.195.149.172";
+  static const int mqttPort = 1883;
   static const String mqttVersion = "/api/mqtt";
   static const int connectTimeout = 30000;
   static const int receiveTimeout = 30000;
@@ -184,6 +186,13 @@ class ApiConfig {
     '$mqttVersion/users/{user_id}/plates/{plate_id}/recognize',
     HttpMethod.post,
   );
+
+  // 获取识别记录
+  static const getRecognitions = ApiEndpoint(
+    '$apiVersion/users/recognitions',
+    HttpMethod.get,
+  );
+
   //获取图像识别结果（会耗费很多时间）
   static const aiChart = '$apiVersion/chat';
   //获取图像识别结果（会耗费很多时间）

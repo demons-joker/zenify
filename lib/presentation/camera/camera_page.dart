@@ -1,12 +1,8 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:zenify/services/api.dart';
 import 'dart:io';
 import 'package:zenify/services/upload_service.dart';
-import 'package:zenify/services/user_session.dart';
 
 class CameraPage extends StatefulWidget {
   @override
@@ -231,33 +227,12 @@ class _CameraPageState extends State<CameraPage> {
                           setState(() {
                             _isAnalyzing = true;
                           });
-                          // 调用服务端API获取识别结果
-                          print(
-                              'jsonDecode(result): ${jsonDecode(result)['image_url']}');
-                          final data = await Api.getRecognize({
-                            'user_id': await UserSession.userId,
-                            'plate_id': await UserSession.plateId
-                          }, {
-                            'image_url': jsonDecode(result)['image_url']
+                          // 上传成功后直接返回，等待MQTT通知
+                          Future.delayed(Duration(milliseconds: 500), () {
+                            if (mounted) {
+                              Navigator.of(context).pop(result);
+                            }
                           });
-                          print('getRecognizedata: $data');
-                          if (mounted && data != null) {
-                            setState(() {
-                              _isAnalyzing = false;
-                              _isSynced = true;
-                            });
-                            // 延时3秒返回首页
-                            Future.delayed(Duration(seconds: 3), () {
-                              if (mounted) {
-                                Navigator.of(context).pop(result);
-                              }
-                            });
-                          } else if (mounted) {
-                            setState(() => _isAnalyzing = false);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('分析失败，请重试')),
-                            );
-                          }
                         }
                       },
               ),
