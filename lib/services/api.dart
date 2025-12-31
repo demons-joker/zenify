@@ -210,7 +210,6 @@ class Api {
     try {
       final headers = await _getAuthHeaders();
       final combinedHeaders = {...headers, ...?header};
-      print('请求头: $combinedHeaders');
       final response = await ApiService.request(
         endpoint,
         body: body,
@@ -520,14 +519,16 @@ class Api {
         ApiConfig.getRecognitions,
         queryParams: params,
       );
-      print('获取用户设备列表成功: $response');
-      if (response is List) {
-        return response;
+      print('获取分析详情列表: $response');
+      if (response is Map && response['success'] == true) {
+        final recognitions = response['recognitions'] as List? ?? [];
+        print('获取到${recognitions.length}条识别记录');
+        return recognitions;
       }
       return [];
     } catch (e) {
-      print('获取用户设备列表失败: $e');
-      throw Exception('获取用户设备列表失败: $e');
+      print('获取分析详情列表失败: $e');
+      throw Exception('获取分析详情列表失败: $e');
     }
   }
 }

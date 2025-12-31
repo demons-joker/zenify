@@ -134,7 +134,7 @@ class _CameraPageState extends State<CameraPage> {
           leading: IconButton(
             icon: Icon(Icons.arrow_back_ios_new,
                 color: _isAnalyzing
-                    ? Colors.white.withOpacity(0.5)
+                    ? Colors.white.withValues(alpha: 0.5)
                     : Colors.white),
             onPressed: _isAnalyzing ? null : () => Navigator.of(context).pop(),
           ),
@@ -207,7 +207,7 @@ class _CameraPageState extends State<CameraPage> {
                 child: Text('重拍',
                     style: TextStyle(
                         color: _isAnalyzing
-                            ? Colors.white.withOpacity(0.5)
+                            ? Colors.white.withValues(alpha: 0.5)
                             : Colors.white)),
                 onPressed: _isAnalyzing ? null : _retakePhoto,
               ),
@@ -215,7 +215,7 @@ class _CameraPageState extends State<CameraPage> {
                 child: Text('确认',
                     style: TextStyle(
                         color: _isAnalyzing
-                            ? Colors.white.withOpacity(0.5)
+                            ? Colors.white.withValues(alpha: 0.5)
                             : Colors.white)),
                 onPressed: _isAnalyzing
                     ? null
@@ -227,10 +227,10 @@ class _CameraPageState extends State<CameraPage> {
                           setState(() {
                             _isAnalyzing = true;
                           });
-                          // 上传成功后直接返回，等待MQTT通知
+                          // 上传成功后返回，携带标记需要切换到ATE tab
                           Future.delayed(Duration(milliseconds: 500), () {
                             if (mounted) {
-                              Navigator.of(context).pop(result);
+                              Navigator.of(context).pop({'switchToATE': true});
                             }
                           });
                         }

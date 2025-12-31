@@ -42,7 +42,7 @@ class _MainPageState extends State<MainPage> {
                         maxHeight: constraints.maxHeight,
                       ),
                       child: _currentIndex == 0
-                          ? IndexPage()
+                          ? IndexPage(key: IndexPage.globalKey)
                           : SingleChildScrollView(
                               padding: const EdgeInsets.only(
                                   bottom: kBottomNavigationBarHeight),
@@ -145,12 +145,17 @@ class _MainPageState extends State<MainPage> {
       _showBottomNavBar = false; // 隐藏导航栏
     });
 
-    AppRoutes.navigateToCameraPage(context).then((_) {
+    AppRoutes.navigateToCameraPage(context).then((result) {
       // 拍照页面关闭后恢复导航栏
       if (mounted) {
         setState(() {
           _showBottomNavBar = true;
         });
+
+        // 如果返回结果要求切换到 ATE tab
+        if (result is Map && result['switchToATE'] == true) {
+          IndexPage.globalKey.currentState?.switchToATETab();
+        }
       }
     });
   }

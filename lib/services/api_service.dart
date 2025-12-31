@@ -22,16 +22,16 @@ class ApiService {
       if (queryParams != null) {
         uri = uri.replace(queryParameters: _convertParams(queryParams ?? {}));
       }
-      print('uri: $uri');
+      // print('uri: $uri');
 
-      print('API请求: ${_methodToString(endpoint.method)} ${uri.toString()}');
+      // print('API请求: ${_methodToString(endpoint.method)} ${uri.toString()}');
 
       final request = http.Request(_methodToString(endpoint.method), uri)
         ..headers.addAll(_headers)
         ..headers.addAll(headers ?? {})
         ..body = body != null ? jsonEncode(body) : ''
         ..followRedirects = true;
-      print('headers: ${request.headers}');
+      // print('headers: ${request.headers}');
 
       final response = await _client
           .send(request)

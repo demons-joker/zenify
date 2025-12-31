@@ -3,80 +3,66 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../../core/app_export.dart';
-import '../../widgets/custom_image_view.dart';
 import '../../services/mqtt_service.dart';
 import '../../services/user_session.dart';
 import '../../services/api.dart';
 
 class IndexPage extends StatefulWidget {
-  const IndexPage({super.key});
+  const IndexPage({super.key, this.initialTab});
+
+  final String? initialTab;
+
+  static final GlobalKey<_IndexPageState> globalKey = GlobalKey<_IndexPageState>();
 
   @override
   State<IndexPage> createState() => _IndexPageState();
-}
-
-class _RingPainter extends CustomPainter {
-  final Color color;
-  final double strokeWidth;
-  final double value;
-
-  _RingPainter({
-    required this.color,
-    required this.strokeWidth,
-    required this.value,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = (size.width - strokeWidth) / 2;
-
-    // 绘制静态背景
-    final backgroundPaint = Paint()
-      ..color = color.withOpacity(0.2)
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -math.pi / 2,
-      2 * math.pi,
-      false,
-      backgroundPaint,
-    );
-
-    // 绘制动态进度条
-    final progressPaint = Paint()
-      ..color = color
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final startAngle = -math.pi / 2;
-    final sweepAngle = -math.pi * 2 * value;
-
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      startAngle,
-      sweepAngle,
-      false,
-      progressPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
   late TabController _tabController;
   final List<String> _tabs = ['EAT', 'ATE'];
   int _selectedDay = DateTime.now().weekday; // 0-6 for Monday-Sunday
-  late AnimationController _animationController;
-  late Animation<double> _animation;
-  late AnimationController _ringAnimationController;
-  late Animation<double> _ringAnimation;
+
+  // MY PLAN 数据
+  final List<Map<String, dynamic>> _dietPlans = [
+    {
+      'name': 'Paleo diet',
+      'user': 'Alice',
+      'score': 'B+',
+      'image': 'assets/images/figma/plate_jimeng.png'
+    },
+    {
+      'name': 'Keto diet',
+      'user': 'Bob',
+      'score': 'A-',
+      'image': 'assets/images/figma/plan_dish1.png'
+    },
+    {
+      'name': 'Vegan diet',
+      'user': 'Carol',
+      'score': 'C+',
+      'image': 'assets/images/figma/plate_jimeng.png'
+    },
+    {
+      'name': 'Mediterranean',
+      'user': 'David',
+      'score': 'A',
+      'image': 'assets/images/figma/plan_dish1.png'
+    },
+    {
+      'name': 'Low carb',
+      'user': 'Eve',
+      'score': 'B',
+      'image': 'assets/images/figma/plate_jimeng.png'
+    },
+    {
+      'name': 'High protein',
+      'user': 'Frank',
+      'score': 'A+',
+      'image': 'assets/images/figma/plan_dish1.png'
+    },
+  ];
+
   String _selectedMealType = 'BREAKFAST';
   final List<String> _mealTypes = ['BREAKFAST', 'LUNCH', 'DINNER', 'OTHER'];
   final TextEditingController _searchController = TextEditingController();
@@ -100,26 +86,14 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _tabController = TabController(length: _tabs.length, vsync: this);
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
-    _animation = Tween<double>(begin: 0, end: 600).animate(_animationController)
-      ..addListener(() {
-        setState(() {});
-      });
-    _animationController.forward();
 
-    _ringAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
-    _ringAnimation = Tween<double>(begin: 0.0, end: 10.0 / 40)
-        .animate(_ringAnimationController)
-      ..addListener(() {
-        setState(() {});
-      });
-    _ringAnimationController.forward();
+    // 根据初始参数设置 tab
+    if (widget.initialTab != null) {
+      final initialIndex = _tabs.indexOf(widget.initialTab!);
+      if (initialIndex != -1) {
+        _currentTabIndex = initialIndex;
+      }
+    }
 
     // 初始化MQTT连接
     _initMQTT();
@@ -132,70 +106,96 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
   Future<void> _loadHistoryData() async {
     if (_isLoadingHistory) return;
 
+    if (!mounted) return;
+
     setState(() {
       _isLoadingHistory = true;
     });
 
     try {
       final userId = await UserSession.userId;
-      if (userId == null) return;
+      if (userId == null || !mounted) return;
 
-      // 计算目标日期
+      // 计算目标日期 - 修复日期计算逻辑
       final now = DateTime.now();
-      final targetDate =
-          now.subtract(Duration(days: now.weekday - _selectedDay));
+      // DateTime.weekday: 1=周一, 2=周二, ..., 7=周日
+      // _selectedDay: 0=周日, 1=周一, ..., 6=周六
+      // 需要将 _selectedDay 转换为 weekday 格式
+      final selectedWeekday =
+          _selectedDay == 0 ? 7 : _selectedDay; // 0->7(周日), 1-6保持不变
+      final daysToSubtract = now.weekday - selectedWeekday;
+      final targetDate = now.subtract(Duration(days: daysToSubtract));
       final dateStr =
           '${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}';
 
       print('加载历史数据: userId=$userId, date=$dateStr');
+      print('当前日期: ${now.toString()}, 目标日期: ${targetDate.toString()}');
+      print(
+          '当前weekday: ${now.weekday}, 选择weekday: $selectedWeekday, 减去天数: $daysToSubtract');
 
       // 调用API获取识别记录
       final result =
           await Api.getRecognitions({'date': dateStr, 'user_id': userId});
 
-      print('API响应: $result');
+      print('API响应记录数: ${result.length}');
 
-      // if (result != null && result is Map && result['success'] == true) {
-      //   final records = result['recognitions'] as List? ?? [];
-      //   print('获取到${records.length}条识别记录');
-      //
-      //   // 清空当前数据
-      //   _ateFoods = {
-      //     'BREAKFAST': [],
-      //     'LUNCH': [],
-      //     'DINNER': [],
-      //     'OTHER': [],
-      //   };
+      // 清空当前数据
+      _ateFoods = {
+        'BREAKFAST': [],
+        'LUNCH': [],
+        'DINNER': [],
+        'OTHER': [],
+      };
 
-      //   // 根据记录时间分类
-      //   for (var record in records) {
-      //     final mealType = _getMealTypeByTimeOfDay(record['created_at']);
-      //     _ateFoods[mealType]?.add(_convertToFoodCard(record));
-      //   }
+      // 根据记录时间分类
+      for (var record in result) {
+        print('处理记录: ${record['created_at']}, status: ${record['status']}');
+        final mealType = _getMealTypeByTimeOfDay(record['created_at']);
+        print('分类为: $mealType');
+        _ateFoods[mealType]?.add(_convertToFoodCard(record));
+      }
 
-      //   setState(() {});
-      // }
+      // 打印最终分类结果
+      print('分类结果:');
+      _ateFoods.forEach((key, value) {
+        print('  $key: ${value.length}条');
+      });
+
+      if (mounted) {
+        setState(() {});
+      }
     } catch (e) {
       print('加载历史数据失败: $e');
+      print('堆栈跟踪: ${StackTrace.current}');
     } finally {
-      setState(() {
-        _isLoadingHistory = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingHistory = false;
+        });
+      }
     }
   }
 
   /// 将识别记录转换为食物卡片数据
   Map<String, dynamic> _convertToFoodCard(Map<String, dynamic> record) {
     final status = record['status'] ?? 'unknown';
-    final isAnalyzing = status == 'accepted';
+    final isAnalyzing = status == 'accepted' || status == 'processing';
 
-    // 提取食物名称
+    // 提取食物名称 - 使用英文名称
     final foods = record['foods'] as List? ?? [];
-    final foodNames =
-        foods.map((f) => f['food']?['name'] ?? 'Unknown').join(', ');
-    final title = isAnalyzing
-        ? 'Analyzing...'
-        : (foodNames.isNotEmpty ? foodNames : 'Recognition Result');
+    final foodNames = foods
+        .map((f) => f['food']?['name_en'] ?? f['food']?['name'] ?? 'Unknown')
+        .join(', ');
+
+    // 根据状态设置标题
+    String title;
+    if (isAnalyzing) {
+      title = 'Analyzing...';
+    } else if (foodNames.isNotEmpty) {
+      title = foodNames;
+    } else {
+      title = 'Recognition Result';
+    }
 
     return {
       'id': record['id'],
@@ -216,23 +216,31 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
       DateTime time;
       if (timeStr is String) {
         time = DateTime.parse(timeStr);
+        print('解析时间: $timeStr -> $time, 小时: ${time.hour}');
       } else if (timeStr is DateTime) {
         time = timeStr;
+        print('使用DateTime: $time, 小时: ${time.hour}');
       } else {
+        print('无效时间格式: $timeStr');
         return 'OTHER';
       }
 
       final hour = time.hour;
+      String mealType;
       if (hour >= 5 && hour < 11) {
-        return 'BREAKFAST';
+        mealType = 'BREAKFAST';
       } else if (hour >= 11 && hour < 14) {
-        return 'LUNCH';
+        mealType = 'LUNCH';
       } else if (hour >= 17 && hour < 21) {
-        return 'DINNER';
+        mealType = 'DINNER';
       } else {
-        return 'OTHER';
+        mealType = 'OTHER';
       }
+
+      print('时间 ${time.hour}时 分类为: $mealType');
+      return mealType;
     } catch (e) {
+      print('解析时间失败: $e, 输入: $timeStr');
       return 'OTHER';
     }
   }
@@ -262,25 +270,9 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
     }
   }
 
-  /// 根据时间返回餐食类型
-  String _getMealTypeByTime() {
-    final hour = DateTime.now().hour;
-    if (hour >= 5 && hour < 11) {
-      return 'BREAKFAST';
-    } else if (hour >= 11 && hour < 14) {
-      return 'LUNCH';
-    } else if (hour >= 17 && hour < 21) {
-      return 'DINNER';
-    } else {
-      return 'OTHER';
-    }
-  }
-
   @override
   void dispose() {
     _tabController.dispose();
-    _animationController.dispose();
-    _ringAnimationController.dispose();
     _searchController.dispose();
     _mqttSubscription?.cancel();
     super.dispose();
@@ -400,7 +392,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                     border: Border.all(color: Colors.white, width: 2.h),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
+                        color: Colors.black.withValues(alpha: 0.15),
                         offset: Offset(0, 2.h),
                         blurRadius: 4.h,
                       ),
@@ -536,17 +528,17 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
             // 早餐组 - 使用动态数据
             _buildMealSection('BREAKFAST', _ateFoods['BREAKFAST'] ?? []),
 
-            SizedBox(height: 24.h),
+            // SizedBox(height: 24.h),
 
             // 中餐组 - 使用动态数据
             _buildMealSection('LUNCH', _ateFoods['LUNCH'] ?? []),
 
-            SizedBox(height: 24.h),
+            // SizedBox(height: 24.h),
 
             // 晚餐组 - 使用动态数据
             _buildMealSection('DINNER', _ateFoods['DINNER'] ?? []),
 
-            SizedBox(height: 24.h),
+            // SizedBox(height: 24.h),
 
             // 加餐组 - 使用动态数据
             _buildMealSection('OTHER', _ateFoods['OTHER'] ?? []),
@@ -577,7 +569,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
           ),
         ),
 
-        SizedBox(height: 16.h),
+        SizedBox(height: 10.h),
 
         // 食物卡片列表
         Column(
@@ -630,7 +622,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(12.h),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             offset: Offset(0, 2.h),
             blurRadius: 8.h,
           ),
@@ -709,7 +701,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                   Row(
                     children: [
                       // 收藏爱心按钮
-                      Container(
+                      SizedBox(
                         width: 32.h,
                         height: 32.h,
                         child: GestureDetector(
@@ -728,43 +720,52 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                         ),
                       ),
 
-                      SizedBox(width: 8.h),
+                      SizedBox(width: 6.h),
 
-                      // Balanced diet 标签
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                            horizontal: 16.h, vertical: 5.h),
-                        decoration: BoxDecoration(
-                          color: Color(0xFFE1EC7C),
-                          borderRadius: BorderRadius.circular(90),
-                        ),
-                        child: Text(
-                          'Balanced diet',
-                          style: TextStyle(
-                            color: Color(0xFF747474),
-                            fontSize: 16.fSize,
-                            fontWeight: FontWeight.w500,
+                      // Balanced diet 标签 - 使用 Flexible 避免溢出
+                      Flexible(
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 5.h, vertical: 4.h),
+                          decoration: BoxDecoration(
+                            color: Color(0xFFE1EC7C),
+                            borderRadius: BorderRadius.circular(90),
+                          ),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Balanced diet',
+                              style: TextStyle(
+                                color: Color(0xFF747474),
+                                fontSize: 16.fSize,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                           ),
                         ),
                       ),
 
                       Spacer(),
 
-                      // 卡路里显示
+                      // 卡路里显示 - 使用 Flexible 避免溢出
                       if (caloriesText.isNotEmpty)
-                        Text(
-                          caloriesText,
-                          style: TextStyle(
-                            color: Color(0xFF747474),
-                            fontSize: 12.fSize,
-                            fontWeight: FontWeight.w500,
+                        Flexible(
+                          child: Text(
+                            caloriesText,
+                            style: TextStyle(
+                              color: Color(0xFF747474),
+                              fontSize: 11.fSize,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                         ),
 
-                      SizedBox(width: 8.h),
+                      if (caloriesText.isNotEmpty) SizedBox(width: 6.h),
 
                       // 编辑按钮
-                      Container(
+                      SizedBox(
                         width: 32.h,
                         height: 32.h,
                         child: GestureDetector(
@@ -1002,7 +1003,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                   bottomLeft: Radius.circular(26),
                   bottomRight: Radius.circular(26),
                 ),
-                color: Colors.black.withOpacity(0.7), // 半透明黑色背景
+                color: Colors.black.withValues(alpha: 0.7), // 半透明黑色背景
               ),
               child: Center(
                 child: RichText(
@@ -1150,7 +1151,8 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                                     color: Colors.transparent,
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.12),
+                                        color: Colors.black
+                                            .withValues(alpha: 0.12),
                                         blurRadius: 12.h,
                                         offset: Offset(0, 6.h),
                                       ),
@@ -1287,7 +1289,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.12),
+                        color: Colors.black.withValues(alpha: 0.12),
                         blurRadius: 6.h,
                         offset: Offset(0, 2.h),
                       ),
@@ -1410,94 +1412,6 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
           ],
         );
       }).toList(),
-    );
-  }
-
-  // 紧凑版食物类别组件
-  Widget _buildCompactFoodCategory(String title, String imageAsset) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 24.h,
-          height: 24.h,
-          child: Image.asset(
-            imageAsset,
-            errorBuilder: (context, error, stackTrace) => Container(
-              color: Color(0xFF454A30),
-              child: Icon(
-                Icons.restaurant,
-                color: Colors.white,
-                size: 12.h,
-              ),
-            ),
-          ),
-        ),
-        SizedBox(height: 4.h),
-        Text(
-          title.split(' ')[0], // 只显示第一个单词
-          style: TextStyle(
-            color: Color(0xFFA9A9A9),
-            fontSize: 10.fSize,
-            fontWeight: FontWeight.w400,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-
-  // 食物类别
-  Widget _buildFoodCategory(String title, String iconPath) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.h, vertical: 12.h),
-      decoration: BoxDecoration(
-        color: Color(0xFF454A30),
-        borderRadius: BorderRadius.circular(12.h),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Image.asset(
-                iconPath,
-                width: 24.h,
-                height: 24.h,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 24.h,
-                  height: 24.h,
-                  color: Colors.grey.shade400,
-                ),
-              ),
-              SizedBox(width: 12.h),
-              Text(
-                title,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16.fSize,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12.h, vertical: 6.h),
-            decoration: BoxDecoration(
-              color: Color(0xFF779600),
-              borderRadius: BorderRadius.circular(16.h),
-            ),
-            child: Text(
-              '更换',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 12.fSize,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1635,8 +1549,8 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                   ),
                   itemCount: _getFilteredPlans().length,
                   itemBuilder: (context, index) {
-                    return _buildPlanCard(
-                        _getFilteredPlans()[index]['originalIndex']);
+                    final filteredPlan = _getFilteredPlans()[index];
+                    return _buildPlanCard(filteredPlan);
                   },
                 ),
               ],
@@ -1648,48 +1562,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
   }
 
   // 计划卡片
-  Widget _buildPlanCard(int index) {
-    final plans = [
-      {
-        'name': 'Paleo diet',
-        'user': 'Alice',
-        'score': 'B+',
-        'image': 'assets/images/figma/plate_jimeng.png'
-      },
-      {
-        'name': 'Keto diet',
-        'user': 'Bob',
-        'score': 'A-',
-        'image': 'assets/images/figma/plan_dish1.png'
-      },
-      {
-        'name': 'Vegan diet',
-        'user': 'Carol',
-        'score': 'C+',
-        'image': 'assets/images/figma/plate_jimeng.png'
-      },
-      {
-        'name': 'Mediterranean',
-        'user': 'David',
-        'score': 'A',
-        'image': 'assets/images/figma/plan_dish1.png'
-      },
-      {
-        'name': 'Low carb',
-        'user': 'Eve',
-        'score': 'B',
-        'image': 'assets/images/figma/plate_jimeng.png'
-      },
-      {
-        'name': 'High protein',
-        'user': 'Frank',
-        'score': 'A+',
-        'image': 'assets/images/figma/plan_dish1.png'
-      },
-    ];
-
-    final plan = plans[index];
-
+  Widget _buildPlanCard(Map<String, dynamic> plan) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1738,9 +1611,17 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                           );
                         },
                       )
-                    : CustomImageView(
-                        imagePath: plan['image']!,
+                    : Image.asset(
+                        plan['image']!,
                         fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: Color(0xFF454A30),
+                          child: Icon(
+                            Icons.restaurant,
+                            color: Colors.white,
+                            size: 40.h,
+                          ),
+                        ),
                       ),
               ),
             ),
@@ -1779,8 +1660,8 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                         padding: EdgeInsets.symmetric(
                             horizontal: 6.h, vertical: 2.h),
                         decoration: BoxDecoration(
-                          color:
-                              _getGradeColor(plan['score']!).withOpacity(0.2),
+                          color: _getGradeColor(plan['score']!)
+                              .withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(6.h),
                         ),
                         child: Text(
@@ -1810,58 +1691,21 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
 
   // 获取筛选后的计划列表
   List<Map<String, dynamic>> _getFilteredPlans() {
-    final allPlans = [
-      {
-        'name': 'Paleo diet',
-        'user': 'Alice',
-        'score': 'B+',
-        'image': 'assets/images/figma/plate_jimeng.png',
-        'originalIndex': 0
-      },
-      {
-        'name': 'Keto diet',
-        'user': 'Bob',
-        'score': 'A-',
-        'image': 'assets/images/figma/plan_dish1.png',
-        'originalIndex': 1
-      },
-      {
-        'name': 'Vegan diet',
-        'user': 'Carol',
-        'score': 'C+',
-        'image': 'assets/images/figma/plate_jimeng.png',
-        'originalIndex': 2
-      },
-      {
-        'name': 'Mediterranean',
-        'user': 'David',
-        'score': 'A',
-        'image': 'assets/images/figma/plan_dish1.png',
-        'originalIndex': 3
-      },
-      {
-        'name': 'Low carb',
-        'user': 'Eve',
-        'score': 'B',
-        'image': 'assets/images/figma/plate_jimeng.png',
-        'originalIndex': 4
-      },
-      {
-        'name': 'High protein',
-        'user': 'Frank',
-        'score': 'A+',
-        'image': 'assets/images/figma/plan_dish1.png',
-        'originalIndex': 5
-      },
-    ];
-
     if (_searchController.text.isEmpty) {
-      return allPlans;
+      return _dietPlans.asMap().entries.map((entry) {
+        final plan = Map<String, dynamic>.from(entry.value);
+        plan['originalIndex'] = entry.key;
+        return plan;
+      }).toList();
     }
 
     final searchTerm = _searchController.text.toLowerCase();
-    return allPlans.where((plan) {
-      return plan['name'].toString().toLowerCase().contains(searchTerm);
+    return _dietPlans.asMap().entries.where((entry) {
+      return entry.value['name'].toString().toLowerCase().contains(searchTerm);
+    }).map((entry) {
+      final plan = Map<String, dynamic>.from(entry.value);
+      plan['originalIndex'] = entry.key;
+      return plan;
     }).toList();
   }
 
@@ -1884,45 +1728,13 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
         return Color(0xFF666666);
     }
   }
-}
 
-// 虚线引导线绘制器
-class DashedLineGuidePainter extends CustomPainter {
-  final Offset start;
-  final Offset end;
-
-  DashedLineGuidePainter({
-    required this.start,
-    required this.end,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Color(0xFFDEC1A4)
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
-
-    final dashWidth = 3.0;
-    final dashSpace = 3.0;
-
-    final distance = (end - start).distance;
-    final direction = (end - start) / distance;
-
-    double currentLength = 0.0;
-
-    while (currentLength < distance) {
-      final segmentLength = math.min(dashWidth, distance - currentLength);
-      final segmentStart = start + direction * currentLength;
-      final segmentEnd = start + direction * (currentLength + segmentLength);
-
-      canvas.drawLine(segmentStart, segmentEnd, paint);
-      currentLength += dashWidth + dashSpace;
-    }
+  /// 切换到 ATE tab（供外部调用）
+  void switchToATETab() {
+    setState(() {
+      _currentTabIndex = 1; // 1 = ATE tab
+    });
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // 虚线绘制器

@@ -90,12 +90,22 @@ class AppRoutes {
         // Auth pages
         login: (context) => Login(),
         registration: (context) => RegistrationFlow(),
-        // Legacy pages 
+        // Legacy pages
         mainPage: (context) => MainPage(),
         // Set app default/home route to the updated IndexPage
         // Map '/home' and '/index' to the new IndexPage
-        home: (context) => IndexPage(),
-        indexPage: (context) => IndexPage(),
+        home: (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map?;
+          return IndexPage(
+            initialTab: args?['initialTab'] as String?,
+          );
+        },
+        indexPage: (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map?;
+          return IndexPage(
+            initialTab: args?['initialTab'] as String?,
+          );
+        },
         cameraPage: (context) => CameraPage(),
         aiChatPage: (context) => AIChatPage(),
         reportPage: (context) => Report(),
