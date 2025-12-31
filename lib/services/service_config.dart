@@ -193,6 +193,12 @@ class ApiConfig {
     HttpMethod.get,
   );
 
+  // 获取最新一条识别记录
+  static const getLatestRecognition = ApiEndpoint(
+    '$apiVersion/users/recognitions/latest',
+    HttpMethod.get,
+  );
+
   //获取图像识别结果（会耗费很多时间）
   static const aiChart = '$apiVersion/chat';
   //获取图像识别结果（会耗费很多时间）

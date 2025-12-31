@@ -531,4 +531,24 @@ class Api {
       throw Exception('获取分析详情列表失败: $e');
     }
   }
+
+  // 获取最新一条识别记录
+  static Future<Map<String, dynamic>?> getLatestRecognition() async {
+    try {
+      final response = await _handleRequest(
+        ApiConfig.getLatestRecognition,
+      );
+      print('获取最新识别记录: $response');
+      if (response is Map && response['success'] == true) {
+        final recognitions = response['recognitions'] as List? ?? [];
+        if (recognitions.isNotEmpty) {
+          return recognitions[0] as Map<String, dynamic>;
+        }
+      }
+      return null;
+    } catch (e) {
+      print('获取最新识别记录失败: $e');
+      throw Exception('获取最新识别记录失败: $e');
+    }
+  }
 }

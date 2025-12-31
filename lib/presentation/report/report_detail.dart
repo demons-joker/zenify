@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import '../../services/api.dart';
+import '../../services/user_session.dart';
 
 class ReportDetailPage extends StatefulWidget {
   const ReportDetailPage({super.key});
@@ -56,9 +58,86 @@ class _DashedLinePainter extends CustomPainter {
 }
 
 class _ReportDetailPageState extends State<ReportDetailPage> {
-  double fullness = 0.25;
+  double fullness = 0.5;
   double taste = 0.5;
   int moodIndex = 1;
+
+  // 识别数据
+  Map<String, dynamic>? _recognitionData;
+  bool _isLoading = true;
+
+  // 计算出的营养数据
+  double _totalCalories = 0;
+  double _carbPercent = 0;
+  double _proteinPercent = 0;
+  double _fatPercent = 0;
+  int _vegetableCount = 0;
+  int _carbCount = 0;
+  int _proteinCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecognitionData();
+  }
+
+  /// 加载最新识别数据
+  Future<void> _loadRecognitionData() async {
+    try {
+      final data = await Api.getLatestRecognition();
+      if (data != null && mounted) {
+        setState(() {
+          _recognitionData = data;
+          _isLoading = false;
+        });
+        _calculateNutritionData(data!);
+      }
+    } catch (e) {
+      print('加载识别数据失败: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  /// 计算营养数据
+  void _calculateNutritionData(Map<String, dynamic> data) {
+    // 从 nutritive_proportion 获取营养数据
+    final nutritiveProportion = data['nutritive_proportion'] as Map? ?? {};
+    final totalCalories = (data['total_calories'] ?? 0) as double;
+
+    // 获取各营养素的克数
+    final carbGrams = (nutritiveProportion['carbohydrate'] ?? 0) as double;
+    final proteinGrams = (nutritiveProportion['protein'] ?? 0) as double;
+    final fatGrams = (nutritiveProportion['fat'] ?? 0) as double;
+
+    // 计算各营养素的热量 (1g碳水/蛋白质=4kcal, 1g脂肪=9kcal)
+    final carbCalories = carbGrams * 4;
+    final proteinCalories = proteinGrams * 4;
+    final fatCalories = fatGrams * 9;
+
+    // 计算百分比
+    _totalCalories = totalCalories;
+    _carbPercent = totalCalories > 0 ? (carbCalories / totalCalories) * 100 : 0;
+    _proteinPercent = totalCalories > 0 ? (proteinCalories / totalCalories) * 100 : 0;
+    _fatPercent = totalCalories > 0 ? (fatCalories / totalCalories) * 100 : 0;
+
+    // 统计各类食物数量
+    final foods = data['foods'] as List? ?? [];
+    for (var foodItem in foods) {
+      final food = foodItem['food'] as Map? ?? {};
+      final category = food['category'] as String? ?? 'other';
+      if (category == 'vegetable') {
+        _vegetableCount++;
+      } else if (category == 'carbohydrate') {
+        _carbCount++;
+      } else if (category == 'protein') {
+        _proteinCount++;
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,43 +150,70 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // _buildHeader(),
-              // const SizedBox(height: 8),
-              _buildDietaryStructureCard(),
-              const SizedBox(height: 20),
-              _buildNutritionDetailsCard(),
-              const SizedBox(height: 20),
-              _buildSliderCard('How full are you?', fullness,
-                  (v) => setState(() => fullness = v)),
-              const SizedBox(height: 12),
-              _buildSliderCard('Do you like the taste?', taste,
-                  (v) => setState(() => taste = v)),
-              const SizedBox(height: 12),
-              _buildMoodSelector(),
-              const SizedBox(height: 24),
-              Center(
-                  child:
-                      Text('-END-', style: TextStyle(color: Colors.grey[400]))),
-            ],
-          ),
-        ),
-      ),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(),
+                    const SizedBox(height: 8),
+                    _buildDietaryStructureCard(),
+                    const SizedBox(height: 20),
+                    _buildNutritionDetailsCard(),
+                    const SizedBox(height: 20),
+                    _buildSliderCard('How full are you?', fullness,
+                        (v) => setState(() => fullness = v)),
+                    const SizedBox(height: 12),
+                    _buildSliderCard('Do you like the taste?', taste,
+                        (v) => setState(() => taste = v)),
+                    const SizedBox(height: 12),
+                    _buildMoodSelector(),
+                    const SizedBox(height: 24),
+                    Center(
+                        child:
+                            Text('-END-', style: TextStyle(color: Colors.grey[400]))),
+                  ],
+                ),
+              ),
+            ),
     );
   }
 
   Widget _buildHeader() {
+    if (_recognitionData == null) {
+      return SizedBox.shrink();
+    }
+
+    // 从 start_time 解析日期
+    final startTime = _recognitionData!['start_time'] as String? ?? '';
+    DateTime? dateTime;
+    try {
+      dateTime = DateTime.parse(startTime);
+    } catch (e) {
+      dateTime = DateTime.now();
+    }
+
+    // 计算评分（简单示例，可以根据实际需求调整）
+    final score = _calculateScore();
+
+    // 格式化日期
+    final monthDay = dateTime != null
+        ? '${dateTime!.month}月${dateTime!.day}号'
+        : '未知日期';
+    final weekdays = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'];
+    final weekday = dateTime != null && dateTime!.weekday <= 7
+        ? weekdays[dateTime!.weekday - 1]
+        : '星期日';
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Row(
           children: [
-            Text('89',
+            Text('${score.toStringAsFixed(0)}',
                 style:
                     const TextStyle(fontSize: 44, fontWeight: FontWeight.bold)),
             const SizedBox(width: 6),
@@ -121,14 +227,53 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
         ),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
-          children: const [
-            Text('12月1号',
-                style: TextStyle(fontSize: 14, color: Colors.black54)),
-            Text('星期三', style: TextStyle(fontSize: 12, color: Colors.black45)),
+          children: [
+            Text(monthDay,
+                style: const TextStyle(fontSize: 14, color: Colors.black54)),
+            Text(weekday, style: const TextStyle(fontSize: 12, color: Colors.black45)),
           ],
         )
       ],
     );
+  }
+
+  /// 计算评分
+  double _calculateScore() {
+    // 优先使用后端 AI 分析的评分
+    final nutritionAnalysis = _recognitionData?['nutrition_analysis'] as Map? ?? {};
+    if (nutritionAnalysis.containsKey('meal_score')) {
+      return (nutritionAnalysis['meal_score'] as num?)?.toDouble() ?? 0;
+    }
+
+    // 如果后端没有评分，使用本地算法
+    final foodCount = _vegetableCount + _carbCount + _proteinCount;
+    if (foodCount == 0) return 0;
+
+    // 营养均衡度（接近目标比例得分更高）
+    final targetVegetable = 40.0;
+    final currentVegetable = _carbPercent;
+    final balanceScore = 100 - ((currentVegetable - targetVegetable).abs() * 2);
+
+    // 食物种类加分
+    final varietyScore = (foodCount >= 3) ? 20 : (foodCount * 6);
+
+    final finalScore = (balanceScore * 0.8) + varietyScore;
+    return finalScore.clamp(0, 100);
+  }
+
+  /// 计算用餐时间
+  int _calculateEatTime() {
+    // 直接使用后端返回的用餐时长
+    final durationMinutes = _recognitionData?['duration_minutes'] as int? ?? 0;
+    if (durationMinutes > 0) {
+      return durationMinutes;
+    }
+
+    // 备用方案：根据食物重量估算
+    final totalQuantity = (_recognitionData?['foods'] as List? ?? [])
+        .fold<double>(0, (sum, item) => sum + ((item['quantity'] ?? 0) as double));
+    // 每300g约5分钟
+    return ((totalQuantity / 300) * 5).round();
   }
 
   Widget _buildDietaryStructureCard() {
@@ -190,8 +335,8 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                     height: 36,
                     errorBuilder: (c, e, s) => const SizedBox.shrink()),
                 const SizedBox(height: 8),
-                const Text('44%',
-                    style: TextStyle(
+                Text('${_carbPercent.toStringAsFixed(0)}%',
+                    style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF6FAF2B))),
@@ -212,17 +357,17 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
             children: [
               Expanded(
                   child: _buildMiniCard(
-                      '27%',
-                      'High-Carb Foods',
-                      'assets/images/figma/report/bread_icon.png',
-                      Colors.redAccent)),
-              const SizedBox(width: 8),
-              Expanded(
-                  child: _buildMiniCard(
-                      '27%',
+                      '${_proteinPercent.toStringAsFixed(0)}%',
                       'High-Protein Foods',
                       'assets/images/figma/report/meat_icon.png',
                       Colors.orange)),
+              const SizedBox(width: 8),
+              Expanded(
+                  child: _buildMiniCard(
+                      '${_fatPercent.toStringAsFixed(0)}%',
+                      'High-Fat Foods',
+                      'assets/images/figma/report/bread_icon.png',
+                      Colors.redAccent)),
             ],
           )
         ],
@@ -232,6 +377,40 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
 
   Widget _buildMiniCard(
       String percent, String title, String icon, Color color) {
+    // 获取对应的食材名称
+    String ingredientName = '';
+    if (title == 'High-Protein Foods' && _recognitionData != null) {
+      final foods = _recognitionData!['foods'] as List? ?? [];
+      final proteinFoods = foods.where((f) {
+        final foodInfo = f['food'] as Map? ?? {};
+        final category = foodInfo['category'] as String? ?? '';
+        return category == 'protein';
+      }).toList();
+      if (proteinFoods.isNotEmpty) {
+        ingredientName = proteinFoods
+            .map((f) {
+              final foodInfo = f['food'] as Map? ?? {};
+              return foodInfo['name_en'] as String? ?? 'Unknown';
+            })
+            .join('\n');
+      }
+    } else if (title == 'High-Fat Foods' && _recognitionData != null) {
+      final foods = _recognitionData!['foods'] as List? ?? [];
+      final fatFoods = foods.where((f) {
+        final foodInfo = f['food'] as Map? ?? {};
+        final category = foodInfo['category'] as String? ?? '';
+        return category == 'fat';
+      }).toList();
+      if (fatFoods.isNotEmpty) {
+        ingredientName = fatFoods
+            .map((f) {
+              final foodInfo = f['food'] as Map? ?? {};
+              return foodInfo['name_en'] as String? ?? 'Unknown';
+            })
+            .join('\n');
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
@@ -255,8 +434,12 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
           Text(title,
               style: const TextStyle(fontSize: 14, color: Color(0xFF7A5C47))),
           const SizedBox(height: 8),
-          const Text('Ingredient 1\nIngredient 1',
-              style: TextStyle(fontSize: 12, color: Color(0xFFB88C6D))),
+          Text(
+            ingredientName.isNotEmpty ? ingredientName : 'Ingredient 1\nIngredient 1',
+            style: const TextStyle(fontSize: 12, color: Color(0xFFB88C6D)),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
@@ -276,16 +459,30 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
           ]),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          _buildPill('assets/images/figma/report/eat_icon.png', '32min'),
-          _buildPill('assets/images/figma/report/kcal_icon.png', '400kcal'),
+          _buildPill('assets/images/figma/report/eat_icon.png',
+              '${_totalCalories.toStringAsFixed(0)}kcal'),
+          _buildPill('assets/images/figma/report/kcal_icon.png',
+              '${_calculateEatTime()}min'),
         ]),
         const SizedBox(height: 12),
         Row(children: [
-          Expanded(child: _buildNutCard('22%', 'Carb', Colors.redAccent)),
+          Expanded(
+              child: _buildNutCard(
+                  '${_carbPercent.toStringAsFixed(0)}%',
+                  'Carb',
+                  Colors.redAccent)),
           const SizedBox(width: 8),
-          Expanded(child: _buildNutCard('21%', 'Protein', Colors.orangeAccent)),
+          Expanded(
+              child: _buildNutCard(
+                  '${_proteinPercent.toStringAsFixed(0)}%',
+                  'Protein',
+                  Colors.orangeAccent)),
           const SizedBox(width: 8),
-          Expanded(child: _buildNutCard('21%', 'Fat', Colors.yellow.shade700)),
+          Expanded(
+              child: _buildNutCard(
+                  '${_fatPercent.toStringAsFixed(0)}%',
+                  'Fat',
+                  Colors.yellow.shade700)),
         ])
       ]),
     );
