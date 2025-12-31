@@ -8,10 +8,12 @@ class RegistrationCompleteScreen extends StatefulWidget {
   const RegistrationCompleteScreen({super.key});
 
   @override
-  State<RegistrationCompleteScreen> createState() => _RegistrationCompleteScreenState();
+  State<RegistrationCompleteScreen> createState() =>
+      _RegistrationCompleteScreenState();
 }
 
-class _RegistrationCompleteScreenState extends State<RegistrationCompleteScreen> {
+class _RegistrationCompleteScreenState
+    extends State<RegistrationCompleteScreen> {
   bool isLoading = false;
 
   @override
@@ -197,7 +199,7 @@ class _RegistrationCompleteScreenState extends State<RegistrationCompleteScreen>
       );
     } catch (e) {
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Something went wrong. Please try again.'),

@@ -210,12 +210,6 @@ class ApiConfig {
   );
 
   // 用户资料相关接口
-  // 创建或更新用户资料
-  static const createOrUpdateUserProfile = ApiEndpoint(
-    '$apiVersion/users/{user_id}/profile',
-    HttpMethod.post,
-  );
-
   // 获取用户资料
   static const getUserProfile = ApiEndpoint(
     '$apiVersion/users/{user_id}/profile',

@@ -7,12 +7,14 @@ class LoginRequest {
   final String email;
   final String fullName;
   final String password;
+  final Map<String, dynamic>? userProfile;
 
   const LoginRequest({
     required this.name,
     this.email = '',
     this.fullName = '',
     required this.password,
+    this.userProfile,
   });
 
   Map<String, dynamic> toJson() => {
@@ -20,6 +22,7 @@ class LoginRequest {
         'email': email,
         'full_name': fullName,
         'password': password,
+        if (userProfile != null) 'user_profile': userProfile,
       };
 }
 
@@ -549,6 +552,27 @@ class Api {
     } catch (e) {
       print('获取最新识别记录失败: $e');
       throw Exception('获取最新识别记录失败: $e');
+    }
+  }
+
+  // 获取用户资料
+  static Future<Map<String, dynamic>> getUserProfile() async {
+    final userId = await UserSession.userId;
+    if (userId == null) {
+      throw Exception('用户未登录');
+    }
+
+    print('获取用户资料请求: user_id=$userId');
+    try {
+      final response = await _handleRequest(
+        ApiConfig.getUserProfile,
+        pathParams: {'user_id': userId},
+      );
+      print('获取用户资料成功: $response');
+      return response;
+    } catch (e) {
+      print('获取用户资料失败: $e');
+      throw Exception('获取用户资料失败: $e');
     }
   }
 }

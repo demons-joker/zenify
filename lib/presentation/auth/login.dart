@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:zenify/services/api.dart';
 import 'package:zenify/services/user_session.dart';
+import 'package:zenify/services/user_data_cache.dart';
 import 'package:zenify/routes/app_routes.dart';
 
 class Login extends StatefulWidget {
@@ -52,12 +53,16 @@ class _Login extends State<Login> {
 
         AppRoutes.navigateToMainPageAndReplace(context);
       } else {
+        // 注册模式：获取缓存的用户画像数据
+        final userProfile = await UserDataCache.getUserProfile();
+
         response = await Api.register(
           LoginRequest(
             name: _nameController.text,
             email: _emailController.text,
             fullName: _fullNameController.text,
             password: _passwordController.text,
+            userProfile: userProfile.isNotEmpty ? userProfile : null,
           ),
         );
         if (response != null) {
@@ -69,6 +74,10 @@ class _Login extends State<Login> {
           );
           // 注册成功后自动登录
           await UserSession.saveLoginResponse(userInfo);
+
+          // 注册成功后清除本地缓存
+          await UserDataCache.clearCache();
+
           AppRoutes.navigateToMainPageAndReplace(context);
         } else {
           setState(() => _errorMessage = '注册失败，请稍后再试');
