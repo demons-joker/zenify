@@ -224,15 +224,9 @@ class _CameraPageState extends State<CameraPage> {
                         final dynamic result =
                             await UploadService.uploadImage(file, context);
                         if (result != null && mounted) {
-                          setState(() {
-                            _isAnalyzing = true;
-                          });
-                          // 上传成功后返回，携带标记需要切换到ATE tab
-                          Future.delayed(Duration(milliseconds: 500), () {
-                            if (mounted) {
-                              Navigator.of(context).pop({'switchToATE': true});
-                            }
-                          });
+                          // 上传成功后立即返回，携带标记需要切换到ATE tab
+                          // 不等待AI分析完成，让服务端异步处理，App通过MQTT接收更新
+                          Navigator.of(context).pop({'switchToATE': true});
                         }
                       },
               ),

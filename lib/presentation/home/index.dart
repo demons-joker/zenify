@@ -12,7 +12,8 @@ class IndexPage extends StatefulWidget {
 
   final String? initialTab;
 
-  static final GlobalKey<_IndexPageState> globalKey = GlobalKey<_IndexPageState>();
+  static final GlobalKey<_IndexPageState> globalKey =
+      GlobalKey<_IndexPageState>();
 
   @override
   State<IndexPage> createState() => _IndexPageState();
@@ -268,6 +269,16 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
       // 识别完成 - 重新加载历史数据
       await _loadHistoryData();
     }
+  }
+
+  /// 切换到 ATE tab
+  void switchToATETab() {
+    if (!mounted) return;
+    setState(() {
+      _currentTabIndex = 1; // ATE tab 的索引是 1
+    });
+    // 切换后重新加载数据，确保显示最新的识别记录
+    _loadHistoryData();
   }
 
   @override
@@ -1727,13 +1738,6 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
       default:
         return Color(0xFF666666);
     }
-  }
-
-  /// 切换到 ATE tab（供外部调用）
-  void switchToATETab() {
-    setState(() {
-      _currentTabIndex = 1; // 1 = ATE tab
-    });
   }
 }
 
