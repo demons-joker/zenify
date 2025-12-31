@@ -77,8 +77,8 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(),
-              const SizedBox(height: 8),
+              // _buildHeader(),
+              // const SizedBox(height: 8),
               _buildDietaryStructureCard(),
               const SizedBox(height: 20),
               _buildNutritionDetailsCard(),

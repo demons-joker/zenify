@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:zenify/presentation/home/index.dart';
 import 'package:zenify/presentation/ai_chat/ai_chat_page.dart';
-import 'package:zenify/presentation/report/report.dart';
+import 'package:zenify/presentation/report/report_detail.dart';
 import 'package:zenify/presentation/profile/profile_page.dart';
 import 'package:zenify/utils/iconfont.dart';
 import 'package:zenify/routes/app_routes.dart';
@@ -22,7 +22,7 @@ class _MainPageState extends State<MainPage> {
     // HomePage(), // 首页
     Container(), // 拍照按钮占位，实际不会显示
     AIChatPage(), // AI聊天页面
-    Report(), // 我的报告
+    ReportDetailPage(), // 我的报告
     ProfilePage(), // 个人中心
   ];
 

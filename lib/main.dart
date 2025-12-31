@@ -96,6 +96,15 @@ class MyApp extends StatelessWidget {
       ),
       // For quick preview: start the app directly on the Report Detail page.
       // Change back to AppRoutes.initialRoute when you're done previewing.
+      // static const String reportPage = '/report';
+      // static const String profilePage = '/profile';
+      // static const String reportDetail = '/report_detail';
+
+      // // Legacy pages (with required parameters - use navigation helper methods)
+      // static const String menuPage = '/menu';
+      // static const String dishDetail = '/dish_detail';
+      // static const String recipeList = '/recipe_list';
+
       initialRoute: AppRoutes.initialRoute,
       routes: AppRoutes.routes,
       builder: (context, child) {
