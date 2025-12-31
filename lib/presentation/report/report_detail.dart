@@ -106,12 +106,22 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
   void _calculateNutritionData(Map<String, dynamic> data) {
     // 从 nutritive_proportion 获取营养数据
     final nutritiveProportion = data['nutritive_proportion'] as Map? ?? {};
-    final totalCalories = (data['total_calories'] ?? 0) as double;
+    final totalCalories = (data['total_calories'] ?? 0) is num
+        ? (data['total_calories'] as num).toDouble()
+        : 0.0;
 
-    // 获取各营养素的克数
-    final carbGrams = (nutritiveProportion['carbohydrate'] ?? 0) as double;
-    final proteinGrams = (nutritiveProportion['protein'] ?? 0) as double;
-    final fatGrams = (nutritiveProportion['fat'] ?? 0) as double;
+    // 获取各营养素的克数（支持 int 和 double）
+    // 使用安全的类型检查和转换
+    double getNumValue(dynamic value) {
+      if (value is num) {
+        return value.toDouble();
+      }
+      return 0.0;
+    }
+
+    final carbGrams = getNumValue(nutritiveProportion['carbohydrate']);
+    final proteinGrams = getNumValue(nutritiveProportion['protein']);
+    final fatGrams = getNumValue(nutritiveProportion['fat']);
 
     // 计算各营养素的热量 (1g碳水/蛋白质=4kcal, 1g脂肪=9kcal)
     final carbCalories = carbGrams * 4;
@@ -127,14 +137,18 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
     // 统计各类食物数量
     final foods = data['foods'] as List? ?? [];
     for (var foodItem in foods) {
-      final food = foodItem['food'] as Map? ?? {};
-      final category = food['category'] as String? ?? 'other';
-      if (category == 'vegetable') {
-        _vegetableCount++;
-      } else if (category == 'carbohydrate') {
-        _carbCount++;
-      } else if (category == 'protein') {
-        _proteinCount++;
+      // 处理 foods 中的食物项
+      if (foodItem is Map) {
+        // foods 可能直接是食物对象，也可能有 'food' 字段
+        final food = foodItem['food'] as Map? ?? foodItem;
+        final category = food['category'] as String? ?? 'other';
+        if (category == 'vegetable') {
+          _vegetableCount++;
+        } else if (category == 'carbohydrate') {
+          _carbCount++;
+        } else if (category == 'protein') {
+          _proteinCount++;
+        }
       }
     }
   }
@@ -142,14 +156,6 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
           : SingleChildScrollView(

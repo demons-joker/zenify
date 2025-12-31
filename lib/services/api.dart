@@ -535,15 +535,15 @@ class Api {
   // 获取最新一条识别记录
   static Future<Map<String, dynamic>?> getLatestRecognition() async {
     try {
+      final userId = await UserSession.userId;
       final response = await _handleRequest(
         ApiConfig.getLatestRecognition,
+        queryParams: {'user_id': userId},
       );
       print('获取最新识别记录: $response');
       if (response is Map && response['success'] == true) {
-        final recognitions = response['recognitions'] as List? ?? [];
-        if (recognitions.isNotEmpty) {
-          return recognitions[0] as Map<String, dynamic>;
-        }
+        final mealRecord = response['meal_record'] as Map<String, dynamic>?;
+        return mealRecord;
       }
       return null;
     } catch (e) {

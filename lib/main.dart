@@ -88,8 +88,8 @@ class MyApp extends StatelessWidget {
             );
           }
 
-          final needsRegistration = false;
-          // final needsRegistration = snapshot.data ?? true;
+          // final needsRegistration = false;
+          final needsRegistration = snapshot.data ?? true;
           // If user doesn't need registration, navigate to the updated home (IndexPage)
           return needsRegistration ? AppNavigationScreen() : MainPage();
         },

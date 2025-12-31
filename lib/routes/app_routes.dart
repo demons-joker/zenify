@@ -18,6 +18,7 @@ import '../presentation/registration/registration_flow.dart';
 import '../presentation/main_page.dart';
 // Home pages
 import '../presentation/home/index.dart';
+import '../presentation/home/meal_analysis_report.dart';
 // Camera page
 import '../presentation/camera/camera_page.dart';
 // AI Chat page
@@ -67,6 +68,7 @@ class AppRoutes {
   static const String reportPage = '/report';
   static const String profilePage = '/profile';
   static const String reportDetail = '/report_detail';
+  static const String mealAnalysisReport = '/meal_analysis_report';
 
   // Legacy pages (with required parameters - use navigation helper methods)
   static const String menuPage = '/menu';
@@ -111,6 +113,15 @@ class AppRoutes {
         reportPage: (context) => Report(),
         reportDetail: (context) => ReportDetailPage(),
         profilePage: (context) => ProfilePage(),
+        mealAnalysisReport: (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map?;
+          return MealAnalysisReport(
+            image: args?['image'] as String? ?? '',
+            title: args?['title'] as String? ?? '',
+            tag: args?['tag'] as String? ?? '',
+            foods: args?['foods'] as List<dynamic>? ?? [],
+          );
+        },
       };
 
   /// Navigate to CameraPage
@@ -202,6 +213,26 @@ class AppRoutes {
       MaterialPageRoute(
         builder: (context) => ReportPage(mealRecordId: mealRecordId),
       ),
+    );
+  }
+
+  /// Navigate to MealAnalysisReport with required parameters
+  /// Usage: AppRoutes.navigateToMealAnalysisReport(context, image, title, tag, foods)
+  static void navigateToMealAnalysisReport(
+    BuildContext context, {
+    required String image,
+    required String title,
+    required String tag,
+    required List<dynamic> foods,
+  }) {
+    Navigator.of(context).pushNamed(
+      mealAnalysisReport,
+      arguments: {
+        'image': image,
+        'title': title,
+        'tag': tag,
+        'foods': foods,
+      },
     );
   }
 

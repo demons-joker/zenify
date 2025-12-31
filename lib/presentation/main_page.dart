@@ -19,10 +19,10 @@ class _MainPageState extends State<MainPage> {
   // 页面列表
   final List<Widget> _pages = [
     IndexPage(), // 首页
+    ReportDetailPage(), // 我的报告
     // HomePage(), // 首页
     Container(), // 拍照按钮占位，实际不会显示
     AIChatPage(), // AI聊天页面
-    ReportDetailPage(), // 我的报告
     ProfilePage(), // 个人中心
   ];
 
@@ -99,12 +99,12 @@ class _MainPageState extends State<MainPage> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _buildNavItem(0, Icon(IconFont.home2), Icon(IconFont.home)),
-          _buildNavItem(1, Icon(IconFont.daohangweixuanzhongPaizhao),
-              Icon(IconFont.daohangxuanzhongPaizhao)),
+          _buildNavItem(1, Icon(IconFont.daohangweixuanzhongTongji),
+              Icon(IconFont.daohangxuanzhongTongji)),
           _buildNavItem(2, Icon(IconFont.daohangweixuanzhongshouye),
               Icon(IconFont.daohangxuanzhongshouye)),
-          _buildNavItem(3, Icon(IconFont.daohangweixuanzhongTongji),
-              Icon(IconFont.daohangxuanzhongTongji)),
+          _buildNavItem(3, Icon(IconFont.daohangweixuanzhongPaizhao),
+              Icon(IconFont.daohangxuanzhongPaizhao)),
           _buildNavItem(4, Icon(IconFont.daohangweixuanzhongWode),
               Icon(IconFont.daohangxuanzhongWode)),
         ],
@@ -117,11 +117,11 @@ class _MainPageState extends State<MainPage> {
     bool isSelected = _currentIndex == index;
     return GestureDetector(
       onTap: () {
-        if (index == 1) {
+        if (index == 3) {
           // 拍照按钮点击处理
           _openCameraPage();
         } else if (index == 2) {
-          // 拍照按钮点击处理
+          // AI点击处理
           _openAiChartPage();
         } else {
           // 其他导航项点击处理

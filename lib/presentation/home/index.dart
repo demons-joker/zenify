@@ -745,7 +745,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
-                              'Balanced diet',
+                              'Balanced',
                               style: TextStyle(
                                 color: Color(0xFF747474),
                                 fontSize: 16.fSize,
@@ -781,7 +781,14 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                         height: 32.h,
                         child: GestureDetector(
                           onTap: () {
-                            // 编辑功能
+                            // 跳转到小分析报告页面
+                            AppRoutes.navigateToMealAnalysisReport(
+                              context,
+                              image: imageUrl ?? '',
+                              title: title,
+                              tag: 'Balanced',
+                              foods: data?['foods'] ?? [],
+                            );
                           },
                           child: Icon(
                             Icons.edit,
