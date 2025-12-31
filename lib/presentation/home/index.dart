@@ -263,8 +263,8 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
     if (!mounted) return;
 
     if (status.status == RecognitionStatusType.analyzing) {
-      // 识别开始 - 重新加载历史数据
-      await _loadHistoryData();
+      // 识别开始 - 切换到 ATE tab 并重新加载历史数据
+      switchToATETab();
     } else if (status.status == RecognitionStatusType.completed) {
       // 识别完成 - 重新加载历史数据
       await _loadHistoryData();

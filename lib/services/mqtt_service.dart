@@ -58,7 +58,7 @@ class MQTTService {
       // 4. 设置连接消息
       final connMess = MqttConnectMessage()
           .withClientIdentifier(clientId)
-          .startClean()  // 清除之前的会话状态
+          .startClean() // 清除之前的会话状态
           .withWillQos(MqttQos.atMostOnce);
 
       _client!.connectionMessage = connMess;
@@ -114,7 +114,6 @@ class MQTTService {
     final topics = [
       'user/$userId/recognition_started',
       'user/$userId/recognition_completed',
-      'device/+/user/$userId/user_session/+/recognize',
     ];
 
     print('📡 开始订阅用户主题...');
@@ -148,9 +147,6 @@ class MQTTService {
           data: data,
         ));
         print('✅ 识别完成通知已处理。');
-      } else if (topic.contains('/recognize')) {
-        // 如果仍需要处理此模式，可以在此添加逻辑
-        print('📝 收到识别结果消息，如需处理请启用相关代码。');
       } else {
         print('📨 收到未明确处理的主题消息: $topic');
       }
