@@ -300,8 +300,8 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
           // 顶部区域：左边tab切换、中间logo、右边菜单
           _buildTopHeader(),
 
-          //           // 周日期选择器
-          _buildWeekSelector(),
+          // 周日期选择器 - 只在 ATE tab 显示
+          if (_currentTabIndex == 1) _buildWeekSelector(),
 
           // 内容区域
           Expanded(
@@ -1308,7 +1308,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                   ),
                   child: Center(
                     child: Text(
-                      '85',
+                      'A',
                       style: TextStyle(
                         color: Colors.black,
                         fontSize: 20.fSize,

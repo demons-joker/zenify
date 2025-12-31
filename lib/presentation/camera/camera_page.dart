@@ -3,6 +3,8 @@ import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:zenify/services/upload_service.dart';
+import 'package:zenify/services/mqtt_service.dart';
+import 'dart:async';
 
 class CameraPage extends StatefulWidget {
   @override
@@ -18,11 +20,23 @@ class _CameraPageState extends State<CameraPage> {
   bool _isInitializing = true;
   bool _isAnalyzing = false;
   bool _isSynced = false;
+  StreamSubscription<RecognitionStatus>? _mqttSubscription;
 
   @override
   void initState() {
     super.initState();
     _initializeCamera();
+    _listenToMQTT();
+  }
+
+  /// 监听 MQTT 消息
+  void _listenToMQTT() {
+    _mqttSubscription = MQTTService().statusStream.listen((status) {
+      if (status.status == RecognitionStatusType.analyzing && mounted) {
+        // 收到 recognition_started 消息，立即跳转到首页 ATE tab
+        Navigator.of(context).pop({'switchToATE': true});
+      }
+    });
   }
 
   Future<void> _initializeCamera() async {
@@ -172,7 +186,8 @@ class _CameraPageState extends State<CameraPage> {
                         children: [
                           CircularProgressIndicator(),
                           SizedBox(height: 16),
-                          Text('分析中...', style: TextStyle(color: Colors.white)),
+                          Text('Uploading...',
+                              style: TextStyle(color: Colors.white)),
                         ],
                       ),
                     ),
@@ -184,7 +199,7 @@ class _CameraPageState extends State<CameraPage> {
                           Icon(Icons.check_circle,
                               color: Colors.green, size: 48),
                           SizedBox(height: 16),
-                          Text('数据同步到餐盘',
+                          Text('Synced successfully',
                               style: TextStyle(color: Colors.white)),
                         ],
                       ),
@@ -204,7 +219,7 @@ class _CameraPageState extends State<CameraPage> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               TextButton(
-                child: Text('重拍',
+                child: Text('Reshoot',
                     style: TextStyle(
                         color: _isAnalyzing
                             ? Colors.white.withValues(alpha: 0.5)
@@ -212,7 +227,7 @@ class _CameraPageState extends State<CameraPage> {
                 onPressed: _isAnalyzing ? null : _retakePhoto,
               ),
               TextButton(
-                child: Text('确认',
+                child: Text('OK',
                     style: TextStyle(
                         color: _isAnalyzing
                             ? Colors.white.withValues(alpha: 0.5)
@@ -221,13 +236,13 @@ class _CameraPageState extends State<CameraPage> {
                     ? null
                     : () async {
                         final file = File(_imageFile!.path);
-                        final dynamic result =
-                            await UploadService.uploadImage(file, context);
-                        if (result != null && mounted) {
-                          // 上传成功后立即返回，携带标记需要切换到ATE tab
-                          // 不等待AI分析完成，让服务端异步处理，App通过MQTT接收更新
-                          Navigator.of(context).pop({'switchToATE': true});
-                        }
+                        setState(() {
+                          _isAnalyzing = true;
+                        });
+
+                        // 上传图片，不等待AI分析完成
+                        await UploadService.uploadImage(file, context);
+                        // 当收到 MQTT recognition_started 消息时会自动跳转
                       },
               ),
             ],
@@ -261,6 +276,7 @@ class _CameraPageState extends State<CameraPage> {
   @override
   void dispose() {
     _cameraController?.dispose();
+    _mqttSubscription?.cancel();
     super.dispose();
   }
 }

@@ -131,20 +131,16 @@ class MQTTService {
   /// 处理收到的消息 - 逻辑优化
   void _handleIncomingMessage(String topic, String payload) {
     try {
-      final data = jsonDecode(payload);
+      // final data = jsonDecode(payload);
 
       if (topic.contains('/recognition_started')) {
         _statusController.add(RecognitionStatus(
-          sessionId: '', // 可以从data或topic中尝试解析
           status: RecognitionStatusType.analyzing,
-          data: data,
         ));
         print('🔄 识别开始通知已处理。');
       } else if (topic.contains('/recognition_completed')) {
         _statusController.add(RecognitionStatus(
-          sessionId: '',
           status: RecognitionStatusType.completed,
-          data: data,
         ));
         print('✅ 识别完成通知已处理。');
       } else {
@@ -192,9 +188,6 @@ class MQTTService {
 enum RecognitionStatusType { analyzing, completed }
 
 class RecognitionStatus {
-  final String sessionId;
   final RecognitionStatusType status;
-  final dynamic data;
-  RecognitionStatus(
-      {required this.sessionId, required this.status, required this.data});
+  RecognitionStatus({required this.status});
 }

@@ -31,32 +31,32 @@ class UploadService {
       request.files.add(multipartFile);
 
       // 显示上传进度
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('正在上传图片...')),
-        );
-      }
+      // if (context.mounted) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     const SnackBar(content: Text('正在上传图片...')),
+      //   );
+      // }
 
       // 发送请求
       final response = await request.send();
       final responseData = await response.stream.bytesToString();
 
       if (response.statusCode == 200) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('上传成功')),
-          );
-        }
+        // if (context.mounted) {
+        //   ScaffoldMessenger.of(context).showSnackBar(
+        //     const SnackBar(content: Text('上传成功')),
+        //   );
+        // }
         return responseData;
       } else {
         throw Exception('上传失败: ${response.statusCode}');
       }
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('上传错误: $e')),
-        );
-      }
+      // if (context.mounted) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(content: Text('上传错误: $e')),
+      //   );
+      // }
       return null;
     }
   }
