@@ -29,8 +29,6 @@ android {
         versionName = "1.0"
     }
 
-    // 临时注释掉签名配置
-    /*
     signingConfigs {
         create("release") {
             val properties = Properties().apply {
@@ -38,16 +36,14 @@ android {
             }
             keyAlias = properties.getProperty("keyAlias")
             keyPassword = properties.getProperty("keyPassword")
-            storeFile = file(properties.getProperty("storeFile"))
+            storeFile = rootProject.file(properties.getProperty("storeFile"))
             storePassword = properties.getProperty("storePassword")
         }
     }
-    */
 
     buildTypes {
         getByName("release") {
-            // 注释掉签名配置用于测试
-            // signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

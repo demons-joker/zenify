@@ -29,7 +29,8 @@ dependencies:
   carousel_slider: ^5.1.1
   connectivity_plus: ^6.1.0
   gradient_borders: ^1.0.2
-  speech_to_text: ^6.6.0
+  # Upgrade to a version that supports the Android v2 embedding (fixes Kotlin build errors)
+  speech_to_text: ^7.3.0
   permission_handler: ^11.3.1
   mobile_scanner: ^5.0.0
   mqtt_client: ^10.0.0
