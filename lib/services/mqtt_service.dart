@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 import 'package:zenify/services/service_config.dart';

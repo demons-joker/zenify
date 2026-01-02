@@ -6,12 +6,15 @@ import '../../core/app_export.dart';
 import '../../services/mqtt_service.dart';
 import '../../services/user_session.dart';
 import '../../services/api.dart';
+import '../../services/user_data_cache.dart';
+import '../menu/menu_page.dart';
 
 class IndexPage extends StatefulWidget {
   const IndexPage({super.key, this.initialTab});
 
   final String? initialTab;
 
+  // ignore: library_private_types_in_public_api
   static final GlobalKey<_IndexPageState> globalKey =
       GlobalKey<_IndexPageState>();
 
@@ -26,48 +29,58 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
 
   // MY PLAN 数据
   final List<Map<String, dynamic>> _dietPlans = [
-    {
-      'name': 'Paleo diet',
-      'user': 'Alice',
-      'score': 'B+',
-      'image': 'assets/images/figma/plate_jimeng.png'
-    },
-    {
-      'name': 'Keto diet',
-      'user': 'Bob',
-      'score': 'A-',
-      'image': 'assets/images/figma/plan_dish1.png'
-    },
-    {
-      'name': 'Vegan diet',
-      'user': 'Carol',
-      'score': 'C+',
-      'image': 'assets/images/figma/plate_jimeng.png'
-    },
-    {
-      'name': 'Mediterranean',
-      'user': 'David',
-      'score': 'A',
-      'image': 'assets/images/figma/plan_dish1.png'
-    },
-    {
-      'name': 'Low carb',
-      'user': 'Eve',
-      'score': 'B',
-      'image': 'assets/images/figma/plate_jimeng.png'
-    },
-    {
-      'name': 'High protein',
-      'user': 'Frank',
-      'score': 'A+',
-      'image': 'assets/images/figma/plan_dish1.png'
-    },
+    // {
+    //   'name': 'Paleo diet',
+    //   'user': 'Alice',
+    //   'score': 'B+',
+    //   'image': 'assets/images/figma/plate_jimeng.png'
+    // },
+    // {
+    //   'name': 'Keto diet',
+    //   'user': 'Bob',
+    //   'score': 'A-',
+    //   'image': 'assets/images/figma/plate_jimeng.png'
+    // },
+    // {
+    //   'name': 'Vegan diet',
+    //   'user': 'Carol',
+    //   'score': 'C+',
+    //   'image': 'assets/images/figma/plate_jimeng.png'
+    // },
+    // {
+    //   'name': 'Mediterranean',
+    //   'user': 'David',
+    //   'score': 'A',
+    //   'image': 'assets/images/figma/plate_jimeng.png'
+    // },
+    // {
+    //   'name': 'Low carb',
+    //   'user': 'Eve',
+    //   'score': 'B',
+    //   'image': 'assets/images/figma/plate_jimeng.png'
+    // },
+    // {
+    //   'name': 'High protein',
+    //   'user': 'Frank',
+    //   'score': 'A+',
+    //   'image': 'assets/images/figma/plate_jimeng.png'
+    // },
   ];
 
   String _selectedMealType = 'BREAKFAST';
-  final List<String> _mealTypes = ['BREAKFAST', 'LUNCH', 'DINNER', 'OTHER'];
+  final List<String> _mealTypes = ['BREAKFAST', 'LUNCH', 'DINNER'];
   final TextEditingController _searchController = TextEditingController();
   bool _isSearchVisible = false;
+
+  // 当前用户食物数据
+  List<dynamic> _currentUserFoods = [];
+  bool _isLoadingFoods = false;
+
+  // 收藏状态 - 按日期和餐食类型存储
+  Map<String, bool> _collectedStatus = {};
+
+  // 收藏的餐食列表
+  List<Map<String, dynamic>> _collectedMeals = [];
 
   // 食物识别记录 - 按餐食类型分组
   Map<String, List<Map<String, dynamic>>> _ateFoods = {
@@ -101,6 +114,15 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
 
     // 加载历史数据
     _loadHistoryData();
+
+    // 加载当前用户食物数据
+    _loadCurrentUserFoods();
+
+    // 加载收藏餐食数据
+    _loadCollectedMeals();
+
+    // 加载收藏状态
+    _loadCollectedStatus();
   }
 
   /// 加载历史识别数据
@@ -174,6 +196,139 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
           _isLoadingHistory = false;
         });
       }
+    }
+  }
+
+  /// 加载当前用户食物数据
+  Future<void> _loadCurrentUserFoods() async {
+    if (_isLoadingFoods) return;
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingFoods = true;
+    });
+
+    try {
+      final userId = await UserSession.userId;
+      if (userId == null || !mounted) return;
+
+      print('加载当前用户食物数据: userId=$userId');
+
+      // 调用API获取当前用户食物数据
+      final result = await Api.getCurrentUserFoods({'user_id': userId});
+
+      print('API响应食物数据: $result');
+
+      if (mounted) {
+        setState(() {
+          _currentUserFoods = result is List ? result : [];
+          _isLoadingFoods = false;
+        });
+        // 加载收藏状态
+        _loadCollectedStatus();
+      }
+    } catch (e) {
+      print('加载当前用户食物数据失败: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingFoods = false;
+        });
+      }
+    }
+  }
+
+  /// 加载收藏的餐食数据
+  Future<void> _loadCollectedMeals() async {
+    try {
+      final meals = await UserDataCache.getCollectedMeals();
+      if (mounted) {
+        setState(() {
+          _collectedMeals = meals;
+        });
+      }
+    } catch (e) {
+      print('加载收藏餐食失败: $e');
+    }
+  }
+
+  /// 切换收藏状态
+  Future<void> _toggleCollect() async {
+    final selectedDate = _getSelectedDate();
+    final dateStr = selectedDate.toIso8601String().split('T')[0];
+    final mealType = _selectedMealType;
+
+    try {
+      if (_collectedStatus[dateStr] ?? false) {
+        // 取消收藏
+        await UserDataCache.removeCollectedMeal(dateStr, mealType);
+        if (mounted) {
+          setState(() {
+            _collectedStatus[dateStr] = false;
+          });
+        }
+      } else {
+        // 添加收藏 - 收藏当前餐食类型的所有食物
+        final selectedMealData = _currentUserFoods.firstWhere(
+          (item) =>
+              item['meal_type']?.toString().toLowerCase() ==
+              _selectedMealType.toLowerCase(),
+          orElse: () => null,
+        );
+
+        if (selectedMealData != null) {
+          final foods = selectedMealData['foods'] as List?;
+          if (foods != null && foods.isNotEmpty) {
+            // 为每个食物创建收藏
+            for (var foodItem in foods) {
+              final food = foodItem['food'] as Map?;
+              if (food != null) {
+                await UserDataCache.saveCollectedMeal({
+                  'date': dateStr,
+                  'meal_type': mealType,
+                  'food_id': food['id'],
+                  'name_en': food['name_en'],
+                  'name': food['name'],
+                  'image_url': food['image_url'],
+                  'category': food['category'],
+                  'quantity': foodItem['quantity'],
+                  'unit': foodItem['unit'],
+                });
+              }
+            }
+          }
+          if (mounted) {
+            setState(() {
+              _collectedStatus[dateStr] = true;
+            });
+          }
+        }
+      }
+
+      // 刷新My Plan模块数据
+      await _loadCollectedMeals();
+    } catch (e) {
+      print('切换收藏状态失败: $e');
+    }
+  }
+
+  /// 获取选中日期
+  DateTime _getSelectedDate() {
+    final now = DateTime.now();
+    final daysUntilSelectedDay = _selectedDay - now.weekday;
+    return now.add(Duration(days: daysUntilSelectedDay));
+  }
+
+  /// 加载收藏状态
+  Future<void> _loadCollectedStatus() async {
+    final selectedDate = _getSelectedDate();
+    final dateStr = selectedDate.toIso8601String().split('T')[0];
+    final mealType = _selectedMealType;
+
+    final isCollected = await UserDataCache.isMealCollected(dateStr, mealType);
+    if (mounted) {
+      setState(() {
+        _collectedStatus[dateStr] = isCollected;
+      });
     }
   }
 
@@ -1084,7 +1239,12 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
         children: _mealTypes.map((mealType) {
           final isSelected = mealType == _selectedMealType;
           return GestureDetector(
-            onTap: () => setState(() => _selectedMealType = mealType),
+            onTap: () {
+              setState(() {
+                _selectedMealType = mealType;
+              });
+              _loadCollectedStatus(); // 切换餐食类型时刷新收藏状态
+            },
             child: Container(
               margin: EdgeInsets.all(4.h),
               padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -1217,114 +1377,127 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // 左侧 Collect 按钮
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 40.h,
-                            height: 40.h,
-                            child: Image.asset(
-                              'assets/images/collect.png',
+                      GestureDetector(
+                        onTap: _toggleCollect,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
                               width: 40.h,
                               height: 40.h,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Container(
-                                width: 40.h,
-                                height: 40.h,
-                                color: Colors.grey.shade600,
-                                child: Icon(
-                                  Icons.collections,
-                                  color: Colors.white,
-                                  size: 20.h,
-                                ),
+                              child: Icon(
+                                (_collectedStatus[_getSelectedDate()
+                                            .toIso8601String()
+                                            .split('T')[0]] ??
+                                        false)
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                color: (_collectedStatus[_getSelectedDate()
+                                            .toIso8601String()
+                                            .split('T')[0]] ??
+                                        false)
+                                    ? Color(0xFFFF0000)
+                                    : Color(0xFF908070),
+                                size: 28.h,
                               ),
                             ),
-                          ),
-                          SizedBox(height: 4.h),
-                          Text(
-                            'Collect',
-                            style: TextStyle(
-                              color: Color(0xFF908070),
-                              fontSize: 14.fSize,
-                              fontWeight: FontWeight.w400,
+                            SizedBox(height: 4.h),
+                            Text(
+                              'Collect',
+                              style: TextStyle(
+                                color: (_collectedStatus[_getSelectedDate()
+                                            .toIso8601String()
+                                            .split('T')[0]] ??
+                                        false)
+                                    ? Color(0xFFFF0000)
+                                    : Color(0xFF908070),
+                                fontSize: 14.fSize,
+                                fontWeight: FontWeight.w400,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                          ],
+                        ),
+                      ),
+                      // 中间显示餐食热量和食材英文名
+                      Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 10.h),
+                          child: _buildMealInfo(),
+                        ),
                       ),
                       // 右侧 Change 按钮
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 40.h,
-                            height: 40.h,
-                            child: Image.asset(
-                              'assets/images/change.png',
-                              width: 40.h,
-                              height: 40.h,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Container(
-                                width: 40.h,
-                                height: 40.h,
-                                color: Colors.grey.shade600,
-                                child: Icon(
-                                  Icons.refresh,
-                                  color: Colors.white,
-                                  size: 20.h,
-                                ),
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 4.h),
-                          Text(
-                            'Change',
-                            style: TextStyle(
-                              color: Color(0xFF908070),
-                              fontSize: 14.fSize,
-                              fontWeight: FontWeight.w400,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
+                      // Column(
+                      //   mainAxisAlignment: MainAxisAlignment.center,
+                      //   children: [
+                      //     SizedBox(
+                      //       width: 40.h,
+                      //       height: 40.h,
+                      //       child: Image.asset(
+                      //         'assets/images/change.png',
+                      //         width: 40.h,
+                      //         height: 40.h,
+                      //         fit: BoxFit.contain,
+                      //         errorBuilder: (context, error, stackTrace) =>
+                      //             Container(
+                      //           width: 40.h,
+                      //           height: 40.h,
+                      //           color: Colors.grey.shade600,
+                      //           child: Icon(
+                      //             Icons.refresh,
+                      //             color: Colors.white,
+                      //             size: 20.h,
+                      //           ),
+                      //         ),
+                      //       ),
+                      //     ),
+                      //     SizedBox(height: 4.h),
+                      //     Text(
+                      //       'Change',
+                      //       style: TextStyle(
+                      //         color: Color(0xFF908070),
+                      //         fontSize: 14.fSize,
+                      //         fontWeight: FontWeight.w400,
+                      //       ),
+                      //       textAlign: TextAlign.center,
+                      //     ),
+                      //   ],
+                      // ),
                     ],
                   ),
                 ),
               ),
 
               // 分数【85】显示在左上角14:14位置
-              Positioned(
-                right: 14.h,
-                top: 14.h,
-                child: Container(
-                  width: 48.h,
-                  height: 48.h,
-                  decoration: BoxDecoration(
-                    color: Color(0xFFC8FD00),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        blurRadius: 6.h,
-                        offset: Offset(0, 2.h),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      'A',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 20.fSize,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+              // Positioned(
+              //   right: 14.h,
+              //   top: 14.h,
+              //   child: Container(
+              //     width: 48.h,
+              //     height: 48.h,
+              //     decoration: BoxDecoration(
+              //       color: Color(0xFFC8FD00),
+              //       shape: BoxShape.circle,
+              //       boxShadow: [
+              //         BoxShadow(
+              //           color: Colors.black.withValues(alpha: 0.12),
+              //           blurRadius: 6.h,
+              //           offset: Offset(0, 2.h),
+              //         ),
+              //       ],
+              //     ),
+              //     child: Center(
+              //       child: Text(
+              //         'A',
+              //         style: TextStyle(
+              //           color: Colors.black,
+              //           fontSize: 20.fSize,
+              //           fontWeight: FontWeight.bold,
+              //         ),
+              //       ),
+              //     ),
+              //   ),
+              // ),
 
               // 虚线分割线
               Positioned(
@@ -1343,44 +1516,277 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
     );
   }
 
+  /// 构建餐食信息（热量和食材英文名）
+  Widget _buildMealInfo() {
+    if (_isLoadingFoods) {
+      return Center(
+        child: CircularProgressIndicator(color: Color(0xFFC8FD00)),
+      );
+    }
+
+    // 获取当前选择的餐食类型对应的食物数据
+    final selectedMealData = _currentUserFoods.firstWhere(
+      (item) =>
+          item['meal_type']?.toString().toLowerCase() ==
+          _selectedMealType.toLowerCase(),
+      orElse: () => null,
+    );
+
+    if (selectedMealData == null) {
+      return Text(
+        'No data',
+        style: TextStyle(
+          color: Color(0xFF908070),
+          fontSize: 14.fSize,
+        ),
+        textAlign: TextAlign.center,
+      );
+    }
+
+    final calories = selectedMealData['calories'] ?? 0;
+    final foods = selectedMealData['foods'] as List? ?? [];
+    final foodNames = foods.map((f) {
+      final foodInfo = f['food'] as Map?;
+      return foodInfo?['name_en'] as String? ?? 'Unknown';
+    }).join(', ');
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '$calories kcal',
+          style: TextStyle(
+            color: Color(0xFF908070),
+            fontSize: 16.fSize,
+            fontWeight: FontWeight.w600,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        SizedBox(height: 4.h),
+        Text(
+          foodNames,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 12.fSize,
+            fontWeight: FontWeight.w400,
+          ),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
+
   // 构建食材类型标签和引导线
   Widget _buildFoodTypeLabels(double cardSize) {
+    // 获取当前选择的餐食类型对应的食物数据
+    final selectedMealData = _currentUserFoods.firstWhere(
+      (item) =>
+          item['meal_type']?.toString().toLowerCase() ==
+          _selectedMealType.toLowerCase(),
+      orElse: () => null,
+    );
+
+    // 收集所有食物信息（最多4个），按类别分组
+    Map<String, List<String>> categorizedFoods = {
+      'vegetable': [],
+      'carbohydrate': [],
+      'protein': [],
+      'fruit': [],
+      'fat': [],
+    };
+
+    if (selectedMealData != null) {
+      final foods = selectedMealData['foods'] as List? ?? [];
+      for (var foodItem in foods) {
+        final foodInfo = foodItem['food'] as Map?;
+        if (foodInfo != null) {
+          final category = foodInfo['category'] as String?;
+          final nameEn = foodInfo['name_en'] as String?;
+          if (category != null && nameEn != null) {
+            final categoryLower = category.toLowerCase();
+            if (categorizedFoods.containsKey(categoryLower)) {
+              categorizedFoods[categoryLower]!.add(nameEn);
+            }
+          }
+        }
+      }
+    }
+
     final containerWidth = cardSize; // 使用卡片总宽度
     final containerHeight = cardSize - 90.h; // 上半部分高度
-    final foodTypes = [
-      {
-        'name': 'Vegetables',
-        'textPosition': Offset(18.h, containerHeight * 0.3 - 50), // 向上移动5px
-      },
-      {
-        'name': 'High-Carb Foods',
-        'textPosition': Offset(18.h, containerHeight * 0.7 + 50), // 向下移动5px
-      },
-      {
-        'name': 'High-Protein Foods',
-        'textPosition': Offset(
-            containerWidth - 180.h, containerHeight * 0.7 + 50), // 向下移动5px
-      },
-    ];
+    final iconSize = 24.h; // 图标大小
+
+    // 构建要显示的食材类型标签列表 - 使用实际的菜品数据
+    final foodTypes = <Map<String, dynamic>>[];
+
+    // 位置1: 左上角 - vegetable
+    int? vegetableId;
+    if (categorizedFoods['vegetable']!.isNotEmpty) {
+      // 找到第一个 vegetable 食物的 plan_id
+      if (selectedMealData != null) {
+        final foods = selectedMealData['foods'] as List? ?? [];
+        for (var foodItem in foods) {
+          final foodInfo = foodItem['food'] as Map?;
+          if (foodInfo != null &&
+              (foodInfo['category'] as String?) == 'vegetable') {
+            vegetableId = foodItem['id'] as int?;
+            break;
+          }
+        }
+      }
+      foodTypes.add({
+        'name': categorizedFoods['vegetable']!.join(', '),
+        'textPosition': Offset(18.h, containerHeight * 0.3 - 40),
+        'isVegetables': true, // 标记这是左上角位置
+        'id': vegetableId,
+        'category': 'vegetable', // 添加食物的category属性
+      });
+    }
+
+    // 位置2: 左下角 - carbohydrate
+    int? carbohydrateId;
+    if (categorizedFoods['carbohydrate']!.isNotEmpty) {
+      // 找到第一个 carbohydrate 食物的 plan_id
+      if (selectedMealData != null) {
+        final foods = selectedMealData['foods'] as List? ?? [];
+        for (var foodItem in foods) {
+          final foodInfo = foodItem['food'] as Map?;
+          if (foodInfo != null &&
+              (foodInfo['category'] as String?) == 'carbohydrate') {
+            carbohydrateId = foodItem['id'] as int?;
+            break;
+          }
+        }
+      }
+      foodTypes.add({
+        'name': categorizedFoods['carbohydrate']!.join(', '),
+        'textPosition': Offset(18.h, containerHeight * 0.7 + 50),
+        'isVegetables': false,
+        'isHighProtein': false,
+        'id': carbohydrateId,
+        'category': 'carbohydrate', // 添加食物的category属性
+      });
+    }
+
+    // 位置3: 右下角 - protein
+    int? proteinId;
+    if (categorizedFoods['protein']!.isNotEmpty) {
+      // 找到第一个 protein 食物的 plan_id
+      if (selectedMealData != null) {
+        final foods = selectedMealData['foods'] as List? ?? [];
+        for (var foodItem in foods) {
+          final foodInfo = foodItem['food'] as Map?;
+          if (foodInfo != null &&
+              (foodInfo['category'] as String?) == 'protein') {
+            proteinId = foodItem['id'] as int?;
+            break;
+          }
+        }
+      }
+      foodTypes.add({
+        'name': categorizedFoods['protein']!.join(', '),
+        'textPosition':
+            Offset(containerWidth - 180.h, containerHeight * 0.7 + 50),
+        'isVegetables': false,
+        'isHighProtein': true, // 标记这是右下角位置
+        'id': proteinId,
+        'category': 'protein', // 添加食物的category属性
+      });
+    }
+
+    // 位置4: 右上角 - fruit或fat（如果有第4个菜）
+    String? fourthFoodName;
+    int? fourthId;
+    String? fourthCategory;
+    if (categorizedFoods['fruit']!.isNotEmpty) {
+      fourthFoodName = categorizedFoods['fruit']!.join(', ');
+      fourthCategory = 'fruit';
+      // 找到第一个 fruit 食物的 plan_id
+      if (selectedMealData != null) {
+        final foods = selectedMealData['foods'] as List? ?? [];
+        for (var foodItem in foods) {
+          final foodInfo = foodItem['food'] as Map?;
+          if (foodInfo != null &&
+              (foodInfo['category'] as String?) == 'fruit') {
+            fourthId = foodItem['id'] as int?;
+            break;
+          }
+        }
+      }
+    } else if (categorizedFoods['fat']!.isNotEmpty) {
+      fourthFoodName = categorizedFoods['fat']!.join(', ');
+      fourthCategory = 'fat';
+      // 找到第一个 fat 食物的 plan_id
+      if (selectedMealData != null) {
+        final foods = selectedMealData['foods'] as List? ?? [];
+        for (var foodItem in foods) {
+          final foodInfo = foodItem['food'] as Map?;
+          if (foodInfo != null && (foodInfo['category'] as String?) == 'fat') {
+            fourthId = foodItem['id'] as int?;
+            break;
+          }
+        }
+      }
+    }
+    // 如果第四个位置已经有其他类别，继续查找
+    if (fourthFoodName == null) {
+      for (var key in categorizedFoods.keys) {
+        if (key != 'vegetable' &&
+            key != 'carbohydrate' &&
+            key != 'protein' &&
+            categorizedFoods[key]!.isNotEmpty) {
+          fourthFoodName = categorizedFoods[key]!.join(', ');
+          fourthCategory = key;
+          if (selectedMealData != null) {
+            final foods = selectedMealData['foods'] as List? ?? [];
+            for (var foodItem in foods) {
+              final foodInfo = foodItem['food'] as Map?;
+              if (foodInfo != null &&
+                  (foodInfo['category'] as String?) == key) {
+                fourthId = foodItem['id'] as int?;
+                break;
+              }
+            }
+          }
+          break;
+        }
+      }
+    }
+    if (fourthFoodName != null) {
+      foodTypes.add({
+        'name': fourthFoodName,
+        'textPosition':
+            Offset(containerWidth - 180.h, containerHeight * 0.3 - 50),
+        'isVegetables': false,
+        'isHighProtein': false,
+        'isFourth': true, // 标记这是第四个菜（右上角）
+        'id': fourthId,
+        'category': fourthCategory, // 添加食物的category属性
+      });
+    }
 
     return Stack(
       children: foodTypes.map((foodType) {
         final textPosition = foodType['textPosition'] as Offset;
-
-        // 根据食材类型决定对齐方式和位置
-        final isVegetables = foodType['name'] == 'Vegetables';
-        final isHighProtein = foodType['name'] == 'High-Protein Foods';
-        final textHeight = 18.fSize; // 文字高度
-        final iconSize = 24.h; // 图标大小
+        final isVegetables = foodType['isVegetables'] as bool;
+        final isHighProtein = foodType['isHighProtein'] as bool? ?? false;
+        final isFourth = foodType['isFourth'] as bool? ?? false;
+        final id = foodType['id'] as int?;
+        final foodCategory = foodType['category'];
 
         return Stack(
           children: [
             // 食材类型文字
             Positioned(
-              left: isHighProtein
+              left: (isHighProtein || isFourth)
                   ? null
-                  : textPosition.dx, // High-Protein Foods右对齐，其他左对齐
-              right: isHighProtein ? 18.h : null, // High-Protein Foods距离右边框18px
+                  : textPosition.dx, // 右下角和右上角右对齐，其他左对齐
+              right: (isHighProtein || isFourth)
+                  ? 18.h
+                  : (containerWidth / 2 - 18.h), // 左侧文字限制在半宽度
               top: textPosition.dy,
               child: Text(
                 foodType['name'] as String,
@@ -1389,21 +1795,38 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                   fontSize: 18.fSize,
                   fontWeight: FontWeight.w500,
                 ),
-                textAlign: isHighProtein ? TextAlign.right : TextAlign.left,
+                textAlign: (isHighProtein || isFourth)
+                    ? TextAlign.right
+                    : TextAlign.left,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             // Change图标按钮
             Positioned(
-              left: isHighProtein
+              left: (isHighProtein || isFourth)
                   ? null
-                  : textPosition.dx, // High-Protein Foods右对齐，其他左对齐
-              right: isHighProtein ? 18.h : null, // High-Protein Foods距离右边框18px
+                  : textPosition.dx, // 右侧右对齐，左侧左对齐
+              right: (isHighProtein || isFourth) ? 18.h : null,
               top: isVegetables
-                  ? textPosition.dy + textHeight + 4.h // Vegetables图标在文字下方
-                  : textPosition.dy - iconSize - 4.h, // 其他图标在文字上方
+                  ? textPosition.dy - iconSize // 左上角图标在文字下方
+                  : textPosition.dy - iconSize - 4.h, // 其他位置图标在文字上方
               child: GestureDetector(
-                onTap: () {
-                  // 更换食材类型功能
+                onTap: () async {
+                  // 跳转到 MenuPage 子页面，传递对应食物的 plan_id 和 category
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MenuPage(
+                        category: foodCategory,
+                        recipeFoodId: id ?? 0,
+                      ),
+                    ),
+                  );
+                  // 如果返回结果为 true，表示需要刷新数据
+                  if (result == true) {
+                    _loadCurrentUserFoods(); // 刷新用户数据
+                  }
                 },
                 child: SizedBox(
                   width: 24.h,
@@ -1581,6 +2004,9 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
 
   // 计划卡片
   Widget _buildPlanCard(Map<String, dynamic> plan) {
+    // 判断是否为收藏的食物（有name_en字段）
+    final isCollectedFood = plan['name_en'] != null;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1613,10 +2039,9 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                   topLeft: Radius.circular(16.h),
                   topRight: Radius.circular(16.h),
                 ),
-                child: plan['image']!.contains('.svg') ||
-                        plan['image']!.contains('.png')
-                    ? Image.asset(
-                        plan['image']!,
+                child: isCollectedFood
+                    ? Image.network(
+                        plan['image_url'] ?? '',
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
@@ -1630,16 +2055,18 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                         },
                       )
                     : Image.asset(
-                        plan['image']!,
+                        plan['image'] ?? '',
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: Color(0xFF454A30),
-                          child: Icon(
-                            Icons.restaurant,
-                            color: Colors.white,
-                            size: 40.h,
-                          ),
-                        ),
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Color(0xFF454A30),
+                            child: Icon(
+                              Icons.restaurant,
+                              color: Colors.white,
+                              size: 40.h,
+                            ),
+                          );
+                        },
                       ),
               ),
             ),
@@ -1653,7 +2080,9 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    plan['name']!,
+                    isCollectedFood
+                        ? (plan['name_en']?.toString() ?? '')
+                        : (plan['name']?.toString() ?? ''),
                     style: TextStyle(
                       color: Colors.black,
                       fontSize: 12.fSize,
@@ -1674,23 +2103,24 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                            horizontal: 6.h, vertical: 2.h),
-                        decoration: BoxDecoration(
-                          color: _getGradeColor(plan['score']!)
-                              .withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(6.h),
-                        ),
-                        child: Text(
-                          plan['score']!,
-                          style: TextStyle(
-                            color: _getGradeColor(plan['score']!),
-                            fontSize: 10.fSize,
-                            fontWeight: FontWeight.w600,
+                      if (!isCollectedFood)
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 6.h, vertical: 2.h),
+                          decoration: BoxDecoration(
+                            color: _getGradeColor(plan['score'] ?? '')
+                                .withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(6.h),
+                          ),
+                          child: Text(
+                            plan['score'] ?? '',
+                            style: TextStyle(
+                              color: _getGradeColor(plan['score'] ?? ''),
+                              fontSize: 10.fSize,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                      ),
                       Icon(
                         Icons.favorite_border,
                         color: Color(0xFF666666),
@@ -1709,6 +2139,20 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
 
   // 获取筛选后的计划列表
   List<Map<String, dynamic>> _getFilteredPlans() {
+    // 如果有收藏的餐食，优先显示收藏的餐食
+    if (_collectedMeals.isNotEmpty) {
+      // 搜索过滤
+      if (_searchController.text.isNotEmpty) {
+        final searchTerm = _searchController.text.toLowerCase();
+        return _collectedMeals.where((meal) {
+          return (meal['name_en']?.toString().toLowerCase() ?? '')
+              .contains(searchTerm);
+        }).toList();
+      }
+      return _collectedMeals;
+    }
+
+    // 如果没有收藏的餐食，显示默认的diet plans
     if (_searchController.text.isEmpty) {
       return _dietPlans.asMap().entries.map((entry) {
         final plan = Map<String, dynamic>.from(entry.value);

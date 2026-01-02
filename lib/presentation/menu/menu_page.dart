@@ -3,14 +3,12 @@ import 'package:zenify/services/api.dart';
 
 class MenuPage extends StatefulWidget {
   final String category;
-  final List<dynamic> recipeFoods;
   final int recipeFoodId;
 
   const MenuPage({
     Key? key,
     required this.category,
     required this.recipeFoodId,
-    required this.recipeFoods,
   }) : super(key: key);
 
   @override
@@ -22,7 +20,10 @@ class _MenuPageState extends State<MenuPage> {
   double _currentPage = 0;
   final double _viewportFraction = 0.2; // 减小视口比例，使页面同时显示5个菜品
   String selectedTag = '全部'; // 默认选中【全部】标签
-  List<dynamic> filteredFoods = []; // 过滤后的食物列表
+  List<dynamic> allFoods = []; // 所有食物列表（未过滤）
+  List<dynamic> categoryFilteredFoods = []; // 按category筛选后的食物列表
+  List<dynamic> filteredFoods = []; // 最终显示的食物列表（tag筛选后）
+  bool _isLoadingFoods = true; // 是否正在加载食物数据
   // final int _actualItemCount = 10; // 实际菜品数量
 
   // 固定的随机颜色列表
@@ -47,8 +48,8 @@ class _MenuPageState extends State<MenuPage> {
   @override
   void initState() {
     super.initState();
-    print('recipeFoods:${widget.recipeFoods}');
-    filteredFoods = widget.recipeFoods; // 初始化过滤列表
+    print('category:${widget.category}');
+    _loadFoods(); // 加载食物数据
     int initialPage = 500;
     _pageController = PageController(
       initialPage: initialPage,
@@ -68,6 +69,52 @@ class _MenuPageState extends State<MenuPage> {
         }
       }
     });
+  }
+
+  /// 加载食物数据
+  Future<void> _loadFoods() async {
+    try {
+      setState(() {
+        _isLoadingFoods = true;
+      });
+
+      // 查询所有食物，不传递category参数
+      final response = await Api.getFoods(
+        FoodsRequest(
+          skip: 0,
+          limit: 10000,
+          category: widget.category, // 传null查询所有食物
+        ),
+      );
+
+      print('getFoods响应: $response');
+
+      if (mounted) {
+        setState(() {
+          // 解析响应数据，提取foods列表
+          if (response is Map && response['foods'] is List) {
+            allFoods = response['foods'];
+          } else if (response is List) {
+            allFoods = response;
+          } else {
+            allFoods = [];
+          }
+          categoryFilteredFoods = allFoods;
+
+          filteredFoods = categoryFilteredFoods; // 初始显示按category筛选后的所有食物
+
+          _isLoadingFoods = false;
+        });
+      }
+    } catch (e) {
+      print('加载食物数据失败: $e');
+      if (mounted) {
+        setState(() {
+          filteredFoods = [];
+          _isLoadingFoods = false;
+        });
+      }
+    }
   }
 
   Future<void> _replacePlanFood(int foodId) async {
@@ -110,17 +157,15 @@ class _MenuPageState extends State<MenuPage> {
           icon: Icon(Icons.arrow_back_ios_new, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Container(
-          alignment: Alignment.centerRight,
-          child: Text(
-            widget.category,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF222222),
-            ),
+        title: Text(
+          widget.category,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF222222),
           ),
         ),
+        centerTitle: true,
       ),
       body: SafeArea(
         child: Column(
@@ -152,9 +197,10 @@ class _MenuPageState extends State<MenuPage> {
                       onSelected: (bool selected) {
                         setState(() {
                           selectedTag = tags[index];
+                          // 在categoryFilteredFoods基础上进行tag筛选
                           filteredFoods = selectedTag == '全部'
-                              ? widget.recipeFoods
-                              : widget.recipeFoods
+                              ? categoryFilteredFoods // 显示按category筛选后的所有食物
+                              : categoryFilteredFoods
                                   .where((food) =>
                                       food['subcategory']?.toString() ==
                                       selectedTag)
@@ -183,7 +229,7 @@ class _MenuPageState extends State<MenuPage> {
                           : 2 * filteredFoods.length),
                   padEnds: false,
                   itemBuilder: (context, index) {
-                    if (widget.recipeFoods.isEmpty) {
+                    if (filteredFoods.isEmpty) {
                       return Center(
                         child: Text(
                           '暂无菜品数据',
@@ -209,7 +255,6 @@ class _MenuPageState extends State<MenuPage> {
                         : filteredFoods[actualIndex];
                     final food = foodItem ?? {};
                     double value = (index - _currentPage);
-                    print('${widget.recipeFoods}');
 
                     // Extract food data with null checks
                     final foodName = food['name'] ?? '未知菜品';
@@ -363,7 +408,7 @@ class _MenuPageState extends State<MenuPage> {
   }
 
   List<String> getTags() {
-    final categories = widget.recipeFoods
+    final categories = allFoods
         .map((rf) => rf['subcategory']?.toString() ?? '其他')
         .toSet()
         .toList();

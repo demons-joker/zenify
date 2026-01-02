@@ -131,7 +131,8 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
     // 计算百分比
     _totalCalories = totalCalories;
     _carbPercent = totalCalories > 0 ? (carbCalories / totalCalories) * 100 : 0;
-    _proteinPercent = totalCalories > 0 ? (proteinCalories / totalCalories) * 100 : 0;
+    _proteinPercent =
+        totalCalories > 0 ? (proteinCalories / totalCalories) * 100 : 0;
     _fatPercent = totalCalories > 0 ? (fatCalories / totalCalories) * 100 : 0;
 
     // 统计各类食物数量
@@ -160,7 +161,8 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
           ? Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20.0, vertical: 12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -179,8 +181,8 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                     _buildMoodSelector(),
                     const SizedBox(height: 24),
                     Center(
-                        child:
-                            Text('-END-', style: TextStyle(color: Colors.grey[400]))),
+                        child: Text('-END-',
+                            style: TextStyle(color: Colors.grey[400]))),
                   ],
                 ),
               ),
@@ -206,13 +208,10 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
     final score = _calculateScore();
 
     // 格式化日期
-    final monthDay = dateTime != null
-        ? '${dateTime!.month}月${dateTime!.day}号'
-        : '未知日期';
+    final monthDay = '${dateTime.month}月${dateTime.day}号';
     final weekdays = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'];
-    final weekday = dateTime != null && dateTime!.weekday <= 7
-        ? weekdays[dateTime!.weekday - 1]
-        : '星期日';
+    final weekday =
+        dateTime.weekday <= 7 ? weekdays[dateTime.weekday - 1] : '星期日';
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -236,7 +235,8 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
           children: [
             Text(monthDay,
                 style: const TextStyle(fontSize: 14, color: Colors.black54)),
-            Text(weekday, style: const TextStyle(fontSize: 12, color: Colors.black45)),
+            Text(weekday,
+                style: const TextStyle(fontSize: 12, color: Colors.black45)),
           ],
         )
       ],
@@ -246,9 +246,10 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
   /// 计算评分
   double _calculateScore() {
     // 优先使用后端 AI 分析的评分
-    final nutritionAnalysis = _recognitionData?['nutrition_analysis'] as Map? ?? {};
+    final nutritionAnalysis =
+        _recognitionData?['nutrition_analysis'] as Map? ?? {};
     if (nutritionAnalysis.containsKey('meal_score')) {
-      return (nutritionAnalysis['meal_score'] as num?)?.toDouble() ?? 0;
+      return ((nutritionAnalysis['meal_score'] as num?)?.toDouble() ?? 0) * 10;
     }
 
     // 如果后端没有评分，使用本地算法
@@ -277,7 +278,8 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
 
     // 备用方案：根据食物重量估算
     final totalQuantity = (_recognitionData?['foods'] as List? ?? [])
-        .fold<double>(0, (sum, item) => sum + ((item['quantity'] ?? 0) as double));
+        .fold<double>(
+            0, (sum, item) => sum + ((item['quantity'] ?? 0) as double));
     // 每300g约5分钟
     return ((totalQuantity / 300) * 5).round();
   }
@@ -354,7 +356,8 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                         color: Color(0xFFADD700),
                         borderRadius: BorderRadius.circular(20)),
                     child: const Text('Vegetables',
-                        style: TextStyle(color: Colors.white))),
+                        style: TextStyle(
+                            color: Colors.black, fontWeight: FontWeight.w600))),
               ],
             ),
           ),
@@ -364,16 +367,16 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
               Expanded(
                   child: _buildMiniCard(
                       '${_proteinPercent.toStringAsFixed(0)}%',
-                      'High-Protein Foods',
+                      'High-Carb Foods',
                       'assets/images/figma/report/meat_icon.png',
-                      Colors.orange)),
+                      Colors.redAccent)),
               const SizedBox(width: 8),
               Expanded(
                   child: _buildMiniCard(
                       '${_fatPercent.toStringAsFixed(0)}%',
-                      'High-Fat Foods',
+                      'High-Protein Foods',
                       'assets/images/figma/report/bread_icon.png',
-                      Colors.redAccent)),
+                      Colors.orange)),
             ],
           )
         ],
@@ -385,48 +388,65 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
       String percent, String title, String icon, Color color) {
     // 获取对应的食材名称
     String ingredientName = '';
-    if (title == 'High-Protein Foods' && _recognitionData != null) {
-      final foods = _recognitionData!['foods'] as List? ?? [];
-      final proteinFoods = foods.where((f) {
-        final foodInfo = f['food'] as Map? ?? {};
-        final category = foodInfo['category'] as String? ?? '';
-        return category == 'protein';
-      }).toList();
-      if (proteinFoods.isNotEmpty) {
-        ingredientName = proteinFoods
-            .map((f) {
-              final foodInfo = f['food'] as Map? ?? {};
-              return foodInfo['name_en'] as String? ?? 'Unknown';
-            })
-            .join('\n');
+    if (_recognitionData != null) {
+      final nutritionAnalysis =
+          _recognitionData!['nutrition_analysis'] as Map? ?? {};
+
+      // 所有可能的分类
+      final allCategories = [
+        'low_gi',
+        'high_fiber',
+        'antioxidant',
+        'calcium_rich',
+        'acne_promoting',
+        'immunity_boosting',
+        'high_quality_protein'
+      ];
+
+      // 根据标题确定目标 category
+      String? targetCategory;
+      if (title == 'High-Carb Foods') {
+        targetCategory = 'carbohydrate';
+      } else if (title == 'High-Protein Foods') {
+        targetCategory = 'protein';
       }
-    } else if (title == 'High-Fat Foods' && _recognitionData != null) {
-      final foods = _recognitionData!['foods'] as List? ?? [];
-      final fatFoods = foods.where((f) {
-        final foodInfo = f['food'] as Map? ?? {};
-        final category = foodInfo['category'] as String? ?? '';
-        return category == 'fat';
-      }).toList();
-      if (fatFoods.isNotEmpty) {
-        ingredientName = fatFoods
-            .map((f) {
-              final foodInfo = f['food'] as Map? ?? {};
-              return foodInfo['name_en'] as String? ?? 'Unknown';
-            })
-            .join('\n');
+
+      // 从所有分类中查找对应 category 的食物
+      if (targetCategory != null) {
+        for (var categoryKey in allCategories) {
+          final foods = nutritionAnalysis[categoryKey] as List? ?? [];
+          final matchedFoods = foods.where((f) {
+            final foodInfo = f as Map?;
+            if (foodInfo == null) return false;
+            final category = foodInfo['category'] as String?;
+            return category == targetCategory;
+          }).toList();
+
+          if (matchedFoods.isNotEmpty) {
+            if (ingredientName.isNotEmpty) {
+              ingredientName += '\n';
+            }
+            ingredientName += matchedFoods.map((f) {
+              final foodInfo = f as Map?;
+              return foodInfo?['name'] as String? ?? 'Unknown';
+            }).join('\n');
+          }
+        }
       }
     }
 
     return Container(
-      padding: const EdgeInsets.all(10),
+      height: 90, // 固定高度保证两个卡片一致
+      padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.grey.shade200)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(children: [
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             Image.asset(icon,
                 width: 24,
                 height: 24,
@@ -436,12 +456,25 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                 style: TextStyle(
                     fontSize: 18, color: color, fontWeight: FontWeight.bold))
           ]),
-          const SizedBox(height: 8),
-          Text(title,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF7A5C47))),
-          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(90),
+                ),
+                child: Text(title,
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black)),
+              ),
+            ],
+          ),
           Text(
-            ingredientName.isNotEmpty ? ingredientName : 'Ingredient 1\nIngredient 1',
+            ingredientName.isNotEmpty ? ingredientName : '',
             style: const TextStyle(fontSize: 12, color: Color(0xFFB88C6D)),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -452,6 +485,18 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
   }
 
   Widget _buildNutritionDetailsCard() {
+    // 获取营养素克数
+    final nutritiveProportion = _recognitionData?['nutritive_proportion'] as Map? ?? {};
+    double getNumValue(dynamic value) {
+      if (value is num) {
+        return value.toDouble();
+      }
+      return 0.0;
+    }
+    final carbGrams = getNumValue(nutritiveProportion['carbohydrate']);
+    final proteinGrams = getNumValue(nutritiveProportion['protein']);
+    final fatGrams = getNumValue(nutritiveProportion['fat']);
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -473,22 +518,16 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
         const SizedBox(height: 12),
         Row(children: [
           Expanded(
-              child: _buildNutCard(
-                  '${_carbPercent.toStringAsFixed(0)}%',
-                  'Carb',
-                  Colors.redAccent)),
+              child: _buildNutCard('${_carbPercent.toStringAsFixed(0)}%',
+                  'Carb', Colors.redAccent, carbGrams)),
           const SizedBox(width: 8),
           Expanded(
-              child: _buildNutCard(
-                  '${_proteinPercent.toStringAsFixed(0)}%',
-                  'Protein',
-                  Colors.orangeAccent)),
+              child: _buildNutCard('${_proteinPercent.toStringAsFixed(0)}%',
+                  'Protein', Colors.orangeAccent, proteinGrams)),
           const SizedBox(width: 8),
           Expanded(
-              child: _buildNutCard(
-                  '${_fatPercent.toStringAsFixed(0)}%',
-                  'Fat',
-                  Colors.yellow.shade700)),
+              child: _buildNutCard('${_fatPercent.toStringAsFixed(0)}%', 'Fat',
+                  Colors.yellow.shade700, fatGrams)),
         ])
       ]),
     );
@@ -511,7 +550,7 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
     );
   }
 
-  Widget _buildNutCard(String percent, String title, Color color) {
+  Widget _buildNutCard(String percent, String title, Color color, double grams) {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
@@ -525,8 +564,8 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
         const SizedBox(height: 6),
         Text(title, style: const TextStyle(color: Color(0xFF7A5C47))),
         const SizedBox(height: 8),
-        const Text('X1g/X2g',
-            style: TextStyle(fontSize: 12, color: Color(0xFFB88C6D))),
+        Text('${grams.toStringAsFixed(1)}g',
+            style: const TextStyle(fontSize: 12, color: Color(0xFFB88C6D))),
       ]),
     );
   }
@@ -543,9 +582,17 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
           ]),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(title,
-            style: const TextStyle(fontSize: 16, color: Color(0xFF7A5C47))),
+            style: const TextStyle(fontSize: 16, color: Color(0xFFAB7E4B))),
         const SizedBox(height: 8),
-        Slider(value: value, onChanged: onChanged),
+        SliderTheme(
+          data: SliderThemeData(
+            activeTrackColor: const Color(0xFFC8FD00),
+            inactiveTrackColor: Colors.grey.shade300,
+            thumbColor: const Color(0xFFC8FD00),
+            overlayColor: const Color(0xFFC8FD00).withOpacity(0.2),
+          ),
+          child: Slider(value: value, onChanged: onChanged),
+        ),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: const [
           Text('Not Full',
               style: TextStyle(fontSize: 12, color: Colors.black38)),

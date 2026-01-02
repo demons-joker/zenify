@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "com.example.zenify"
-    compileSdk = 35  // 更新为35
+    compileSdk = 35
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -23,12 +23,14 @@ android {
 
     defaultConfig {
         applicationId = "com.example.zenify"
-        minSdk = 21
+        minSdk = flutter.minSdkVersion
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
     }
 
+    // 临时注释掉签名配置
+    /*
     signingConfigs {
         create("release") {
             val properties = Properties().apply {
@@ -40,10 +42,12 @@ android {
             storePassword = properties.getProperty("storePassword")
         }
     }
+    */
 
     buildTypes {
         getByName("release") {
-            signingConfig = signingConfigs.getByName("release")
+            // 注释掉签名配置用于测试
+            // signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

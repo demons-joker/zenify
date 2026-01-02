@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class UserDataCache {
   static const String _userProfileKey = 'user_profile_cache';
   static const String _onboardingCompleteKey = 'onboarding_complete';
+  static const String _collectedMealsKey = 'collected_meals';
 
   /// 保存用户资料到缓存
   static Future<void> saveUserProfile({
@@ -132,6 +133,78 @@ class UserDataCache {
       return prefs.containsKey(_userProfileKey);
     } catch (e) {
       print('检查缓存数据失败: $e');
+      return false;
+    }
+  }
+
+  /// 保存收藏的餐食（单个食物）
+  static Future<void> saveCollectedMeal(Map<String, dynamic> mealData) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final collectedMeals = await getCollectedMeals();
+
+      // 检查是否已经收藏过该食物（根据food_id）
+      final foodId = mealData['food_id']?.toString();
+      final existingIndex = collectedMeals.indexWhere((meal) =>
+          meal['food_id']?.toString() == foodId);
+
+      if (existingIndex == -1) {
+        // 添加新收藏
+        collectedMeals.add({
+          ...mealData,
+          'collected_at': DateTime.now().toIso8601String(),
+        });
+        await prefs.setString(_collectedMealsKey, jsonEncode(collectedMeals));
+        print('餐食已收藏: $mealData');
+      }
+    } catch (e) {
+      print('保存收藏餐食失败: $e');
+      throw Exception('保存收藏餐食失败: $e');
+    }
+  }
+
+  /// 移除收藏的餐食（移除该日期和餐食类型对应的所有食物）
+  static Future<void> removeCollectedMeal(String date, String mealType) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final collectedMeals = await getCollectedMeals();
+
+      collectedMeals.removeWhere((meal) =>
+          meal['date'] == date && meal['meal_type'] == mealType);
+
+      await prefs.setString(_collectedMealsKey, jsonEncode(collectedMeals));
+      print('餐食已取消收藏: $date - $mealType');
+    } catch (e) {
+      print('移除收藏餐食失败: $e');
+    }
+  }
+
+  /// 获取所有收藏的餐食
+  static Future<List<Map<String, dynamic>>> getCollectedMeals() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedData = prefs.getString(_collectedMealsKey);
+
+      if (cachedData != null) {
+        final meals = jsonDecode(cachedData) as List;
+        return meals.cast<Map<String, dynamic>>();
+      }
+
+      return [];
+    } catch (e) {
+      print('获取收藏餐食失败: $e');
+      return [];
+    }
+  }
+
+  /// 检查指定餐食是否已收藏
+  static Future<bool> isMealCollected(String date, String mealType) async {
+    try {
+      final collectedMeals = await getCollectedMeals();
+      return collectedMeals.any((meal) =>
+          meal['date'] == date && meal['meal_type'] == mealType);
+    } catch (e) {
+      print('检查餐食收藏状态失败: $e');
       return false;
     }
   }

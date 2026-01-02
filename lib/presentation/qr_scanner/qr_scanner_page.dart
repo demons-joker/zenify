@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 class QRScannerPage extends StatefulWidget {
   @override
@@ -8,7 +8,7 @@ class QRScannerPage extends StatefulWidget {
 
 class _QRScannerPageState extends State<QRScannerPage> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  QRViewController? controller;
+  MobileScannerController? controller;
   bool isProcessing = false;
 
   @override
@@ -28,16 +28,14 @@ class _QRScannerPageState extends State<QRScannerPage> {
         children: <Widget>[
           Expanded(
             flex: 5,
-            child: QRView(
+            child: MobileScanner(
               key: qrKey,
-              onQRViewCreated: _onQRViewCreated,
-              overlay: QrScannerOverlayShape(
-                borderColor: Colors.red,
-                borderRadius: 10,
-                borderLength: 30,
-                borderWidth: 10,
-                cutOutSize: 250,
-              ),
+              onDetect: (capture) {
+                final barcode = capture.barcodes.first;
+                if (!isProcessing && barcode.rawValue != null) {
+                  _handleQRCode(barcode.rawValue!);
+                }
+              },
             ),
           ),
           Expanded(
@@ -63,24 +61,12 @@ class _QRScannerPageState extends State<QRScannerPage> {
     );
   }
 
-  void _onQRViewCreated(QRViewController controller) {
-    this.controller = controller;
-    controller.scannedDataStream.listen((scanData) {
-      if (!isProcessing && scanData.code != null) {
-        _handleQRCode(scanData.code!);
-      }
-    });
-  }
-
   void _handleQRCode(String code) {
     if (isProcessing) return;
 
     setState(() {
       isProcessing = true;
     });
-
-    // 停止扫描
-    controller?.pauseCamera();
 
     // 返回扫描结果
     Navigator.pop(context, code);

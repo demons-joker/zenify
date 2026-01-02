@@ -153,7 +153,6 @@ class AppRoutes {
         builder: (context) => MenuPage(
           category: category,
           recipeFoodId: recipeFoodId,
-          recipeFoods: recipeFoods,
         ),
       ),
     );

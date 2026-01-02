@@ -12,8 +12,9 @@ class UploadService {
   ) async {
     try {
       final userId = await UserSession.userId;
+      final plateId = await UserSession.plateId;
       final uri = Uri.parse(
-          '${ApiConfig.baseUrl}/api/mqtt/users/$userId/plates/1/recognize/upload');
+          '${ApiConfig.baseUrl}/api/mqtt/users/$userId/plates/$plateId/recognize/upload');
       print('uri: $uri');
       final request = http.MultipartRequest('POST', uri);
 
