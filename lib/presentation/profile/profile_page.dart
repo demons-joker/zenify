@@ -42,7 +42,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = '获取用户信息失败: ${e.toString()}';
+          _errorMessage = 'Failed to get user info: ${e.toString()}';
         });
       }
     }
@@ -62,7 +62,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('扫描失败: ${e.toString()}'),
+            content: Text('Scan failed: ${e.toString()}'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -77,7 +77,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('设备绑定成功'),
+            content: Text('Device bound successfully'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -88,7 +88,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('设备绑定失败: ${e.toString()}'),
+            content: Text('Failed to bind device: ${e.toString()}'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -100,16 +100,16 @@ class _ProfilePageState extends State<ProfilePage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('确认解绑'),
-        content: Text('确定要解绑设备"${device.name}"吗？'),
+        title: Text('Confirm Unbind'),
+        content: Text('Are you sure you want to unbind device "${device.name}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('取消'),
+            child: Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('确定'),
+            child: Text('Confirm'),
           ),
         ],
       ),
@@ -120,23 +120,23 @@ class _ProfilePageState extends State<ProfilePage> {
         await Api.unbindDevice(device.deviceId);
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('设备解绑成功'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Device unbound successfully'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
           // 重新加载用户信息（包含设备信息）
           _loadUserInfo();
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('设备解绑失败: ${e.toString()}'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to unbind device: ${e.toString()}'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
         }
       }
     }
@@ -146,7 +146,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('个人中心'),
+        title: Text('Profile'),
         backgroundColor: Colors.transparent,
         actions: [
           IconButton(
@@ -155,7 +155,7 @@ class _ProfilePageState extends State<ProfilePage> {
               size: 18,
             ),
             onPressed: _logout,
-            tooltip: '退出登录',
+            tooltip: 'Logout',
           ),
         ],
       ),
@@ -165,11 +165,11 @@ class _ProfilePageState extends State<ProfilePage> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text('加载失败: ${snapshot.error}'));
+            return Center(child: Text('Failed to load: ${snapshot.error}'));
           } else if (snapshot.hasData) {
             return snapshot.data!;
           } else {
-            return Center(child: Text('未知错误'));
+            return Center(child: Text('Unknown error'));
           }
         },
       ),
@@ -182,13 +182,13 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('未登录', style: TextStyle(fontSize: 16)),
+            Text('Not logged in', style: TextStyle(fontSize: 16)),
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
                 AppRoutes.navigateToLoginAndReplace(context);
               },
-              child: Text('去登录'),
+              child: Text('Go to login'),
             ),
           ],
         ),
@@ -211,7 +211,7 @@ class _ProfilePageState extends State<ProfilePage> {
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: _loadUserInfo,
-              child: Text('重试'),
+              child: Text('Retry'),
               style: ElevatedButton.styleFrom(
                 padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
@@ -226,11 +226,11 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('未获取到用户信息', style: TextStyle(fontSize: 16)),
+            Text('User info not available', style: TextStyle(fontSize: 16)),
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: _loadUserInfo,
-              child: Text('重新加载'),
+              child: Text('Reload'),
             ),
           ],
         ),
@@ -267,7 +267,7 @@ class _ProfilePageState extends State<ProfilePage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '设备管理',
+          'Device Management',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -290,7 +290,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 SizedBox(height: 12),
                 Text(
-                  '暂无绑定设备',
+                  'No devices bound',
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey[600],
@@ -301,7 +301,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     icon: Icon(Icons.qr_code_scanner),
-                    label: Text('扫描二维码绑定设备'),
+                    label: Text('Scan QR to bind device'),
                     onPressed: _scanAndBindDevice,
                     style: ElevatedButton.styleFrom(
                       padding: EdgeInsets.symmetric(vertical: 12),
@@ -345,7 +345,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                               SizedBox(height: 4),
                               Text(
-                                '设备ID: ${device.deviceId}',
+                                'Device ID: ${device.deviceId}',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey[600],
@@ -353,7 +353,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                               SizedBox(height: 2),
                               Text(
-                                '在线状态: ${device.isOnline ? "在线" : "离线"}',
+                                'Status: ${device.isOnline ? "Online" : "Offline"}',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: device.isOnline
@@ -364,7 +364,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               if (device.lastLoginAt != null) ...[
                                 SizedBox(height: 2),
                                 Text(
-                                  '最后登录: ${_formatDateTime(device.lastLoginAt!)}',
+                                  'Last login: ${_formatDateTime(device.lastLoginAt!)}',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey[600],
@@ -377,7 +377,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         IconButton(
                           icon: Icon(Icons.link_off, color: Colors.red),
                           onPressed: () => _unbindDevice(device),
-                          tooltip: '解绑设备',
+                          tooltip: 'Unbind device',
                         ),
                       ],
                     ),
@@ -562,7 +562,7 @@ class _ProfilePageState extends State<ProfilePage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('登出失败: ${e.toString()}'),
+          content: Text('Logout failed: ${e.toString()}'),
           behavior: SnackBarBehavior.floating,
         ),
       );

@@ -80,12 +80,12 @@ class _Login extends State<Login> {
 
           AppRoutes.navigateToMainPageAndReplace(context);
         } else {
-          setState(() => _errorMessage = '注册失败，请稍后再试');
+          setState(() => _errorMessage = 'Registration failed, please try again later');
         }
       }
       print('loginobject: $response');
     } catch (e) {
-      setState(() => _errorMessage = '登录失败: ${e.toString()}');
+      setState(() => _errorMessage = 'Login failed: ${e.toString()}');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -103,7 +103,7 @@ class _Login extends State<Login> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: Text(_isLoginMode ? '用户登录' : '用户注册'),
+        title: Text(_isLoginMode ? 'Login' : 'Register'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -115,12 +115,12 @@ class _Login extends State<Login> {
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(
-                  labelText: '用户名',
+                  labelText: 'Username',
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return '请输入用户名';
+                    return 'Please enter username';
                   }
                   return null;
                 },
@@ -131,18 +131,18 @@ class _Login extends State<Login> {
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
-                    labelText: '电子邮箱',
+                    labelText: 'Email',
                     border: OutlineInputBorder(),
                   ),
                   validator: _isLoginMode
                       ? null
                       : (value) {
                           if (value == null || value.isEmpty) {
-                            return '请输入电子邮箱';
+                            return 'Please enter email';
                           }
                           if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                               .hasMatch(value)) {
-                            return '请输入有效的电子邮箱';
+                            return 'Please enter a valid email';
                           }
                           return null;
                         },
@@ -151,14 +151,14 @@ class _Login extends State<Login> {
                 TextFormField(
                   controller: _fullNameController,
                   decoration: InputDecoration(
-                    labelText: '全名',
+                    labelText: 'Full Name',
                     border: OutlineInputBorder(),
                   ),
                   validator: _isLoginMode
                       ? null
                       : (value) {
                           if (value == null || value.isEmpty) {
-                            return '请输入您的全名';
+                            return 'Please enter your full name';
                           }
                           return null;
                         },
@@ -169,15 +169,15 @@ class _Login extends State<Login> {
                 controller: _passwordController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  labelText: '密码',
+                  labelText: 'Password',
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return '请输入密码';
+                    return 'Please enter password';
                   }
                   if (!_isLoginMode && value.length < 6) {
-                    return '密码至少6位';
+                    return 'Password must be at least 6 characters';
                   }
                   return null;
                 },
@@ -195,7 +195,7 @@ class _Login extends State<Login> {
                 onPressed: _isLoading ? null : _submit,
                 child: _isLoading
                     ? CircularProgressIndicator()
-                    : Text(_isLoginMode ? '登录' : '注册'),
+                    : Text(_isLoginMode ? 'Login' : 'Register'),
                 style: ElevatedButton.styleFrom(
                   minimumSize: Size(double.infinity, 50),
                 ),
@@ -203,7 +203,7 @@ class _Login extends State<Login> {
               TextButton(
                 onPressed: _isLoading ? null : _switchAuthMode,
                 child: Text(
-                  _isLoginMode ? '没有账号？立即注册' : '已有账号？立即登录',
+                  _isLoginMode ? 'No account? Register now' : 'Already have an account? Login',
                   style: TextStyle(color: Theme.of(context).primaryColor),
                 ),
               ),

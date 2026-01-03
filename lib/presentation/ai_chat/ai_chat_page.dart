@@ -33,9 +33,22 @@ class _AIChatPageState extends State<AIChatPage>
   List<File> _selectedFiles = []; // 选中的文件列表
   bool _showBottomPanel = false; // 是否显示底部功能面板
 
+  // AI头像图片状态
+  String _currentAiImage = 'assets/images/aichatwink.gif';
+
   @override
   void initState() {
     super.initState();
+
+    // 2秒后从眨眼图片切换到正常图片
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _currentAiImage = 'assets/images/aichatnormal.gif';
+        });
+      }
+    });
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -170,67 +183,67 @@ class _AIChatPageState extends State<AIChatPage>
                 child: Stack(
                   children: [
                     // 脉搏信号背景动画
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: RadialGradient(
-                            center: Alignment(0.0, -0.3),
-                            radius: 1.2,
-                            colors: [
-                              Colors.transparent,
-                              Colors.cyan.withOpacity(0.02),
-                              Colors.purple.withOpacity(0.02),
-                              Colors.transparent,
-                            ],
-                            stops: [0.0, 0.3, 0.6, 1.0],
-                          ),
-                        ),
-                      ),
-                    ),
+                    // Positioned.fill(
+                    //   child: Container(
+                    //     decoration: BoxDecoration(
+                    //       gradient: RadialGradient(
+                    //         center: Alignment(0.0, -0.3),
+                    //         radius: 1.2,
+                    //         colors: [
+                    //           Colors.transparent,
+                    //           Colors.cyan.withOpacity(0.02),
+                    //           Colors.purple.withOpacity(0.02),
+                    //           Colors.transparent,
+                    //         ],
+                    //         stops: [0.0, 0.3, 0.6, 1.0],
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ),
                     // 左侧数据流装饰
-                    Positioned(
-                      left: 0,
-                      top: 100,
-                      bottom: 100,
-                      width: 2,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Color(0xFF00FF41).withOpacity(0.6),
-                              Color(0xFF00CC33).withOpacity(0.4),
-                              Colors.transparent,
-                            ],
-                            stops: [0.0, 0.3, 0.7, 1.0],
-                          ),
-                        ),
-                      ),
-                    ),
+                    // Positioned(
+                    //   left: 0,
+                    //   top: 100,
+                    //   bottom: 100,
+                    //   width: 2,
+                    //   child: Container(
+                    //     decoration: BoxDecoration(
+                    //       gradient: LinearGradient(
+                    //         begin: Alignment.topCenter,
+                    //         end: Alignment.bottomCenter,
+                    //         colors: [
+                    //           Colors.transparent,
+                    //           Color(0xFF00FF41).withOpacity(0.6),
+                    //           Color(0xFF00CC33).withOpacity(0.4),
+                    //           Colors.transparent,
+                    //         ],
+                    //         stops: [0.0, 0.3, 0.7, 1.0],
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ),
                     // 右侧数据流装饰
-                    Positioned(
-                      right: 0,
-                      top: 100,
-                      bottom: 100,
-                      width: 2,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Color(0xFF00CC33).withOpacity(0.4),
-                              Color(0xFF00FF41).withOpacity(0.6),
-                              Colors.transparent,
-                            ],
-                            stops: [0.0, 0.3, 0.7, 1.0],
-                          ),
-                        ),
-                      ),
-                    ),
+                    // Positioned(
+                    //   right: 0,
+                    //   top: 100,
+                    //   bottom: 100,
+                    //   width: 2,
+                    //   child: Container(
+                    //     decoration: BoxDecoration(
+                    //       gradient: LinearGradient(
+                    //         begin: Alignment.topCenter,
+                    //         end: Alignment.bottomCenter,
+                    //         colors: [
+                    //           Colors.transparent,
+                    //           Color(0xFF00CC33).withOpacity(0.4),
+                    //           Color(0xFF00FF41).withOpacity(0.6),
+                    //           Colors.transparent,
+                    //         ],
+                    //         stops: [0.0, 0.3, 0.7, 1.0],
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ),
                     // 聊天内容滚动区域
                     SingleChildScrollView(
                       controller: _scrollController,
@@ -249,120 +262,57 @@ class _AIChatPageState extends State<AIChatPage>
                         }).toList(),
                       ),
                     ),
-                    // 悬浮的圆形AI logo with 赛博朋克效果
-                    Positioned(
-                      top: 50,
-                      left: 0,
-                      right: 0,
-                      child: Center(
-                        child: Stack(
-                          children: [
-                            // 外圈光环
-                            Container(
-                              width: 170,
-                              height: 170,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Color(0xFF00FF41).withOpacity(0.3),
-                                  width: 1,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Color(0xFF00FF41).withOpacity(0.2),
-                                    blurRadius: 20,
-                                    spreadRadius: 5,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // 中圈光环
-                            Container(
-                              width: 150,
-                              height: 150,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Color(0xFF00CC33).withOpacity(0.4),
-                                  width: 2,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Color(0xFF00CC33).withOpacity(0.3),
-                                    blurRadius: 15,
-                                    spreadRadius: 3,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // 中心图片
-                            Container(
-                              width: 130,
-                              height: 130,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Color(0xFF00FF41).withOpacity(0.4),
-                                    blurRadius: 10,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
-                              ),
-                              child: ClipOval(
-                                child: Image.asset(
-                                  'assets/images/aichatlogo.png',
-                                  fit: BoxFit.cover,
-                                  width: 130,
-                                  height: 130,
-                                ),
-                              ),
-                            ),
-                            // 数据流点缀
-                            Positioned(
-                              top: -5,
-                              left: -5,
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Color(0xFF00FF41),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Color(0xFF00FF41).withOpacity(0.8),
-                                      blurRadius: 4,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: -5,
-                              right: -5,
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Color(0xFF00CC33),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Color(0xFF00CC33).withOpacity(0.8),
-                                      blurRadius: 4,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
             ],
+          ),
+          // 悬浮的圆形AI logo with 赛博朋克效果
+          Positioned(
+            top: 100,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Stack(
+                children: [
+                  // 中心图片
+                  Container(
+                    width: 170,
+                    height: 170,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(0xFF00FF41).withOpacity(0.4),
+                          blurRadius: 10,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        _currentAiImage,
+                        fit: BoxFit.cover,
+                        width: 170,
+                        height: 170,
+                        gaplessPlayback: true,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey,
+                            child: Center(
+                              child: Text(
+                                'Error',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
           // 输入框和底部面板定位到屏幕底部
           Positioned(
@@ -514,7 +464,7 @@ class _AIChatPageState extends State<AIChatPage>
               ),
             ),
             const SizedBox(width: 12),
-            // 发送按钮（Android显示，iOS隐藏）
+            // Send button (Android)
             if (Theme.of(context).platform == TargetPlatform.android)
               GestureDetector(
                 onTap: _sendMessage,
@@ -640,7 +590,9 @@ class _AIChatPageState extends State<AIChatPage>
                           ),
                           child: Center(
                             child: Text(
-                              _selectedFiles.length > 9 ? '9+' : '${_selectedFiles.length}',
+                              _selectedFiles.length > 9
+                                  ? '9+'
+                                  : '${_selectedFiles.length}',
                               style: TextStyle(
                                 color: Colors.black,
                                 fontSize: 8,
@@ -733,7 +685,7 @@ class _AIChatPageState extends State<AIChatPage>
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '拍照',
+                          'Camera',
                           style: TextStyle(
                             color: Color(0xFF00FF41),
                             fontSize: 12,
@@ -780,7 +732,7 @@ class _AIChatPageState extends State<AIChatPage>
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '相册',
+                          'Gallery',
                           style: TextStyle(
                             color: Color(0xFF00FF41),
                             fontSize: 12,
@@ -827,7 +779,7 @@ class _AIChatPageState extends State<AIChatPage>
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '文档',
+                          'Documents',
                           style: TextStyle(
                             color: Color(0xFF00FF41),
                             fontSize: 12,
@@ -851,7 +803,7 @@ class _AIChatPageState extends State<AIChatPage>
                   ),
                 ),
                 child: Text(
-                  '支持图片、音频、视频、文档等多种文件类型（单个文件最大10MB）',
+                  'Support images, audio, video, documents and more (max 10MB per file)',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Color(0xFF00FF41).withOpacity(0.8),
@@ -871,9 +823,25 @@ class _AIChatPageState extends State<AIChatPage>
     final text = _textController.text.trim();
     if (text.isEmpty && _selectedFiles.isEmpty) return;
 
+    // 检查是否发送了 "cheers"
+    if (text.toLowerCase() == 'cheers') {
+      setState(() {
+        _currentAiImage = 'assets/images/aichatcheers.gif';
+      });
+
+      // 5秒后切换回正常图片
+      Future.delayed(const Duration(seconds: 5), () {
+        if (mounted) {
+          setState(() {
+            _currentAiImage = 'assets/images/aichatnormal.gif';
+          });
+        }
+      });
+    }
+
     // 保存文件列表的副本，在清空之前使用
     final filesToSend = List<File>.from(_selectedFiles);
-    
+
     setState(() {
       _messages.add(Message(
         text: text,
@@ -883,7 +851,7 @@ class _AIChatPageState extends State<AIChatPage>
       _textController.clear();
       _selectedFiles.clear(); // 清空原始文件列表
     });
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -934,12 +902,12 @@ class _AIChatPageState extends State<AIChatPage>
           final fileName = file.path.split('/').last;
           final bytes = file.readAsBytesSync();
           final base64 = base64Encode(bytes);
-          
+
           // 根据文件扩展名确定类型和MIME
           String fileType = 'file';
           String mimeType = 'application/octet-stream';
           final extension = fileName.toLowerCase().split('.').last;
-          
+
           switch (extension) {
             case 'jpg':
             case 'jpeg':
@@ -980,7 +948,7 @@ class _AIChatPageState extends State<AIChatPage>
               mimeType = 'video/mp4';
               break;
           }
-          
+
           return {
             'name': fileName,
             'size': bytes.length,
@@ -992,7 +960,7 @@ class _AIChatPageState extends State<AIChatPage>
       }
 
       print('Making request with ${fileDataList.length} files');
-      
+
       final stream = client.streamPostWithFiles(
         messages: messages,
         fileDataList: fileDataList,
@@ -1020,8 +988,6 @@ class _AIChatPageState extends State<AIChatPage>
       }
     }
   }
-
-
 
   void _startTypingEffect() {
     _typingTimer?.cancel();
@@ -1060,7 +1026,7 @@ class _AIChatPageState extends State<AIChatPage>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('需要麦克风权限才能使用语音输入'),
+              content: Text('Microphone permission required for voice input'),
               backgroundColor: Colors.red,
             ),
           );
@@ -1096,7 +1062,7 @@ class _AIChatPageState extends State<AIChatPage>
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('语音识别错误: $error'),
+          content: Text('Speech recognition error: $error'),
           backgroundColor: Colors.red.withOpacity(0.8),
         ),
       );
@@ -1159,7 +1125,7 @@ class _AIChatPageState extends State<AIChatPage>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('已拍摄照片'),
+              content: Text('Photo taken'),
               backgroundColor: Colors.green.withOpacity(0.8),
             ),
           );
@@ -1170,7 +1136,7 @@ class _AIChatPageState extends State<AIChatPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('拍照失败: $e'),
+            content: Text('Failed to take photo: $e'),
             backgroundColor: Colors.red.withOpacity(0.8),
           ),
         );
@@ -1194,7 +1160,7 @@ class _AIChatPageState extends State<AIChatPage>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('已选择 ${files.length} 张图片'),
+              content: Text('${files.length} image(s) selected'),
               backgroundColor: Colors.green.withOpacity(0.8),
             ),
           );
@@ -1205,7 +1171,7 @@ class _AIChatPageState extends State<AIChatPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('选择图片失败: $e'),
+            content: Text('Failed to select image: $e'),
             backgroundColor: Colors.red.withOpacity(0.8),
           ),
         );
@@ -1219,27 +1185,29 @@ class _AIChatPageState extends State<AIChatPage>
       // 由于Flutter没有内置的文档选择器，这里提供基础实现
       // 在实际项目中，你可能需要使用file_picker等包
       final ImagePicker picker = ImagePicker();
-      final XFile? videoFile = await picker.pickVideo(source: ImageSource.gallery);
+      final XFile? videoFile =
+          await picker.pickVideo(source: ImageSource.gallery);
 
       if (videoFile != null) {
         final File file = File(videoFile.path);
-        
+
         // 检查文件大小（10MB限制）
         final fileSize = await file.length();
         const maxSize = 10 * 1024 * 1024; // 10MB
-        
+
         if (fileSize > maxSize) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('文件大小超过10MB限制，请选择较小的文件'),
+                content: Text(
+                    'File size exceeds 10MB limit, please select a smaller file'),
                 backgroundColor: Colors.red.withOpacity(0.8),
               ),
             );
           }
           return;
         }
-        
+
         setState(() {
           _selectedFiles.add(file);
         });
@@ -1247,7 +1215,8 @@ class _AIChatPageState extends State<AIChatPage>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('已选择视频文件：${file.path.split('/').last}'),
+              content:
+                  Text('Video file selected: ${file.path.split('/').last}'),
               backgroundColor: Colors.green.withOpacity(0.8),
             ),
           );
@@ -1258,7 +1227,7 @@ class _AIChatPageState extends State<AIChatPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('选择文档失败: $e'),
+            content: Text('Failed to select document: $e'),
             backgroundColor: Colors.red.withOpacity(0.8),
           ),
         );
@@ -1310,10 +1279,10 @@ class _AIChatPageState extends State<AIChatPage>
             runSpacing: 8,
             children: _selectedFiles.map((file) {
               final fileName = file.path.split('/').last;
-              final isImage = fileName.toLowerCase().endsWith('.jpg') || 
-                           fileName.toLowerCase().endsWith('.jpeg') || 
-                           fileName.toLowerCase().endsWith('.png');
-              
+              final isImage = fileName.toLowerCase().endsWith('.jpg') ||
+                  fileName.toLowerCase().endsWith('.jpeg') ||
+                  fileName.toLowerCase().endsWith('.png');
+
               return Container(
                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -1334,7 +1303,9 @@ class _AIChatPageState extends State<AIChatPage>
                     ),
                     SizedBox(width: 4),
                     Text(
-                      fileName.length > 15 ? '${fileName.substring(0, 12)}...' : fileName,
+                      fileName.length > 15
+                          ? '${fileName.substring(0, 12)}...'
+                          : fileName,
                       style: TextStyle(
                         color: Color(0xFF00FF41),
                         fontSize: 10,

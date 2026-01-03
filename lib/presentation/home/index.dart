@@ -639,7 +639,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                 ),
                 child: Center(
                   child: Text(
-                    ['日', '一', '二', '三', '四', '五', '六'][index],
+                    ['S', 'M', 'T', 'W', 'T', 'F', 'S'][index],
                     style: TextStyle(
                       color: isSelected ? Colors.white : Colors.black,
                       fontSize: 12.fSize,
