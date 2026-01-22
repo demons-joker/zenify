@@ -188,7 +188,7 @@ class Api {
   // 添加认证头
   static Map<String, String>? _cachedAuthHeaders;
   static Future<Map<String, String>> _getAuthHeaders() async {
-    if (_cachedAuthHeaders != null) return _cachedAuthHeaders!;
+    // 每次都重新获取 token，确保使用最新的认证信息
     final token = await UserSession.token;
     print('Token: $token');
     if (token != null) {
@@ -200,6 +200,11 @@ class Api {
       _cachedAuthHeaders = _defaultHeaders;
     }
     return _cachedAuthHeaders!;
+  }
+
+  // 清除认证头缓存（用于登录/登出时刷新）
+  static void clearAuthCache() {
+    _cachedAuthHeaders = null;
   }
 
   // 统一请求处理

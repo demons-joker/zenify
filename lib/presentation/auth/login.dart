@@ -48,6 +48,9 @@ class _Login extends State<Login> {
         );
         print('loginresponse: $response');
 
+        // 清除 API 缓存，确保使用新 token
+        Api.clearAuthCache();
+
         // 保存登录响应数据
         await UserSession.saveLoginResponse(response);
 
@@ -72,6 +75,10 @@ class _Login extends State<Login> {
               password: _passwordController.text,
             ),
           );
+
+          // 清除 API 缓存，确保使用新 token
+          Api.clearAuthCache();
+
           // 注册成功后自动登录
           await UserSession.saveLoginResponse(userInfo);
 

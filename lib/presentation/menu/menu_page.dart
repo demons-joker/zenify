@@ -19,7 +19,7 @@ class _MenuPageState extends State<MenuPage> {
   late PageController _pageController;
   double _currentPage = 0;
   final double _viewportFraction = 0.2; // 减小视口比例，使页面同时显示5个菜品
-  String selectedTag = '全部'; // 默认选中【全部】标签
+  String selectedTag = 'All'; // 默认选中【All】标签
   List<dynamic> allFoods = []; // 所有食物列表（未过滤）
   List<dynamic> categoryFilteredFoods = []; // 按category筛选后的食物列表
   List<dynamic> filteredFoods = []; // 最终显示的食物列表（tag筛选后）
@@ -125,15 +125,15 @@ class _MenuPageState extends State<MenuPage> {
       print('_replacePlanFood: $response');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('替换成功')),
+          SnackBar(content: Text('Replace successful')),
         );
         Navigator.of(context).pop(true); // 传递 true 表示需要刷新
       }
     } catch (e) {
-      print('替换计划食物失败: $e');
+      print('Replace plan food failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('替换失败: $e')),
+          SnackBar(content: Text('Replace failed: $e')),
         );
       }
     }
@@ -198,7 +198,7 @@ class _MenuPageState extends State<MenuPage> {
                         setState(() {
                           selectedTag = tags[index];
                           // 在categoryFilteredFoods基础上进行tag筛选
-                          filteredFoods = selectedTag == '全部'
+                          filteredFoods = selectedTag == 'All'
                               ? categoryFilteredFoods // 显示按category筛选后的所有食物
                               : categoryFilteredFoods
                                   .where((food) =>
@@ -232,7 +232,7 @@ class _MenuPageState extends State<MenuPage> {
                     if (filteredFoods.isEmpty) {
                       return Center(
                         child: Text(
-                          '暂无菜品数据',
+                          'No food data available',
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.grey,
@@ -246,7 +246,7 @@ class _MenuPageState extends State<MenuPage> {
                         : index % filteredFoods.length;
                     final foodItem = filteredFoods.isEmpty
                         ? {
-                            'name': '示例菜品',
+                            'name': 'Sample food',
                             'image_url': null,
                             'quantity': 100,
                             'unit': 'g',
@@ -257,7 +257,7 @@ class _MenuPageState extends State<MenuPage> {
                     double value = (index - _currentPage);
 
                     // Extract food data with null checks
-                    final foodName = food['name'] ?? '未知菜品';
+                    final foodName = food['name_en'] ?? 'Unknown food';
                     final imageUrl = food['image_url'];
                     // final quantity = foodItem['quantity']?.toString() ?? '1';
                     // final unit = foodItem['unit']?.toString() ?? '份';
@@ -271,17 +271,17 @@ class _MenuPageState extends State<MenuPage> {
                           final confirm = await showDialog<bool>(
                             context: context,
                             builder: (context) => AlertDialog(
-                              title: Text('确认替换'),
-                              content: Text('是否替换为该食物？'),
+                              title: Text('Confirm Replace'),
+                              content: Text('Replace with this food?'),
                               actions: [
                                 TextButton(
                                   onPressed: () =>
                                       Navigator.pop(context, false),
-                                  child: Text('取消'),
+                                  child: Text('Cancel'),
                                 ),
                                 TextButton(
                                   onPressed: () => Navigator.pop(context, true),
-                                  child: Text('确认'),
+                                  child: Text('Confirm'),
                                 ),
                               ],
                             ),
@@ -409,10 +409,10 @@ class _MenuPageState extends State<MenuPage> {
 
   List<String> getTags() {
     final categories = allFoods
-        .map((rf) => rf['subcategory']?.toString() ?? '其他')
+        .map((rf) => rf['subcategory']?.toString() ?? 'Other')
         .toSet()
         .toList();
-    return ['全部']..addAll(categories);
+    return ['All']..addAll(categories);
   }
 
   // int _parseCalories(String? nutritionalInfo) {

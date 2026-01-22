@@ -31,7 +31,7 @@ class ApiService {
         ..headers.addAll(headers ?? {})
         ..body = body != null ? jsonEncode(body) : ''
         ..followRedirects = true;
-      // print('headers: ${request.headers}');
+      print('headers: ${request.headers}');
 
       final response = await _client
           .send(request)
