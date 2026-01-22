@@ -556,8 +556,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _logout() async {
     try {
+      // Api.logout() 已经包含了清除缓存和会话的逻辑
       await Api.logout();
-      await UserSession.clear();
       AppRoutes.navigateToLoginAndReplace(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

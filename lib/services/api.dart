@@ -266,6 +266,9 @@ class Api {
 
   // 登出
   static Future<dynamic> logout() async {
+    // 清除 API 认证缓存
+    clearAuthCache();
+    // 清除用户会话
     await UserSession.clear();
     return true;
   }
