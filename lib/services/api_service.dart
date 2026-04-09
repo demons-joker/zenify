@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:zenify/services/service_config.dart';
+import 'package:zenify/services/user_session.dart';
 
 class ApiService {
   static final _client = http.Client();
@@ -83,7 +84,11 @@ class ApiService {
       case 400:
         throw Exception('请求参数错误: ${response.body}');
       case 401:
-        throw Exception('未授权，请登录');
+        // 401 未授权错误，需要重新登录
+        print('Token 已过期或无效，需要重新登录');
+        // 清除用户会话，强制重新登录（异步执行，不等待）
+        UserSession.clear().catchError((e) => print('清除会话失败: $e'));
+        throw Exception('登录已过期，请重新登录');
       case 403:
         throw Exception('拒绝访问');
       case 404:

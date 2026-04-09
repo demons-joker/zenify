@@ -5,6 +5,8 @@ import 'dart:io';
 import 'package:zenify/services/upload_service.dart';
 import 'package:zenify/services/mqtt_service.dart';
 import 'dart:async';
+import 'package:zenify/utils/toast_helper.dart';
+import 'package:zenify/utils/error_message_helper.dart';
 
 class CameraPage extends StatefulWidget {
   @override
@@ -118,9 +120,7 @@ class _CameraPageState extends State<CameraPage> {
       }
     } catch (e) {
       print('Photo pick error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('选择照片失败: ${e.toString()}')),
-      );
+      ToastHelper.error(context, ErrorMessageHelper.format(e));
     }
   }
 

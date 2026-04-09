@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:zenify/utils/toast_helper.dart';
 
 /// Tag input widget for flexible tag management
 class TagInputWidget extends StatefulWidget {
@@ -50,16 +51,12 @@ class _TagInputWidgetState extends State<TagInputWidget> {
     if (trimmedTag.isEmpty) return;
 
     if (_tags.contains(trimmedTag)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('标签 "$trimmedTag" 已存在')),
-      );
+      ToastHelper.warning(context, '标签 "$trimmedTag" 已存在');
       return;
     }
 
     if (_tags.length >= widget.maxTags) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('最多只能添加 ${widget.maxTags} 个标签')),
-      );
+      ToastHelper.warning(context, '最多只能添加 ${widget.maxTags} 个标签');
       return;
     }
 

@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:zenify/utils/file_handling_utils.dart';
+import 'package:zenify/utils/toast_helper.dart';
+import 'package:zenify/utils/error_message_helper.dart';
 
 /// File upload widget with camera and gallery support
 class FileUploadWidget extends StatefulWidget {
@@ -54,9 +56,7 @@ class _FileUploadWidgetState extends State<FileUploadWidget> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('拍照失败: $e')),
-        );
+        ToastHelper.error(context, ErrorMessageHelper.format(e));
       }
     } finally {
       if (mounted) {
@@ -92,9 +92,7 @@ class _FileUploadWidgetState extends State<FileUploadWidget> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('选择文件失败: $e')),
-        );
+        ToastHelper.error(context, ErrorMessageHelper.format(e));
       }
     } finally {
       if (mounted) {

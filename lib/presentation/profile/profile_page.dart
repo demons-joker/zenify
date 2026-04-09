@@ -3,6 +3,8 @@ import 'package:zenify/services/api.dart';
 import 'package:zenify/services/user_session.dart';
 import 'package:zenify/routes/app_routes.dart';
 import 'package:zenify/presentation/qr_scanner/qr_scanner_page.dart';
+import 'package:zenify/utils/toast_helper.dart';
+import 'package:zenify/utils/error_message_helper.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -60,12 +62,7 @@ class _ProfilePageState extends State<ProfilePage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Scan failed: ${e.toString()}'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        ToastHelper.error(context, ErrorMessageHelper.format(e));
       }
     }
   }
@@ -75,23 +72,13 @@ class _ProfilePageState extends State<ProfilePage> {
       await Api.bindDevice(deviceId);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Device bound successfully'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        ToastHelper.success(context, '设备绑定成功');
         // 重新加载用户信息（包含设备信息）
         _loadUserInfo();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to bind device: ${e.toString()}'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        ToastHelper.error(context, ErrorMessageHelper.format(e));
       }
     }
   }
@@ -120,23 +107,13 @@ class _ProfilePageState extends State<ProfilePage> {
         await Api.unbindDevice(device.deviceId);
 
         if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Device unbound successfully'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-          // 重新加载用户信息（包含设备信息）
-          _loadUserInfo();
+        ToastHelper.success(context, '设备解绑成功');
+        // 重新加载用户信息（包含设备信息）
+        _loadUserInfo();
         }
       } catch (e) {
         if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to unbind device: ${e.toString()}'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        ToastHelper.error(context, ErrorMessageHelper.format(e));
         }
       }
     }
@@ -560,12 +537,7 @@ class _ProfilePageState extends State<ProfilePage> {
       await Api.logout();
       AppRoutes.navigateToLoginAndReplace(context);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Logout failed: ${e.toString()}'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      ToastHelper.error(context, ErrorMessageHelper.format(e));
     }
   }
 }

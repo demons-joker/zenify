@@ -11,6 +11,7 @@ class ApiConfig {
   // static const String baseUrl = "https://www.maididi.com";
   // static const String baseUrl = "http://127.0.0.1:8000";
   static const String baseUrl = "http://118.195.149.172:8000";
+  // static const String baseUrl = "http://170.106.72.81:8000";
 
   static const String apiVersion = "/api/v1";
   static const String mqttBrokerAddress = "118.195.149.172";

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:zenify/services/api.dart';
+import 'package:zenify/utils/toast_helper.dart';
+import 'package:zenify/utils/error_message_helper.dart';
 
 class MenuPage extends StatefulWidget {
   final String category;
@@ -124,17 +126,13 @@ class _MenuPageState extends State<MenuPage> {
           {'plan_food_id': widget.recipeFoodId, 'food_id': foodId});
       print('_replacePlanFood: $response');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Replace successful')),
-        );
+        ToastHelper.success(context, '食物替换成功');
         Navigator.of(context).pop(true); // 传递 true 表示需要刷新
       }
     } catch (e) {
       print('Replace plan food failed: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Replace failed: $e')),
-        );
+        ToastHelper.error(context, ErrorMessageHelper.format(e));
       }
     }
   }

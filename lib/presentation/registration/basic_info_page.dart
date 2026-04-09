@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:zenify/providers/registration_provider.dart';
+import 'package:zenify/utils/toast_helper.dart';
 
 class BasicInfoPage extends StatefulWidget {
   const BasicInfoPage({super.key});
@@ -348,9 +349,7 @@ class _BasicInfoPageState extends State<BasicInfoPage> {
       provider.nextStep();
 
       // Navigate to next step (to be implemented)
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已保存基本信息，下一步待实现')),
-      );
+      ToastHelper.info(context, '已保存基本信息，下一步待实现');
     }
   }
 }

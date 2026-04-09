@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../core/app_export.dart';
 import '../../services/user_data_cache.dart';
 import '../../widgets/custom_image_view.dart';
+import '../../utils/toast_helper.dart';
+import '../../utils/error_message_helper.dart';
 
 class RegistrationCompleteScreen extends StatefulWidget {
   const RegistrationCompleteScreen({super.key});
@@ -179,13 +181,7 @@ class _RegistrationCompleteScreenState
       if (!mounted) return;
 
       // 显示成功消息
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Welcome! Your personalized journey begins now!'),
-          backgroundColor: appTheme.colorFF52D1,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      ToastHelper.success(context, '欢迎！您的个性化之旅现在开始');
 
       // 短暂延迟后导航到主页
       await Future.delayed(Duration(milliseconds: 500));
@@ -200,12 +196,7 @@ class _RegistrationCompleteScreenState
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Something went wrong. Please try again.'),
-          backgroundColor: appTheme.redCustom,
-        ),
-      );
+      ToastHelper.error(context, ErrorMessageHelper.format(e));
     } finally {
       if (mounted) {
         setState(() {

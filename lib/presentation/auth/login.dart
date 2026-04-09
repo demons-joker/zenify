@@ -3,6 +3,8 @@ import 'package:zenify/services/api.dart';
 import 'package:zenify/services/user_session.dart';
 import 'package:zenify/services/user_data_cache.dart';
 import 'package:zenify/routes/app_routes.dart';
+import 'package:zenify/utils/toast_helper.dart';
+import 'package:zenify/utils/error_message_helper.dart';
 
 class Login extends StatefulWidget {
   @override
@@ -18,7 +20,6 @@ class _Login extends State<Login> {
 
   bool _isLoading = false;
   bool _isLoginMode = true; // 切换登录/注册模式
-  String? _errorMessage;
 
   @override
   void dispose() {
@@ -34,7 +35,6 @@ class _Login extends State<Login> {
 
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
     });
 
     try {
@@ -87,12 +87,12 @@ class _Login extends State<Login> {
 
           AppRoutes.navigateToMainPageAndReplace(context);
         } else {
-          setState(() => _errorMessage = 'Registration failed, please try again later');
+          ToastHelper.error(context, '注册失败，请稍后重试');
         }
       }
       print('loginobject: $response');
     } catch (e) {
-      setState(() => _errorMessage = 'Login failed: ${e.toString()}');
+      ToastHelper.error(context, ErrorMessageHelper.format(e));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -101,7 +101,6 @@ class _Login extends State<Login> {
   void _switchAuthMode() {
     setState(() {
       _isLoginMode = !_isLoginMode;
-      _errorMessage = null;
     });
   }
 
@@ -190,14 +189,6 @@ class _Login extends State<Login> {
                 },
               ),
               SizedBox(height: 30),
-              if (_errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Text(
-                    _errorMessage!,
-                    style: TextStyle(color: Colors.red),
-                  ),
-                ),
               ElevatedButton(
                 onPressed: _isLoading ? null : _submit,
                 child: _isLoading

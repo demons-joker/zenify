@@ -7,6 +7,7 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/custom_gradient_text_field.dart';
 import '../../widgets/custom_image_view.dart';
 import '../../widgets/custom_progress_app_bar.dart';
+import '../../utils/toast_helper.dart';
 
 class UserProfileSetupScreen extends StatefulWidget {
   const UserProfileSetupScreen({super.key});
@@ -558,25 +559,19 @@ class _UserProfileSetupScreenState extends State<UserProfileSetupScreen> {
       await _saveUserProfileData();
 
       // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content:
-              Text('Basic information saved! Let\'s continue with the setup.'),
-          backgroundColor: appTheme.colorFF52D1,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      if (mounted) {
+        ToastHelper.success(context, '基本信息已保存！让我们继续设置吧');
+      }
 
       // Navigate to next screen
-      Navigator.of(context).pushNamed(AppRoutes.goalSelectionScreen);
+      if (mounted) {
+        Navigator.of(context).pushNamed(AppRoutes.goalSelectionScreen);
+      }
     } else {
       // Show validation error
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please complete all required fields'),
-          backgroundColor: appTheme.redCustom,
-        ),
-      );
+      if (mounted) {
+        ToastHelper.warning(context, '请填写所有必填项');
+      }
     }
   }
 }

@@ -186,25 +186,23 @@ class Api {
   }
 
   // 添加认证头
-  static Map<String, String>? _cachedAuthHeaders;
   static Future<Map<String, String>> _getAuthHeaders() async {
     // 每次都重新获取 token，确保使用最新的认证信息
     final token = await UserSession.token;
     print('Token: $token');
     if (token != null) {
-      _cachedAuthHeaders = {
+      return {
         ..._defaultHeaders,
         'Authorization': 'Bearer $token',
       };
     } else {
-      _cachedAuthHeaders = _defaultHeaders;
+      return _defaultHeaders;
     }
-    return _cachedAuthHeaders!;
   }
 
-  // 清除认证头缓存（用于登录/登出时刷新）
+  // 清除认证头缓存（已移除缓存机制，此方法保留但不执行任何操作）
   static void clearAuthCache() {
-    _cachedAuthHeaders = null;
+    // 缓存机制已移除，此方法保留以保持向后兼容性
   }
 
   // 统一请求处理
