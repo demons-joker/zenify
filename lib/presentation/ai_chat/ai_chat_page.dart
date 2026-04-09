@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:zenify/models/message.dart';
 import 'package:zenify/services/ai_stream.dart';
-import 'package:zenify/services/speech_to_text_service.dart';
 import 'dart:async';
 import 'dart:math';
 import 'dart:convert';
@@ -22,12 +21,6 @@ class _AIChatPageState extends State<AIChatPage>
   late AnimationController _animationController;
   final ScrollController _scrollController = ScrollController();
   late MatrixRainPainter _matrixRainPainter;
-
-  // 语音识别相关
-  final SpeechToTextService _speechService = SpeechToTextService();
-  bool _isListening = false;
-  bool _isVoiceMode = false; // 是否在语音输入模式
-  String _voiceText = ''; // 语音识别的临时文本
 
   // 文件相关
   List<File> _selectedFiles = []; // 选中的文件列表
@@ -55,9 +48,6 @@ class _AIChatPageState extends State<AIChatPage>
     );
     _matrixRainPainter = MatrixRainPainter(_animationController); // 创建一次数码雨画笔
     _animationController.repeat(); // 启动动画让数码雨持续重绘
-
-    // 初始化语音识别
-    _initializeSpeechRecognition();
   }
 
   @override
@@ -65,7 +55,6 @@ class _AIChatPageState extends State<AIChatPage>
     _animationController.dispose();
     _scrollController.dispose();
     _typingTimer?.cancel();
-    _speechService.dispose();
     super.dispose();
   }
 
@@ -388,49 +377,21 @@ class _AIChatPageState extends State<AIChatPage>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // 左侧：语音输入图标（替代键盘图标位置）
-                    GestureDetector(
-                      onTap: () => _toggleVoiceInput(),
-                      onLongPress: () => _startVoiceInput(),
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _isListening
-                              ? Color(0xFF00FF41).withOpacity(0.3)
-                              : (_isVoiceMode
-                                  ? Color(0xFF00FF41).withOpacity(0.3)
-                                  : Color(0xFF00CC33).withOpacity(0.2)),
-                          border: Border.all(
-                            color: _isListening
-                                ? Color(0xFF00FF41).withOpacity(0.8)
-                                : (_isVoiceMode
-                                    ? Color(0xFF00FF41).withOpacity(0.8)
-                                    : Color(0xFF00CC33).withOpacity(0.5)),
-                            width: 1,
-                          ),
-                          // 语音录制时的脉冲效果
-                          boxShadow: _isListening
-                              ? [
-                                  BoxShadow(
-                                    color: Color(0xFF00FF41).withOpacity(0.6),
-                                    blurRadius: 8,
-                                    spreadRadius: 2,
-                                  ),
-                                ]
-                              : null,
+                    // 左侧：键盘图标
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color(0xFF00CC33).withOpacity(0.2),
+                        border: Border.all(
+                          color: Color(0xFF00CC33).withOpacity(0.5),
+                          width: 1,
                         ),
-                        child: Icon(
-                          _isListening
-                              ? Icons.stop
-                              : (_isVoiceMode ? Icons.mic_off : Icons.mic),
-                          color: _isListening
-                              ? Color(0xFF00FF41)
-                              : (_isVoiceMode
-                                  ? Color(0xFF00FF41)
-                                  : Color(0xFF00CC33)),
-                          size: 18,
-                        ),
+                      ),
+                      child: Icon(
+                        Icons.keyboard,
+                        color: Color(0xFF00CC33),
+                        size: 18,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -1015,97 +976,6 @@ class _AIChatPageState extends State<AIChatPage>
         timer.cancel();
       }
     });
-  }
-
-  // 开始语音输入（长按触发）
-  Future<void> _startVoiceInput() async {
-    bool hasPermission = await _speechService.checkPermission();
-    if (!hasPermission) {
-      bool granted = await _speechService.requestPermission();
-      if (!granted) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Microphone permission required for voice input'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
-      }
-    }
-
-    setState(() {
-      _isVoiceMode = true;
-      _voiceText = _textController.text; // 保存当前输入框内容
-    });
-
-    _speechService.startListening(
-      localeId: 'zh_CN',
-      listenFor: const Duration(seconds: 30),
-      pauseFor: const Duration(seconds: 3),
-    );
-  }
-
-  // 初始化语音识别
-  Future<void> _initializeSpeechRecognition() async {
-    _speechService.onResult = (result) {
-      setState(() {
-        _voiceText = result;
-      });
-    };
-
-    _speechService.onError = (error) {
-      setState(() {
-        _isListening = false;
-        _isVoiceMode = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Speech recognition error: $error'),
-          backgroundColor: Colors.red.withOpacity(0.8),
-        ),
-      );
-    };
-
-    _speechService.onListeningStateChanged = (isListening) {
-      setState(() {
-        _isListening = isListening;
-        if (!isListening) {
-          _isVoiceMode = false;
-          // 将语音结果设置到输入框
-          if (_voiceText.isNotEmpty) {
-            _textController.text = _voiceText;
-          }
-        }
-      });
-    };
-
-    await _speechService.initialize();
-  }
-
-  // 切换语音输入状态（点击切换）
-  Future<void> _toggleVoiceInput() async {
-    if (_isListening) {
-      // 停止录音
-      await _speechService.stopListening();
-      setState(() {
-        _isListening = false;
-        _isVoiceMode = false;
-        // 将语音结果设置到输入框
-        if (_voiceText.isNotEmpty) {
-          _textController.text = _voiceText;
-        }
-      });
-    } else {
-      // 切换到语音模式但不开始录音
-      setState(() {
-        _isVoiceMode = !_isVoiceMode;
-        if (!_isVoiceMode) {
-          _voiceText = _textController.text; // 保存当前文本
-        }
-      });
-    }
   }
 
   // 拍照
