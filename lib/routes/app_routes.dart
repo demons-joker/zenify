@@ -27,6 +27,7 @@ import '../presentation/ai_chat/ai_chat_page.dart';
 import '../presentation/report/report.dart';
 import '../presentation/report/report_page.dart';
 import '../presentation/report/report_detail.dart';
+import '../presentation/report/report_code.dart';
 // Profile page
 import '../presentation/profile/profile_page.dart';
 // Menu page
@@ -68,6 +69,8 @@ class AppRoutes {
   static const String reportPage = '/report';
   static const String profilePage = '/profile';
   static const String reportDetail = '/report_detail';
+  static const String reportCode = '/report_code';
+  static const String reportBuddy = '/report_buddy';
   static const String mealAnalysisReport = '/meal_analysis_report';
 
   // Legacy pages (with required parameters - use navigation helper methods)
@@ -112,6 +115,7 @@ class AppRoutes {
         aiChatPage: (context) => AIChatPage(),
         reportPage: (context) => Report(),
         reportDetail: (context) => ReportDetailPage(),
+        reportCode: (context) => ReportCodePage(),
         profilePage: (context) => ProfilePage(),
         mealAnalysisReport: (context) {
           final args = ModalRoute.of(context)?.settings.arguments as Map?;

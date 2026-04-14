@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:zenify/presentation/home/index.dart';
 import 'package:zenify/presentation/ai_chat/ai_chat_page.dart';
-import 'package:zenify/presentation/report/report_detail.dart';
+// import 'package:zenify/presentation/report/report_detail.dart';
+import 'package:zenify/presentation/report/report_code.dart';
 import 'package:zenify/presentation/profile/profile_page.dart';
 import 'package:zenify/utils/iconfont.dart';
 import 'package:zenify/routes/app_routes.dart';
@@ -19,7 +20,9 @@ class _MainPageState extends State<MainPage> {
   // 页面列表
   final List<Widget> _pages = [
     IndexPage(), // 首页
-    ReportDetailPage(), // 我的报告
+    // ReportDetailPage(), // 我的报告
+    ReportCodePage(), // 报告代码
+    // ReportBuddyPage(), // 报告伙伴
     // HomePage(), // 首页
     Container(), // 拍照按钮占位，实际不会显示
     AIChatPage(), // AI聊天页面
