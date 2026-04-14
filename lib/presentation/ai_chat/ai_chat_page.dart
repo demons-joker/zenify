@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:zenify/models/message.dart';
 import 'package:zenify/services/ai_stream.dart';
+import 'package:zenify/services/speech_to_text_service.dart';
 import 'dart:async';
 import 'dart:math';
 import 'dart:convert';
@@ -8,6 +9,8 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:zenify/utils/toast_helper.dart';
 import 'package:zenify/utils/error_message_helper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert' as convert;
 
 class AIChatPage extends StatefulWidget {
   const AIChatPage({super.key});
@@ -31,6 +34,19 @@ class _AIChatPageState extends State<AIChatPage>
   // AI头像图片状态
   String _currentAiImage = 'assets/images/aichatwink.gif';
 
+  // 语音识别相关
+  final SpeechToTextService _speechService = SpeechToTextService();
+  bool _isListening = false;
+  bool _isVoiceMode = false; // 是否在语音输入模式
+  String _voiceText = ''; // 语音识别的临时文本
+
+  // 历史会话相关
+  List<Map<String, dynamic>> _chatHistory = []; // 历史会话列表
+  String? _currentChatId; // 当前会话ID
+  String? _currentChatTitle; // 当前会话标题
+  bool _showHistoryPanel = false; // 是否显示历史面板
+  bool _isLoadingHistory = false;
+
   @override
   void initState() {
     super.initState();
@@ -50,6 +66,12 @@ class _AIChatPageState extends State<AIChatPage>
     );
     _matrixRainPainter = MatrixRainPainter(_animationController); // 创建一次数码雨画笔
     _animationController.repeat(); // 启动动画让数码雨持续重绘
+
+    // 加载历史会话
+    _loadChatHistory();
+
+    // 初始化语音识别
+    _initializeSpeechRecognition();
   }
 
   @override
@@ -57,6 +79,7 @@ class _AIChatPageState extends State<AIChatPage>
     _animationController.dispose();
     _scrollController.dispose();
     _typingTimer?.cancel();
+    _speechService.dispose();
     super.dispose();
   }
 
@@ -66,7 +89,8 @@ class _AIChatPageState extends State<AIChatPage>
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // 黑客帝国风格背景层
+          // 历史会话面板
+          if (_showHistoryPanel) _buildHistoryPanel(),
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -149,6 +173,15 @@ class _AIChatPageState extends State<AIChatPage>
                         icon: Icon(Icons.arrow_back_ios_new,
                             color: Color(0xFF00FF41)),
                         onPressed: () => Navigator.of(context).pop(),
+                      ),
+                      // 历史会话按钮
+                      IconButton(
+                        icon: Icon(Icons.history, color: Color(0xFF00FF41)),
+                        onPressed: () {
+                          setState(() {
+                            _showHistoryPanel = !_showHistoryPanel;
+                          });
+                        },
                       ),
                       Expanded(
                         child: Container(
@@ -379,21 +412,48 @@ class _AIChatPageState extends State<AIChatPage>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // 左侧：键盘图标
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Color(0xFF00CC33).withOpacity(0.2),
-                        border: Border.all(
-                          color: Color(0xFF00CC33).withOpacity(0.5),
-                          width: 1,
+                    // 左侧：语音输入图标
+                    GestureDetector(
+                      onTap: () => _toggleVoiceInput(),
+                      onLongPress: () => _startVoiceInput(),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _isListening
+                              ? Color(0xFF00FF41).withOpacity(0.3)
+                              : (_isVoiceMode
+                                  ? Color(0xFF00FF41).withOpacity(0.3)
+                                  : Color(0xFF00CC33).withOpacity(0.2)),
+                          border: Border.all(
+                            color: _isListening
+                                ? Color(0xFF00FF41).withOpacity(0.8)
+                                : (_isVoiceMode
+                                    ? Color(0xFF00FF41).withOpacity(0.8)
+                                    : Color(0xFF00CC33).withOpacity(0.5)),
+                            width: 1,
+                          ),
+                          boxShadow: _isListening
+                              ? [
+                                  BoxShadow(
+                                    color: Color(0xFF00FF41).withOpacity(0.6),
+                                    blurRadius: 8,
+                                    spreadRadius: 2,
+                                  ),
+                                ]
+                              : null,
                         ),
-                      ),
-                      child: Icon(
-                        Icons.keyboard,
-                        color: Color(0xFF00CC33),
-                        size: 18,
+                        child: Icon(
+                          _isListening
+                              ? Icons.stop
+                              : (_isVoiceMode ? Icons.mic_off : Icons.mic),
+                          color: _isListening
+                              ? Color(0xFF00FF41)
+                              : (_isVoiceMode
+                                  ? Color(0xFF00FF41)
+                                  : Color(0xFF00CC33)),
+                          size: 18,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -826,6 +886,9 @@ class _AIChatPageState extends State<AIChatPage>
     });
 
     _getAIResponseWithFiles(text, filesToSend); // 使用保存的文件列表
+
+    // 保存当前会话
+    _saveCurrentChat();
   }
 
   String _currentAiResponse = '';
@@ -933,8 +996,9 @@ class _AIChatPageState extends State<AIChatPage>
         print('Received chunk: $chunk');
         if (mounted) {
           setState(() {
-            // 累积响应内容，不自动添加换行符
-            _currentAiResponse += chunk;
+            // 清理并累积响应内容，确保有效的 UTF-16 编码
+            final cleanedChunk = _cleanInvalidUtf16(chunk);
+            _currentAiResponse += cleanedChunk;
           });
           _startTypingEffect();
         }
@@ -949,6 +1013,49 @@ class _AIChatPageState extends State<AIChatPage>
           );
         });
       }
+    }
+  }
+
+  // 清理无效的 UTF-16 字符
+  String _cleanInvalidUtf16(String input) {
+    try {
+      // 尝试验证字符串是否有效
+      // Dart 的 String 使用 UTF-16，所以需要确保代理对正确
+      input.codeUnits; // 这会抛出异常如果无效
+      return input;
+    } catch (e) {
+      // 如果无效，尝试清理或替换无效字符
+      final validChars = <int>[];
+      final codeUnits = input.codeUnits;
+      
+      for (int i = 0; i < codeUnits.length; i++) {
+        final code = codeUnits[i];
+        
+        // 检查是否是有效的 UTF-16 代理对
+        if (code >= 0xD800 && code <= 0xDBFF) {
+          // 高代理
+          if (i + 1 < codeUnits.length) {
+            final lowSurrogate = codeUnits[i + 1];
+            if (lowSurrogate >= 0xDC00 && lowSurrogate <= 0xDFFF) {
+              // 有效的代理对
+              validChars.add(code);
+              validChars.add(lowSurrogate);
+              i++; // 跳过低代理
+              continue;
+            }
+          }
+          // 无效的高代理，跳过或替换
+          validChars.add(0xFFFD); // 替换为 U+FFFD (替换字符)
+        } else if (code >= 0xDC00 && code <= 0xDFFF) {
+          // 孤立的低代理，跳过或替换
+          validChars.add(0xFFFD);
+        } else if (code < 0xD800 || code > 0xDFFF) {
+          // 有效的 BMP 字符
+          validChars.add(code);
+        }
+      }
+      
+      return String.fromCharCodes(validChars);
     }
   }
 
@@ -978,6 +1085,483 @@ class _AIChatPageState extends State<AIChatPage>
         timer.cancel();
       }
     });
+  }
+
+  // 构建历史会话面板
+  Widget _buildHistoryPanel() {
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 300),
+      left: _showHistoryPanel ? 0 : -300,
+      top: 0,
+      bottom: 0,
+      width: 300,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Color(0xFF0a0a0a),
+          border: Border(
+            right: BorderSide(
+              color: Color(0xFF00FF41).withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.8),
+              blurRadius: 20,
+              spreadRadius: 5,
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // 面板标题
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: Color(0xFF00FF41).withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '历史会话',
+                    style: TextStyle(
+                      color: Color(0xFF00FF41),
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close, color: Color(0xFF00FF41)),
+                    onPressed: () {
+                      setState(() {
+                        _showHistoryPanel = false;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+            // 新建会话按钮
+            Container(
+              margin: EdgeInsets.all(12),
+              child: GestureDetector(
+                onTap: _createNewChat,
+                child: Container(
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Color(0xFF00FF41).withOpacity(0.2),
+                        Color(0xFF00CC33).withOpacity(0.1),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Color(0xFF00FF41).withOpacity(0.5),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add, color: Color(0xFF00FF41), size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        '新建会话',
+                        style: TextStyle(
+                          color: Color(0xFF00FF41),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // 历史会话列表
+            Expanded(
+              child: _isLoadingHistory
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF00FF41),
+                      ),
+                    )
+                  : _chatHistory.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.chat_bubble_outline,
+                                color: Color(0xFF00FF41).withOpacity(0.3),
+                                size: 48,
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                '暂无历史会话',
+                                style: TextStyle(
+                                  color: Color(0xFF00FF41).withOpacity(0.5),
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: _chatHistory.length,
+                          itemBuilder: (context, index) {
+                            final chat = _chatHistory[index];
+                            final isSelected = chat['id'] == _currentChatId;
+                            return GestureDetector(
+                              onTap: () => _loadChat(chat),
+                              child: Container(
+                                margin: EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 4),
+                                padding: EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? Color(0xFF00FF41).withOpacity(0.15)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? Color(0xFF00FF41).withOpacity(0.5)
+                                        : Colors.transparent,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.chat,
+                                      color: Color(0xFF00FF41).withOpacity(0.7),
+                                      size: 20,
+                                    ),
+                                    SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            chat['title'] ?? '新会话',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          SizedBox(height: 4),
+                                          Text(
+                                            _formatTime(chat['timestamp']),
+                                            style: TextStyle(
+                                              color: Color(0xFF00FF41)
+                                                  .withOpacity(0.5),
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.delete_outline,
+                                        color: Colors.red.withOpacity(0.7),
+                                        size: 20,
+                                      ),
+                                      onPressed: () =>
+                                          _deleteChat(chat['id']),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 格式化时间
+  String _formatTime(dynamic timestamp) {
+    if (timestamp == null) return '';
+    try {
+      final time = timestamp is int
+          ? DateTime.fromMillisecondsSinceEpoch(timestamp)
+          : DateTime.parse(timestamp.toString());
+      final now = DateTime.now();
+      final diff = now.difference(time);
+
+      if (diff.inDays > 7) {
+        return '${time.month}/${time.day} ${time.hour}:${time.minute.toString().padLeft(2, '0')}';
+      } else if (diff.inDays > 0) {
+        return '${diff.inDays}天前';
+      } else if (diff.inHours > 0) {
+        return '${diff.inHours}小时前';
+      } else if (diff.inMinutes > 0) {
+        return '${diff.inMinutes}分钟前';
+      } else {
+        return '刚刚';
+      }
+    } catch (e) {
+      return '';
+    }
+  }
+
+  // 加载历史会话列表
+  Future<void> _loadChatHistory() async {
+    setState(() {
+      _isLoadingHistory = true;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final historyJson = prefs.getString('chat_history');
+
+      if (historyJson != null) {
+        final List<dynamic> historyList = convert.jsonDecode(historyJson);
+        setState(() {
+          _chatHistory = historyList.cast<Map<String, dynamic>>();
+        });
+      }
+    } catch (e) {
+      debugPrint('加载历史会话失败: $e');
+    } finally {
+      setState(() {
+        _isLoadingHistory = false;
+      });
+    }
+  }
+
+  // 保存历史会话列表
+  Future<void> _saveChatHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final historyJson = convert.jsonEncode(_chatHistory);
+      await prefs.setString('chat_history', historyJson);
+    } catch (e) {
+      debugPrint('保存历史会话失败: $e');
+    }
+  }
+
+  // 创建新会话
+  void _createNewChat() {
+    // 如果当前有未保存的消息，先保存
+    if (_messages.isNotEmpty && _currentChatId != null) {
+      _saveCurrentChat();
+    }
+
+    setState(() {
+      _messages.clear();
+      _currentChatId = DateTime.now().millisecondsSinceEpoch.toString();
+      _currentChatTitle = null;
+      _showHistoryPanel = false;
+    });
+  }
+
+  // 加载指定会话
+  void _loadChat(Map<String, dynamic> chat) {
+    // 如果当前有未保存的消息，先保存
+    if (_messages.isNotEmpty && _currentChatId != null) {
+      _saveCurrentChat();
+    }
+
+    setState(() {
+      _messages.clear();
+      _currentChatId = chat['id'] as String?;
+      _currentChatTitle = _cleanInvalidUtf16(chat['title'] as String? ?? '新会话');
+
+      // 加载消息
+      if (chat['messages'] != null) {
+        final messagesList = chat['messages'] as List<dynamic>;
+        for (var msg in messagesList) {
+          _messages.add(Message(
+            text: _cleanInvalidUtf16(msg['text'] as String? ?? ''),
+            isUser: msg['isUser'] as bool? ?? true,
+          ));
+        }
+      }
+    });
+
+    setState(() {
+      _showHistoryPanel = false;
+    });
+  }
+
+  // 删除指定会话
+  Future<void> _deleteChat(String chatId) async {
+    // 如果删除的是当前会话，清空当前状态
+    if (_currentChatId == chatId) {
+      setState(() {
+        _messages.clear();
+        _currentChatId = null;
+        _currentChatTitle = null;
+      });
+    }
+
+    setState(() {
+      _chatHistory.removeWhere((chat) => chat['id'] == chatId);
+    });
+
+    await _saveChatHistory();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('会话已删除'),
+          backgroundColor: Color(0xFF00FF41).withOpacity(0.8),
+        ),
+      );
+    }
+  }
+
+  // 保存当前会话
+  Future<void> _saveCurrentChat() async {
+    if (_messages.isEmpty) return;
+
+    // 生成会话标题（使用第一条用户消息的前20个字符）
+    String title = '新会话';
+    if (_messages.isNotEmpty && _messages.first.isUser) {
+      final firstMessage = _messages.first.text;
+      title = firstMessage.length > 20
+          ? '${firstMessage.substring(0, 20)}...'
+          : firstMessage;
+    }
+
+    final chatData = {
+      'id': _currentChatId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      'title': _cleanInvalidUtf16(title),
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+      'messages': _messages
+          .map((msg) => {
+                'text': _cleanInvalidUtf16(msg.text),
+                'isUser': msg.isUser,
+              })
+          .toList(),
+    };
+
+    // 更新或添加会话
+    final existingIndex =
+        _chatHistory.indexWhere((chat) => chat['id'] == chatData['id']);
+
+    if (existingIndex >= 0) {
+      _chatHistory[existingIndex] = chatData;
+    } else {
+      // 添加到列表开头
+      _chatHistory.insert(0, chatData);
+      _currentChatId = chatData['id'] as String?;
+      _currentChatTitle = chatData['title'] as String?;
+    }
+
+    // 限制历史记录数量（保留最近50条）
+    if (_chatHistory.length > 50) {
+      _chatHistory = _chatHistory.sublist(0, 50);
+    }
+
+    await _saveChatHistory();
+  }
+
+  // 开始语音输入（长按触发）
+  Future<void> _startVoiceInput() async {
+    bool hasPermission = await _speechService.checkPermission();
+    if (!hasPermission) {
+      bool granted = await _speechService.requestPermission();
+      if (!granted) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('需要麦克风权限才能使用语音输入'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    setState(() {
+      _isVoiceMode = true;
+      _voiceText = _textController.text; // 保存当前输入框内容
+    });
+
+    _speechService.startListening(
+      localeId: 'zh_CN',
+      listenFor: const Duration(seconds: 30),
+      pauseFor: const Duration(seconds: 3),
+    );
+  }
+
+  // 初始化语音识别
+  Future<void> _initializeSpeechRecognition() async {
+    _speechService.onResult = (result) {
+      setState(() {
+        _voiceText = _cleanInvalidUtf16(result);
+      });
+    };
+
+    _speechService.onError = (error) {
+      setState(() {
+        _isListening = false;
+        _isVoiceMode = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('语音识别错误: $error'),
+          backgroundColor: Colors.red.withOpacity(0.8),
+        ),
+      );
+    };
+
+    _speechService.onListeningStateChanged = (isListening) {
+      setState(() {
+        _isListening = isListening;
+        if (!isListening) {
+          _isVoiceMode = false;
+          // 将语音结果设置到输入框
+          if (_voiceText.isNotEmpty) {
+            _textController.text = _voiceText;
+          }
+        }
+      });
+    };
+
+    await _speechService.initialize();
+  }
+
+  // 切换语音输入状态（点击切换）
+  Future<void> _toggleVoiceInput() async {
+    if (_isListening) {
+      // 停止录音
+      await _speechService.stopListening();
+      setState(() {
+        _isListening = false;
+        _isVoiceMode = false;
+        // 将语音结果设置到输入框
+        if (_voiceText.isNotEmpty) {
+          _textController.text = _voiceText;
+        }
+      });
+    } else {
+      // 切换到语音模式但不开始录音
+      setState(() {
+        _isVoiceMode = !_isVoiceMode;
+        if (!_isVoiceMode) {
+          _voiceText = _textController.text; // 保存当前文本
+        }
+      });
+    }
   }
 
   // 拍照
