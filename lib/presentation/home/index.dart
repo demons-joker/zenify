@@ -1287,71 +1287,13 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
           ),
           child: Stack(
             children: [
-              // 上部分内容（占90.h高度）
+              // 上部分内容（占 cardSize - 90.h 高度）- 新布局：三行列表
               Positioned(
                 top: 0,
                 left: 0,
                 right: 0,
-                height: cardSize - 90.h,
-                child: Stack(
-                  children: [
-                    // 中央分格餐盘（圆形）
-                    Center(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final plateDiameter = math.min(
-                                  constraints.maxWidth * 0.6,
-                                  constraints.maxHeight * 0.8) -
-                              20; // 缩小5像素
-
-                          return SizedBox(
-                            width: plateDiameter,
-                            height: plateDiameter,
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                Container(
-                                  width: plateDiameter,
-                                  height: plateDiameter,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.transparent,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black
-                                            .withValues(alpha: 0.12),
-                                        blurRadius: 12.h,
-                                        offset: Offset(0, 6.h),
-                                      ),
-                                    ],
-                                  ),
-                                  child: ClipOval(
-                                    child: Image.asset(
-                                      'assets/images/plate.png',
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) =>
-                                              Container(
-                                        color: Color(0xFF454A30),
-                                        child: Icon(
-                                          Icons.restaurant,
-                                          color: Colors.white,
-                                          size: 40.h,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    // 食材类型标签和引导线（在整个上半部分区域）
-                    _buildFoodTypeLabels(cardSize),
-                  ],
-                ),
+                bottom: 90.h,
+                child: _buildFoodList(),
               ),
 
               // 下部分内容（90.h高度）
@@ -1568,7 +1510,206 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
     );
   }
 
-  // 构建食材类型标签和引导线
+  // 构建食材列表 - 三行布局
+  Widget _buildFoodList() {
+    // 获取当前选择的餐食类型对应的食物数据
+    final selectedMealData = _currentUserFoods.isNotEmpty
+        ? _currentUserFoods.firstWhere(
+            (item) =>
+                item['meal_type']?.toString().toLowerCase() ==
+                _selectedMealType.toLowerCase(),
+            orElse: () => null,
+          )
+        : null;
+
+    // 收集所有食物信息，按类别分组
+    Map<String, Map<String, dynamic>> categorizedFoods = {
+      'vegetable': {'names': <String>[], 'id': null},
+      'carbohydrate': {'names': <String>[], 'id': null},
+      'protein': {'names': <String>[], 'id': null},
+    };
+
+    if (selectedMealData != null) {
+      final foods = selectedMealData['foods'] as List? ?? [];
+      for (var foodItem in foods) {
+        final foodInfo = foodItem['food'] as Map?;
+        if (foodInfo != null) {
+          final category = foodInfo['category'] as String?;
+          final nameEn = foodInfo['name_en'] as String?;
+          if (category != null && nameEn != null) {
+            final categoryLower = category.toLowerCase();
+            if (categorizedFoods.containsKey(categoryLower)) {
+              // 如果还没有设置 id，设置第一个食物的 id
+              if (categorizedFoods[categoryLower]!['id'] == null) {
+                categorizedFoods[categoryLower]!['id'] = foodItem['id'];
+              }
+              categorizedFoods[categoryLower]!['names'].add(nameEn);
+            }
+          }
+        }
+      }
+    }
+
+    // 定义三行的固定配置
+    final foodRows = [
+      {
+        'category': 'vegetable',
+        'image': 'assets/images/211cai.png',
+        'name': categorizedFoods['vegetable']!['names'].isNotEmpty
+            ? categorizedFoods['vegetable']!['names'].join(', ')
+            : 'No vegetable',
+        'id': categorizedFoods['vegetable']!['id'],
+      },
+      {
+        'category': 'carbohydrate',
+        'image': 'assets/images/211mianbao.png',
+        'name': categorizedFoods['carbohydrate']!['names'].isNotEmpty
+            ? categorizedFoods['carbohydrate']!['names'].join(', ')
+            : 'No carbohydrate',
+        'id': categorizedFoods['carbohydrate']!['id'],
+      },
+      {
+        'category': 'protein',
+        'image': 'assets/images/211rou.png',
+        'name': categorizedFoods['protein']!['names'].isNotEmpty
+            ? categorizedFoods['protein']!['names'].join(', ')
+            : 'No protein',
+        'id': categorizedFoods['protein']!['id'],
+      },
+    ];
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20.h, vertical: 30.h),
+      child: Column(
+        children: foodRows.asMap().entries.map((entry) {
+          final index = entry.key;
+          final rowData = entry.value;
+          final category = rowData['category'] as String;
+          final imagePath = rowData['image'] as String;
+          final foodName = rowData['name'] as String;
+          final foodId = rowData['id'] as int?;
+
+          return Expanded(
+            child: index < foodRows.length - 1
+                ? Padding(
+                    padding: EdgeInsets.only(bottom: 12.h),
+                    child: _buildFoodRow(
+                      imagePath: imagePath,
+                      foodName: foodName,
+                      category: category,
+                      foodId: foodId,
+                    ),
+                  )
+                : _buildFoodRow(
+                    imagePath: imagePath,
+                    foodName: foodName,
+                    category: category,
+                    foodId: foodId,
+                  ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // 构建单行食材
+  Widget _buildFoodRow({
+    required String imagePath,
+    required String foodName,
+    required String category,
+    int? foodId,
+  }) {
+    return GestureDetector(
+      onTap: () async {
+        // 点击整行跳转到 MenuPage
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MenuPage(
+              category: category,
+              recipeFoodId: foodId ?? 0,
+            ),
+          ),
+        );
+        if (result == true) {
+          _loadCurrentUserFoods();
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Color(0xFF2A2A2A),
+          borderRadius: BorderRadius.circular(12.h),
+        ),
+        child: Row(
+          children: [
+            // 左侧图片
+            Container(
+              width: 60.h,
+              height: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(12.h),
+                  bottomLeft: Radius.circular(12.h),
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(12.h),
+                  bottomLeft: Radius.circular(12.h),
+                ),
+                child: Image.asset(
+                  imagePath,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: Color(0xFF454A30),
+                    child: Icon(
+                      Icons.restaurant,
+                      color: Colors.white,
+                      size: 24.h,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // 中间食材名称
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12.h),
+                child: Text(
+                  foodName,
+                  style: TextStyle(
+                    color: Color(0xFFDEC1A4),
+                    fontSize: 16.fSize,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+            // 右侧切换按钮
+            Padding(
+              padding: EdgeInsets.only(right: 12.h),
+              child: Image.asset(
+                'assets/images/icon-change.png',
+                width: 24.h,
+                height: 24.h,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => Icon(
+                  Icons.refresh,
+                  color: Color(0xFF908070),
+                  size: 20.h,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 保留原有的 _buildFoodTypeLabels 方法（如果其他地方调用）
+  // 构建食材类型标签和引导线（兼容旧代码）
   Widget _buildFoodTypeLabels(double cardSize) {
     // 获取当前选择的餐食类型对应的食物数据
     final selectedMealData = _currentUserFoods.firstWhere(
