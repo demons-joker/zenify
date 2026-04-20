@@ -781,202 +781,191 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
       caloriesText = '${totalCalories.toStringAsFixed(0)} kcal';
     }
 
-    return Container(
-      height: 114.h, // 114px高度
-      decoration: BoxDecoration(
-        color: Color(0xFFF6F6F6),
-        borderRadius: BorderRadius.circular(12.h),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            offset: Offset(0, 2.h),
-            blurRadius: 8.h,
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(12.h),
-        child: Row(
-          children: [
-            // 左边正方形图片或加载动画
-            Container(
-              width: 90.h,
-              height: 90.h,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8.h),
-                color: Colors.grey[200],
+    return GestureDetector(
+      onTap: () {
+        if (!isAnalyzing) {
+          AppRoutes.navigateToMealAnalysisReport(
+            context,
+            image: imageUrl ?? '',
+            title: title,
+            tag: 'Balanced',
+            foods: data?['foods'] ?? [],
+          );
+        }
+      },
+      child: Container(
+        height: 114.h, // 114px高度
+        decoration: BoxDecoration(
+          color: Color(0xFFF6F6F6),
+          borderRadius: BorderRadius.circular(12.h),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              offset: Offset(0, 2.h),
+              blurRadius: 8.h,
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(12.h),
+          child: Row(
+            children: [
+              // 左边正方形图片或加载动画
+              Container(
+                width: 90.h,
+                height: 90.h,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8.h),
+                  color: Colors.grey[200],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8.h),
+                  child: isAnalyzing
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 30.h,
+                                height: 30.h,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 3,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Color(0xFF747474),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 8.h),
+                              Text(
+                                'Analyzing',
+                                style: TextStyle(
+                                  color: Color(0xFF747474),
+                                  fontSize: 12.fSize,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : imageUrl != null && imageUrl.isNotEmpty
+                          ? Image.network(
+                              imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                color: Colors.grey[300],
+                                child: Icon(
+                                  Icons.restaurant,
+                                  color: Colors.grey[600],
+                                  size: 32.h,
+                                ),
+                              ),
+                            )
+                          : Icon(
+                              Icons.restaurant,
+                              color: Colors.grey[600],
+                              size: 32.h,
+                            ),
+                ),
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8.h),
-                child: isAnalyzing
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 30.h,
-                              height: 30.h,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 3,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Color(0xFF747474),
+
+              SizedBox(width: 10.h), // 距离右边10px
+
+              // 右边剩余区域
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 第一行：收藏按钮、标签、卡路里、编辑按钮
+                    Row(
+                      children: [
+                        // 收藏爱心按钮
+                        SizedBox(
+                          width: 32.h,
+                          height: 32.h,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                // 这里可以切换收藏状态
+                              });
+                            },
+                            child: Icon(
+                              isLiked ? Icons.favorite : Icons.favorite_border,
+                              color: isLiked
+                                  ? Color.fromARGB(255, 214, 37, 37)
+                                  : Color(0xFF747474),
+                              size: 20.h,
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(width: 6.h),
+
+                        // Balanced diet 标签 - 使用 Flexible 避免溢出
+                        Flexible(
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 5.h, vertical: 4.h),
+                            decoration: BoxDecoration(
+                              color: Color(0xFFE1EC7C),
+                              borderRadius: BorderRadius.circular(90),
+                            ),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                'Balanced',
+                                style: TextStyle(
+                                  color: Color(0xFF747474),
+                                  fontSize: 16.fSize,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ),
-                            SizedBox(height: 8.h),
-                            Text(
-                              'Analyzing',
-                              style: TextStyle(
-                                color: Color(0xFF747474),
-                                fontSize: 12.fSize,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : imageUrl != null && imageUrl.isNotEmpty
-                        ? Image.network(
-                            imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Container(
-                              color: Colors.grey[300],
-                              child: Icon(
-                                Icons.restaurant,
-                                color: Colors.grey[600],
-                                size: 32.h,
-                              ),
-                            ),
-                          )
-                        : Icon(
-                            Icons.restaurant,
-                            color: Colors.grey[600],
-                            size: 32.h,
-                          ),
-              ),
-            ),
-
-            SizedBox(width: 10.h), // 距离右边10px
-
-            // 右边剩余区域
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 第一行：收藏按钮、标签、卡路里、编辑按钮
-                  Row(
-                    children: [
-                      // 收藏爱心按钮
-                      SizedBox(
-                        width: 32.h,
-                        height: 32.h,
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              // 这里可以切换收藏状态
-                            });
-                          },
-                          child: Icon(
-                            isLiked ? Icons.favorite : Icons.favorite_border,
-                            color: isLiked
-                                ? Color.fromARGB(255, 214, 37, 37)
-                                : Color(0xFF747474),
-                            size: 20.h,
                           ),
                         ),
-                      ),
 
-                      SizedBox(width: 6.h),
+                        Spacer(),
 
-                      // Balanced diet 标签 - 使用 Flexible 避免溢出
-                      Flexible(
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 5.h, vertical: 4.h),
-                          decoration: BoxDecoration(
-                            color: Color(0xFFE1EC7C),
-                            borderRadius: BorderRadius.circular(90),
-                          ),
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
+                        // 卡路里显示
+                        if (caloriesText.isNotEmpty) ...[
+                          SizedBox(width: 6.h),
+                          Flexible(
                             child: Text(
-                              'Balanced',
+                              caloriesText,
                               style: TextStyle(
                                 color: Color(0xFF747474),
-                                fontSize: 16.fSize,
+                                fontSize: 11.fSize,
                                 fontWeight: FontWeight.w500,
                               ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
                           ),
-                        ),
-                      ),
-
-                      Spacer(),
-
-                      // 卡路里显示 - 使用 Flexible 避免溢出
-                      if (caloriesText.isNotEmpty)
-                        Flexible(
-                          child: Text(
-                            caloriesText,
-                            style: TextStyle(
-                              color: Color(0xFF747474),
-                              fontSize: 11.fSize,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-
-                      if (caloriesText.isNotEmpty) SizedBox(width: 6.h),
-
-                      // 编辑按钮
-                      SizedBox(
-                        width: 32.h,
-                        height: 32.h,
-                        child: GestureDetector(
-                          onTap: () {
-                            // 跳转到小分析报告页面
-                            AppRoutes.navigateToMealAnalysisReport(
-                              context,
-                              image: imageUrl ?? '',
-                              title: title,
-                              tag: 'Balanced',
-                              foods: data?['foods'] ?? [],
-                            );
-                          },
-                          child: Icon(
-                            Icons.edit,
-                            color: Color(0xFF747474),
-                            size: 20.h,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  SizedBox(height: 8.h),
-
-                  // 第二行：文案内容
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        color: Color(0xFF646464),
-                        fontSize: 16.fSize,
-                        fontWeight: FontWeight.w500,
-                        height:
-                            22.0 / 16.0, // line-height 22px / font-size 16px
-                        letterSpacing: 0.121,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                        ],
+                      ],
                     ),
-                  ),
-                ],
+
+                    SizedBox(height: 8.h),
+
+                    // 第二行：文案内容
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          color: Color(0xFF646464),
+                          fontSize: 16.fSize,
+                          fontWeight: FontWeight.w500,
+                          height: 22.0 / 16.0,
+                          letterSpacing: 0.121,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

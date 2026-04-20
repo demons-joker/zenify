@@ -32,6 +32,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   final SpeechToTextService _speechService = SpeechToTextService();
   bool _isListening = false;
   bool _isVoiceMode = false;
+  bool _isSpeechAvailable = false;
   String _voiceText = '';
 
   // 语音播放相关
@@ -619,6 +620,18 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
 
   // 构建语音输入按钮
   Widget _buildVoiceInputButton() {
+    // 如果语音不可用，显示禁用状态
+    if (!_isSpeechAvailable) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        child: Icon(
+          Icons.mic_off_rounded,
+          color: Colors.grey[300],
+          size: 24,
+        ),
+      );
+    }
+
     return GestureDetector(
       onTap: _toggleVoiceInput,
       onLongPress: _startVoiceInput,
@@ -1464,16 +1477,32 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
     };
 
     _speechService.onError = (error) {
+      debugPrint('语音识别错误: $error');
+
+      // 关闭语音模式并标记不可用
       setState(() {
         _isListening = false;
         _isVoiceMode = false;
+        _isSpeechAvailable = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('语音识别错误: $error'),
-          backgroundColor: Colors.red.withOpacity(0.8),
-        ),
-      );
+
+      // 根据错误内容给出更友好的提示，常见情况：模拟器/设备不支持或系统识别服务不可用
+      final lower = error.toLowerCase();
+      String userMessage = '语音识别错误: $error';
+      if (lower.contains('recogniz') ||
+          lower.contains('不可用') ||
+          lower.contains('recognizernotavailable')) {
+        userMessage = '设备不支持语音识别或在模拟器上不可用。请在真机上测试并检查系统语音识别服务与权限。';
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(userMessage),
+            backgroundColor: Colors.orange.withOpacity(0.9),
+          ),
+        );
+      }
     };
 
     _speechService.onListeningStateChanged = (isListening) {
@@ -1488,11 +1517,35 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
       });
     };
 
-    await _speechService.initialize();
+    _isSpeechAvailable = await _speechService.initialize();
+    if (!_isSpeechAvailable) {
+      debugPrint('当前设备不支持语音识别功能');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('当前设备不支持语音识别功能，可能是在模拟器或未启用系统识别服务。请在真机上测试并检查麦克风/语音识别权限。'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
   }
 
   // 切换语音输入状态
   Future<void> _toggleVoiceInput() async {
+    // 检查语音识别是否可用
+    if (!_isSpeechAvailable) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('当前设备不支持语音识别功能'),
+            backgroundColor: Colors.orange.withOpacity(0.8),
+          ),
+        );
+      }
+      return;
+    }
+
     if (_isListening) {
       await _speechService.stopListening();
       setState(() {
