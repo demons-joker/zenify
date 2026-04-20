@@ -300,29 +300,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                       child: _buildFileAttachments(message.files!),
                     ),
 
-                  // AI消息底部操作栏
-                  if (!isUser && message.text.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // 语音播放按钮
-                          _buildVoicePlayButton(message),
-                          const SizedBox(width: 8),
-                          // 复制按钮
-                          _buildActionButton(
-                            icon: Icons.copy_rounded,
-                            onPressed: () => _copyMessage(message.text),
-                          ),
-                          // 重新生成按钮
-                          _buildActionButton(
-                            icon: Icons.refresh_rounded,
-                            onPressed: () => _regenerateMessage(message),
-                          ),
-                        ],
-                      ),
-                    ),
+                  
                 ],
               ),
             ),
@@ -1446,9 +1424,14 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
       if (!granted) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('需要麦克风权限才能使用语音输入'),
+            SnackBar(
+              content: const Text('需要麦克风权限才能使用语音输入'),
               backgroundColor: Colors.red,
+              action: SnackBarAction(
+                label: '设置',
+                textColor: Colors.white,
+                onPressed: () => _speechService.openSettings(),
+              ),
             ),
           );
         }

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:speech_to_text/speech_to_text.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:permission_handler/permission_handler.dart' show Permission, openAppSettings;
 
 class SpeechToTextService {
   static final SpeechToTextService _instance = SpeechToTextService._internal();
@@ -136,6 +136,20 @@ class SpeechToTextService {
   // 请求权限
   Future<bool> requestPermission() async {
     var status = await Permission.microphone.request();
+    if (status.isDenied) {
+      // 权限被拒绝，尝试再次请求
+      status = await Permission.microphone.request();
+    }
+    if (status.isPermanentlyDenied) {
+      // 权限被永久拒绝，跳转到设置页面
+      await openAppSettings();
+      return false;
+    }
     return status.isGranted;
+  }
+
+  // 跳转到应用设置页面
+  Future<bool> openSettings() async {
+    return await openAppSettings();
   }
 }
