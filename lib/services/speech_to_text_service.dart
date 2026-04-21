@@ -22,10 +22,10 @@ class SpeechToTextService {
     if (_isInitialized) return true;
 
     try {
-      // 请求麦克风权限
-      var micStatus = await Permission.microphone.request();
-      if (!micStatus.isGranted) {
-        onError?.call('麦克风权限被拒绝');
+      // 初始化前先确保语音相关权限齐全（麦克风 + 语音识别）
+      final granted = await requestPermission();
+      if (!granted) {
+        onError?.call('语音输入权限未授权');
         return false;
       }
 
@@ -129,23 +129,82 @@ class SpeechToTextService {
 
   // 检查权限
   Future<bool> checkPermission() async {
-    var status = await Permission.microphone.status;
-    return status.isGranted;
+    final micGranted = (await Permission.microphone.status).isGranted;
+    bool speechGranted = true;
+    try {
+      speechGranted = (await Permission.speech.status).isGranted;
+    } catch (_) {
+      // 某些平台没有独立语音识别权限，默认按已满足处理
+      speechGranted = true;
+    }
+    return micGranted && speechGranted;
   }
 
   // 请求权限
   Future<bool> requestPermission() async {
-    var status = await Permission.microphone.request();
-    if (status.isDenied) {
+    var micStatus = await Permission.microphone.request();
+    if (micStatus.isDenied) {
       // 权限被拒绝，尝试再次请求
-      status = await Permission.microphone.request();
+      micStatus = await Permission.microphone.request();
     }
-    if (status.isPermanentlyDenied) {
+
+    if (micStatus.isPermanentlyDenied) {
       // 权限被永久拒绝，跳转到设置页面
       await openAppSettings();
       return false;
     }
-    return status.isGranted;
+
+    if (!micStatus.isGranted) {
+      return false;
+    }
+
+    // iOS 等平台可能还需要语音识别权限；不支持的平台会抛异常，直接忽略
+    try {
+      var speechStatus = await Permission.speech.request();
+      if (speechStatus.isDenied) {
+        speechStatus = await Permission.speech.request();
+      }
+      if (speechStatus.isPermanentlyDenied) {
+        await openAppSettings();
+        return false;
+      }
+      if (!speechStatus.isGranted) {
+        return false;
+      }
+    } catch (_) {
+      // 平台不支持独立语音权限时，忽略该步骤
+    }
+
+    return true;
+  }
+
+  // 获取权限诊断信息
+  Future<Map<String, String>> getPermissionDiagnostics() async {
+    final micStatus = await Permission.microphone.status;
+    String speechStatusText = 'not_supported';
+
+    try {
+      final speechStatus = await Permission.speech.status;
+      speechStatusText = _statusToText(speechStatus);
+    } catch (_) {
+      speechStatusText = 'not_supported';
+    }
+
+    return {
+      'microphone': _statusToText(micStatus),
+      'speech': speechStatusText,
+      'allGranted': (await checkPermission()).toString(),
+    };
+  }
+
+  String _statusToText(PermissionStatus status) {
+    if (status.isGranted) return 'granted';
+    if (status.isDenied) return 'denied';
+    if (status.isPermanentlyDenied) return 'permanentlyDenied';
+    if (status.isRestricted) return 'restricted';
+    if (status.isLimited) return 'limited';
+    if (status.isProvisional) return 'provisional';
+    return status.toString();
   }
 
   // 跳转到应用设置页面

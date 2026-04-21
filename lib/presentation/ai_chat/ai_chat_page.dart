@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:zenify/models/message.dart';
 import 'package:zenify/services/ai_stream.dart';
 import 'package:zenify/services/speech_to_text_service.dart';
@@ -17,6 +18,9 @@ class AIChatPage extends StatefulWidget {
 }
 
 class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
+  static const String _thinkingPlaceholder = '思考中...';
+  static const String _regeneratingPlaceholder = '重新生成中...';
+
   final List<Message> _messages = [];
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -38,6 +42,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   // 语音播放相关
   bool _isPlayingAudio = false;
   String? _playingMessageId;
+  bool _isRegenerating = false;
 
   // 历史会话相关
   List<Map<String, dynamic>> _chatHistory = [];
@@ -54,6 +59,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _textController.addListener(_onInputChanged);
 
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
@@ -69,6 +75,8 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    _textController.removeListener(_onInputChanged);
+    _textController.dispose();
     _scrollController.dispose();
     _typingTimer?.cancel();
     _speechService.dispose();
@@ -284,14 +292,40 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // 消息文本
-                  Text(
-                    message.text,
-                    style: TextStyle(
-                      color: isUser ? Colors.white : const Color(0xFF1A1A2E),
-                      fontSize: 15,
-                      height: 1.5,
+                  if (!isUser && _isPendingPlaceholder(message.text))
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            message.text,
+                            style: const TextStyle(
+                              color: Color(0xFF1A1A2E),
+                              fontSize: 15,
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF4A90D9),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
+                  else
+                    Text(
+                      message.text,
+                      style: TextStyle(
+                        color: isUser ? Colors.white : const Color(0xFF1A1A2E),
+                        fontSize: 15,
+                        height: 1.5,
+                      ),
+                    ),
 
                   // 文件附件
                   if (message.files != null && message.files!.isNotEmpty)
@@ -299,8 +333,28 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                       padding: const EdgeInsets.only(top: 8),
                       child: _buildFileAttachments(message.files!),
                     ),
-
-                  
+                  if (!isUser && !_isPendingPlaceholder(message.text))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          _buildVoicePlayButton(message),
+                          _buildActionButton(
+                            icon: Icons.copy_rounded,
+                            onPressed: () => _copyMessage(message.text),
+                          ),
+                          _buildActionButton(
+                            icon: _isRegenerating
+                                ? Icons.hourglass_top_rounded
+                                : Icons.refresh_rounded,
+                            enabled: !_isRegenerating,
+                            onPressed: () => _regenerateMessage(message),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -354,19 +408,22 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   Widget _buildActionButton({
     required IconData icon,
     required VoidCallback onPressed,
+    bool enabled = true,
   }) {
     return GestureDetector(
-      onTap: onPressed,
+      onTap: enabled ? onPressed : null,
       child: Container(
         padding: const EdgeInsets.all(6),
         margin: const EdgeInsets.only(right: 4),
         decoration: BoxDecoration(
-          color: Colors.grey.withOpacity(0.1),
+          color: enabled
+              ? Colors.grey.withOpacity(0.1)
+              : Colors.grey.withOpacity(0.05),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
           icon,
-          color: Colors.grey[600],
+          color: enabled ? Colors.grey[600] : Colors.grey[400],
           size: 16,
         ),
       ),
@@ -561,6 +618,11 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
         ],
       ),
     );
+  }
+
+  void _onInputChanged() {
+    if (!mounted) return;
+    setState(() {});
   }
 
   // 构建圆形按钮
@@ -1069,10 +1131,10 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   int _charIndex = 0;
   Timer? _typingTimer;
 
-  void _getAIResponseWithFiles(String query, List<File> files) async {
+  Future<void> _getAIResponseWithFiles(String query, List<File> files) async {
     try {
       final messages = _messages
-          .where((msg) => msg.text != '思考中...')
+          .where((msg) => !_isPendingPlaceholder(msg.text))
           .map((msg) => {
                 'role': msg.isUser ? 'user' : 'assistant',
                 'content': msg.text,
@@ -1081,10 +1143,12 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
 
       setState(() {
         _currentAiResponse = '';
-        _displayText = '思考中...';
+        _displayText = _isRegenerating
+            ? _regeneratingPlaceholder
+            : _thinkingPlaceholder;
         _charIndex = 0;
         _messages.add(Message(
-          text: '思考中...',
+          text: _displayText,
           isUser: false,
         ));
       });
@@ -1093,9 +1157,9 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
 
       List<Map<String, dynamic>> fileDataList = [];
       if (files.isNotEmpty) {
-        fileDataList = files.map((file) {
+        final fileEntries = await Future.wait(files.map((file) async {
           final fileName = file.path.split('/').last;
-          final bytes = file.readAsBytesSync();
+          final bytes = await file.readAsBytes();
           final base64 = base64Encode(bytes);
 
           String fileType = 'file';
@@ -1150,7 +1214,8 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
             'mime_type': mimeType,
             'data': 'data:$mimeType;base64,$base64',
           };
-        }).toList();
+        }));
+        fileDataList = fileEntries;
       }
 
       print('Making request with ${fileDataList.length} files');
@@ -1170,6 +1235,18 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
           _startTypingEffect();
         }
       }
+
+      if (mounted && _messages.isNotEmpty) {
+        _typingTimer?.cancel();
+        setState(() {
+          _displayText = _currentAiResponse;
+          _messages.last = Message(
+            text: _displayText,
+            isUser: false,
+          );
+        });
+        await _saveCurrentChat();
+      }
     } catch (e) {
       print('AI response error: $e');
       if (mounted && _messages.isNotEmpty) {
@@ -1179,8 +1256,13 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
             isUser: false,
           );
         });
+        await _saveCurrentChat();
       }
     }
+  }
+
+  bool _isPendingPlaceholder(String text) {
+    return text == _thinkingPlaceholder || text == _regeneratingPlaceholder;
   }
 
   // 清理无效的 UTF-16 字符
@@ -1462,19 +1544,27 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
     _speechService.onError = (error) {
       debugPrint('语音识别错误: $error');
 
-      // 关闭语音模式并标记不可用
+      // 关闭语音模式；仅在识别器确实不可用时才标记为不可用
+      final lower = error.toLowerCase();
+      final recognizerUnavailable = lower.contains('recognizernotavailable') ||
+          lower.contains('recognizer_not_available') ||
+          lower.contains('语音识别不可用') ||
+          lower.contains('not available');
+
       setState(() {
         _isListening = false;
         _isVoiceMode = false;
-        _isSpeechAvailable = false;
+        if (recognizerUnavailable) {
+          _isSpeechAvailable = false;
+        }
       });
 
-      // 根据错误内容给出更友好的提示，常见情况：模拟器/设备不支持或系统识别服务不可用
-      final lower = error.toLowerCase();
       String userMessage = '语音识别错误: $error';
-      if (lower.contains('recogniz') ||
-          lower.contains('不可用') ||
-          lower.contains('recognizernotavailable')) {
+      if (lower.contains('permission') ||
+          lower.contains('error_permission') ||
+          lower.contains('权限')) {
+        userMessage = '语音输入权限不足，请在系统设置中开启麦克风和语音识别权限。';
+      } else if (recognizerUnavailable || lower.contains('不可用')) {
         userMessage = '设备不支持语音识别或在模拟器上不可用。请在真机上测试并检查系统语音识别服务与权限。';
       }
 
@@ -1518,15 +1608,43 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   Future<void> _toggleVoiceInput() async {
     // 检查语音识别是否可用
     if (!_isSpeechAvailable) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('当前设备不支持语音识别功能'),
-            backgroundColor: Colors.orange.withOpacity(0.8),
-          ),
-        );
+      final canUseNow = await _speechService.initialize();
+      if (canUseNow) {
+        setState(() {
+          _isSpeechAvailable = true;
+        });
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('当前设备不支持语音识别功能'),
+              backgroundColor: Colors.orange.withOpacity(0.8),
+            ),
+          );
+        }
+        return;
       }
-      return;
+    }
+
+    final hasPermission = await _speechService.checkPermission();
+    if (!hasPermission) {
+      final granted = await _speechService.requestPermission();
+      if (!granted) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('语音输入权限未开启，请在系统设置中授权'),
+              backgroundColor: Colors.red,
+              action: SnackBarAction(
+                label: '设置',
+                textColor: Colors.white,
+                onPressed: () => _speechService.openSettings(),
+              ),
+            ),
+          );
+        }
+        return;
+      }
     }
 
     if (_isListening) {
@@ -1539,12 +1657,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
         }
       });
     } else {
-      setState(() {
-        _isVoiceMode = !_isVoiceMode;
-        if (!_isVoiceMode) {
-          _voiceText = _textController.text;
-        }
-      });
+      await _startVoiceInput();
     }
   }
 
@@ -1565,7 +1678,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
 
   // 复制消息
   void _copyMessage(String text) {
-    // TODO: 实现复制功能
+    Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('已复制到剪贴板'),
@@ -1575,14 +1688,42 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   }
 
   // 重新生成消息
-  void _regenerateMessage(Message message) {
-    // TODO: 实现重新生成功能
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('正在重新生成...'),
-        backgroundColor: Color(0xFF00FF41),
-      ),
-    );
+  Future<void> _regenerateMessage(Message message) async {
+    if (_isRegenerating) {
+      return;
+    }
+
+    final targetIndex = _messages.lastIndexOf(message);
+    if (targetIndex <= 0) {
+      return;
+    }
+
+    String? lastUserPrompt;
+    for (int i = targetIndex - 1; i >= 0; i--) {
+      if (_messages[i].isUser) {
+        lastUserPrompt = _messages[i].text;
+        break;
+      }
+    }
+
+    if (lastUserPrompt == null || lastUserPrompt.trim().isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _messages.removeAt(targetIndex);
+      _isRegenerating = true;
+    });
+
+    try {
+      await _getAIResponseWithFiles(lastUserPrompt, []);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRegenerating = false;
+        });
+      }
+    }
   }
 
   // 显示选项菜单
@@ -1608,6 +1749,16 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                 ),
               ),
               ListTile(
+                leading: const Icon(Icons.privacy_tip_outlined,
+                    color: Colors.orange),
+                title: const Text('语音权限诊断',
+                    style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showSpeechPermissionDiagnostics();
+                },
+              ),
+              ListTile(
                 leading: const Icon(Icons.delete_outline, color: Colors.red),
                 title:
                     const Text('清空当前会话', style: TextStyle(color: Colors.white)),
@@ -1619,6 +1770,62 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
               const SizedBox(height: 20),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showSpeechPermissionDiagnostics() async {
+    final diagnostics = await _speechService.getPermissionDiagnostics();
+    if (!mounted) return;
+
+    final mic = diagnostics['microphone'] ?? 'unknown';
+    final speech = diagnostics['speech'] ?? 'unknown';
+    final allGranted = diagnostics['allGranted'] == 'true';
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('语音权限诊断'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('麦克风权限: $mic'),
+              const SizedBox(height: 8),
+              Text('语音识别权限: $speech'),
+              const SizedBox(height: 12),
+              Text(
+                allGranted ? '状态正常，可直接语音输入' : '权限未完整开启，请授权后重试',
+                style: TextStyle(
+                  color: allGranted ? Colors.green : Colors.red,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+              },
+              child: const Text('关闭'),
+            ),
+            TextButton(
+              onPressed: () async {
+                await _speechService.openSettings();
+              },
+              child: const Text('去设置'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(dialogContext);
+                await _showSpeechPermissionDiagnostics();
+              },
+              child: const Text('重新检查'),
+            ),
+          ],
         );
       },
     );
