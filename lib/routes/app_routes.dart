@@ -24,7 +24,6 @@ import '../presentation/camera/camera_page.dart';
 // AI Chat page
 import '../presentation/ai_chat/ai_chat_page.dart';
 // Report pages
-import '../presentation/report/report.dart';
 import '../presentation/report/report_page.dart';
 import '../presentation/report/report_detail.dart';
 import '../presentation/report/report_code.dart';
@@ -113,7 +112,10 @@ class AppRoutes {
         },
         cameraPage: (context) => CameraPage(),
         aiChatPage: (context) => AIChatPage(),
-        reportPage: (context) => Report(),
+        reportPage: (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map?;
+          return ReportPage(mealRecordId: args?['mealRecordId']);
+        },
         reportDetail: (context) => ReportDetailPage(),
         reportCode: (context) => ReportCodePage(),
         profilePage: (context) => ProfilePage(),

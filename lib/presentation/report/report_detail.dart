@@ -338,7 +338,7 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
           Center(
             child: Column(
               children: [
-                Image.asset('assets/images/figma/report/veg_icon.png',
+                Image.asset('assets/images/figma/report/egg_icon.png',
                     width: 36,
                     height: 36,
                     errorBuilder: (c, e, s) => const SizedBox.shrink()),
@@ -368,14 +368,14 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                   child: _buildMiniCard(
                       '${_proteinPercent.toStringAsFixed(0)}%',
                       'High-Carb Foods',
-                      'assets/images/figma/report/meat_icon.png',
+                      'assets/images/figma/report/meat_stroke.png',
                       Colors.redAccent)),
               const SizedBox(width: 8),
               Expanded(
                   child: _buildMiniCard(
                       '${_fatPercent.toStringAsFixed(0)}%',
                       'High-Protein Foods',
-                      'assets/images/figma/report/bread_icon.png',
+                      'assets/images/figma/report/candy_icon.png',
                       Colors.orange)),
             ],
           )
@@ -510,9 +510,9 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
           ]),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          _buildPill('assets/images/figma/report/eat_icon.png',
+          _buildPill('assets/images/figma/report/egg_icon.png',
               '${_totalCalories.toStringAsFixed(0)}kcal'),
-          _buildPill('assets/images/figma/report/kcal_icon.png',
+          _buildPill('assets/images/figma/report/candy_icon.png',
               '${_calculateEatTime()}min'),
         ]),
         const SizedBox(height: 12),

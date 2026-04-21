@@ -180,15 +180,15 @@ class _EatingStyleScreenState extends State<EatingStyleScreen> {
     final List<Map<String, String>> eatingStyles = [
       {
         'title': 'Meat-heavy',
-        'image': 'assets/images/eating_styles/meat_heavy-1c0812.png',
+        'image': 'assets/images/211rou.png',
       },
       {
         'title': 'Balanced',
-        'image': 'assets/images/eating_styles/balanced-54c079.png',
+        'image': 'assets/images/plate.png',
       },
       {
         'title': 'Carb-heavy',
-        'image': 'assets/images/eating_styles/carb_heavy-7ff457.png',
+        'image': 'assets/images/211mianbao.png',
       },
     ];
 

@@ -25,7 +25,7 @@ class FoodItemCard extends StatelessWidget {
       child: Row(
         children: [
           // 左侧图片
-          Image.asset('assets/images/egg.jpeg', width: 114, height: 114),
+          Image.asset('assets/images/plate.png', width: 114, height: 114),
           // 中间文字
           Expanded(
             child: Padding(
@@ -66,7 +66,11 @@ class FoodItemCard extends StatelessWidget {
           ),
           // 右侧按钮
           IconButton(
-            icon: Image.asset('assets/images/edit.png', width: 45, height: 45),
+            icon: const Icon(
+              Icons.edit_rounded,
+              size: 28,
+              color: Color(0xFF8FB500),
+            ),
             onPressed: onEditPressed,
           ),
         ],

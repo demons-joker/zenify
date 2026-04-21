@@ -189,7 +189,6 @@ class Api {
   static Future<Map<String, String>> _getAuthHeaders() async {
     // 每次都重新获取 token，确保使用最新的认证信息
     final token = await UserSession.token;
-    print('Token: $token');
     if (token != null) {
       return {
         ..._defaultHeaders,

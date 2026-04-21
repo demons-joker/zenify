@@ -30,7 +30,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   bool _showBottomPanel = false;
 
   // AI头像图片状态
-  String _currentAiImage = 'assets/images/aichatwink.gif';
+  String _currentAiImage = 'assets/images/figma/avatar_center.png';
 
   // 语音识别相关
   final SpeechToTextService _speechService = SpeechToTextService();
@@ -64,7 +64,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() {
-          _currentAiImage = 'assets/images/aichatnormal.gif';
+          _currentAiImage = 'assets/images/figma/avatar_center.png';
         });
       }
     });
@@ -316,7 +316,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                           ),
                         ),
                       ],
-                    ),
+                    )
                   else
                     Text(
                       message.text,
@@ -1088,13 +1088,13 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
     // 检查是否发送了 "cheers"
     if (text.toLowerCase() == 'cheers') {
       setState(() {
-        _currentAiImage = 'assets/images/aichatcheers.gif';
+        _currentAiImage = 'assets/images/figma/avatar_center.png';
       });
 
       Future.delayed(const Duration(seconds: 5), () {
         if (mounted) {
           setState(() {
-            _currentAiImage = 'assets/images/aichatnormal.gif';
+            _currentAiImage = 'assets/images/figma/avatar_center.png';
           });
         }
       });

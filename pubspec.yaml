@@ -45,9 +45,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
-    - assets/figma/
     - assets/images/
-    - assets/images/eating_styles/
     - assets/transition/
   fonts:
     - family: iconfont

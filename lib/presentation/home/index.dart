@@ -567,7 +567,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(18.h),
                     child: Image.asset(
-                      'assets/images/profile_avatar.png',
+                      'assets/images/figma/avatar_center.png',
                       width: 36.h,
                       height: 36.h,
                       fit: BoxFit.cover,
@@ -1106,16 +1106,16 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
     // 根据名称设置显示名称和图片路径
     switch (name) {
       case '蔬菜':
-        imagePath = 'assets/images/cai_unlock.png';
+        imagePath = 'assets/images/211cai.png';
         break;
       case '主食':
-        imagePath = 'assets/images/fan_unlock.png';
+        imagePath = 'assets/images/211mianbao.png';
         break;
       case '肉食':
-        imagePath = 'assets/images/rou_unlock.png';
+        imagePath = 'assets/images/211rou.png';
         break;
       default:
-        imagePath = 'assets/images/cai_unlock.png';
+        imagePath = 'assets/images/211cai.png';
     }
 
     return Container(
@@ -1690,16 +1690,10 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
             // 右侧切换按钮
             Padding(
               padding: EdgeInsets.only(right: 12.h),
-              child: Image.asset(
-                'assets/images/icon-change.png',
-                width: 24.h,
-                height: 24.h,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => Icon(
-                  Icons.refresh,
-                  color: Color(0xFF908070),
-                  size: 20.h,
-                ),
+              child: Icon(
+                Icons.refresh_rounded,
+                color: Color(0xFF908070),
+                size: 20.h,
               ),
             ),
           ],
@@ -1961,21 +1955,10 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                 child: SizedBox(
                   width: 24.h,
                   height: 24.h,
-                  child: Image.asset(
-                    'assets/images/icon-change.png',
-                    width: 24.h,
-                    height: 24.h,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      width: 24.h,
-                      height: 24.h,
-                      color: Colors.grey.shade600,
-                      child: Icon(
-                        Icons.refresh,
-                        color: Colors.white,
-                        size: 12.h,
-                      ),
-                    ),
+                  child: Icon(
+                    Icons.refresh_rounded,
+                    color: Color(0xFF908070),
+                    size: 20.h,
                   ),
                 ),
               ),

@@ -15,7 +15,6 @@ class StreamApiClient {
     Map<String, String>? headers,
   }) async* {
     final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.aiChart}');
-    print('streamPost: $body');
     final request = http.Request('POST', uri)
       ..headers.addAll(headers ??
           {
@@ -27,11 +26,6 @@ class StreamApiClient {
 
     try {
       final streamedResponse = await http.Client().send(request);
-      print('streamedResponse:');
-      print(streamedResponse.statusCode);
-      print(streamedResponse.headers);
-      print(streamedResponse.request);
-      print(streamedResponse);
       if (streamedResponse.statusCode != 200) {
         throw Exception(
             'Failed to stream AI response: ${streamedResponse.statusCode}');
@@ -58,9 +52,6 @@ class StreamApiClient {
     Map<String, String>? headers,
   }) async* {
     final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.aiChartWithFile}');
-    print('streamPostWithFiles: messages count: ${messages.length}');
-    print('streamPostWithFiles: files count: ${fileDataList.length}');
-    print('Messages content: ${json.encode(messages)}');
 
     // 创建multipart/form-data请求
     final request = http.MultipartRequest('POST', uri);
@@ -102,27 +93,10 @@ class StreamApiClient {
     // 注意：不创建空文件，让服务端处理files为null的情况
 
     try {
-      // 打印请求详情用于调试
-    print('Request details:');
-    print('URL: ${request.url}');
-    print('Method: ${request.method}');
-    print('Headers: ${request.headers}');
-    print('Fields: ${request.fields}');
-    print('Messages field: ${request.fields['messages']}');
-    print('Files count: ${request.files.length}');
-    for (var file in request.files) {
-      print(
-          'File: ${file.field}, name: ${file.filename}, size: ${file.length}');
-    }
-
       final streamedResponse = await request.send();
-      print('streamPostWithFiles response:');
-      print('Status: ${streamedResponse.statusCode}');
-      print('Headers: ${streamedResponse.headers}');
 
       if (streamedResponse.statusCode != 200) {
         final responseBody = await streamedResponse.stream.bytesToString();
-        print('Error response: $responseBody');
         throw Exception(
             'Failed to stream AI response with files: ${streamedResponse.statusCode}, Body: $responseBody');
       }
@@ -135,17 +109,16 @@ class StreamApiClient {
         yield chunk;
       }
     } catch (e) {
-      print('streamPostWithFiles error: $e');
       throw Exception('Failed to stream AI response with files: $e');
     }
   }
 
   /// 便捷方法：构建带文件的用户消息
   /// 自动转换文件内容为base64格式
-  static Map<String, dynamic> buildUserMessageWithFiles({
+  static Future<Map<String, dynamic>> buildUserMessageWithFiles({
     required String text,
     required List<Map<String, dynamic>> files,
-  }) {
+  }) async {
     final contentItems = <Map<String, dynamic>>[];
 
     // 添加文本内容
@@ -161,11 +134,11 @@ class StreamApiClient {
       final filePath = file['path'] as String;
       final fileObj = File(filePath);
 
-      if (!fileObj.existsSync()) {
+      if (!await fileObj.exists()) {
         throw Exception('File not found: $filePath');
       }
 
-      final bytes = fileObj.readAsBytesSync();
+      final bytes = await fileObj.readAsBytes();
       final base64 = base64Encode(bytes);
       final fileName = file['name'] ?? filePath.split('/').last;
       final fileSize = bytes.length;
