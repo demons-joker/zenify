@@ -9,8 +9,8 @@ plugins {
 
 android {
     namespace = "com.example.zenify"
-    compileSdk = 35
-    ndkVersion = "27.0.12077973"
+    compileSdk = 36
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -23,8 +23,8 @@ android {
 
     defaultConfig {
         applicationId = "com.example.zenify"
-        minSdk = 21
-        targetSdk = 35
+        minSdk = flutter.minSdkVersion
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
     }

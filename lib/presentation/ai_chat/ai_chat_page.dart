@@ -36,7 +36,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   final SpeechToTextService _speechService = SpeechToTextService();
   bool _isListening = false;
   bool _isVoiceMode = false;
-  bool _isSpeechAvailable = false;
+  bool _isSpeechAvailable = true;
   String _voiceText = '';
 
   // 语音播放相关
@@ -55,6 +55,8 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   final Map<String, AnimationController> _messageAnimations = {};
   final Map<String, Animation<Offset>> _messageSlideAnimations = {};
   final Map<String, Animation<double>> _messageFadeAnimations = {};
+  OverlayEntry? _topMessageEntry;
+  Timer? _topMessageTimer;
 
   @override
   void initState() {
@@ -79,6 +81,8 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
     _textController.dispose();
     _scrollController.dispose();
     _typingTimer?.cancel();
+    _topMessageTimer?.cancel();
+    _topMessageEntry?.remove();
     _speechService.dispose();
 
     // 清理动画控制器
@@ -111,6 +115,96 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
         ],
       ),
     );
+  }
+
+  void _showTopMessage(
+    String message, {
+    Color backgroundColor = const Color(0xFF323232),
+    Duration duration = const Duration(seconds: 4),
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    if (!mounted) return;
+
+    _topMessageTimer?.cancel();
+    _topMessageEntry?.remove();
+
+    final overlay = Overlay.of(context);
+    _topMessageEntry = OverlayEntry(
+      builder: (overlayContext) {
+        return Positioned(
+          top: MediaQuery.of(overlayContext).padding.top + 12,
+          left: 12,
+          right: 12,
+          child: Material(
+            color: Colors.transparent,
+            child: SafeArea(
+              bottom: false,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: backgroundColor,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.18),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          message,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                      if (actionLabel != null && onAction != null) ...[
+                        const SizedBox(width: 12),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(44, 32),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          onPressed: () {
+                            _dismissTopMessage();
+                            onAction();
+                          },
+                          child: Text(actionLabel),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    overlay.insert(_topMessageEntry!);
+    _topMessageTimer = Timer(duration, _dismissTopMessage);
+  }
+
+  void _dismissTopMessage() {
+    _topMessageTimer?.cancel();
+    _topMessageTimer = null;
+    _topMessageEntry?.remove();
+    _topMessageEntry = null;
   }
 
   // 构建顶部导航栏
@@ -1143,9 +1237,8 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
 
       setState(() {
         _currentAiResponse = '';
-        _displayText = _isRegenerating
-            ? _regeneratingPlaceholder
-            : _thinkingPlaceholder;
+        _displayText =
+            _isRegenerating ? _regeneratingPlaceholder : _thinkingPlaceholder;
         _charIndex = 0;
         _messages.add(Message(
           text: _displayText,
@@ -1447,11 +1540,9 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
     await _saveChatHistory();
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('会话已删除'),
-          backgroundColor: const Color(0xFF00FF41).withOpacity(0.8),
-        ),
+      _showTopMessage(
+        '会话已删除',
+        backgroundColor: const Color(0xFF00FF41).withValues(alpha: 0.8),
       );
     }
   }
@@ -1500,52 +1591,82 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
 
   // 开始语音输入
   Future<void> _startVoiceInput() async {
+    if (!_isSpeechAvailable) {
+      final canUseNow = await _speechService.initialize();
+      if (!canUseNow) {
+        if (mounted) {
+          final message = await _buildSpeechErrorMessage(
+            _speechService.lastError ?? '当前设备不支持语音识别功能',
+          );
+          _showTopMessage(
+            message,
+            backgroundColor: Colors.orange.withValues(alpha: 0.92),
+            duration: const Duration(seconds: 9),
+          );
+        }
+        return;
+      }
+      if (mounted) {
+        setState(() {
+          _isSpeechAvailable = true;
+        });
+      }
+    }
+
     bool hasPermission = await _speechService.checkPermission();
     if (!hasPermission) {
       bool granted = await _speechService.requestPermission();
       if (!granted) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('需要麦克风权限才能使用语音输入'),
-              backgroundColor: Colors.red,
-              action: SnackBarAction(
-                label: '设置',
-                textColor: Colors.white,
-                onPressed: () => _speechService.openSettings(),
-              ),
-            ),
+          _showTopMessage(
+            '需要麦克风权限才能使用语音输入。请在系统设置中允许本应用使用麦克风。',
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 8),
+            actionLabel: '设置',
+            onAction: () => _speechService.openSettings(),
           );
         }
         return;
       }
     }
 
+    if (!mounted) return;
     setState(() {
       _isVoiceMode = true;
       _voiceText = _textController.text;
     });
 
-    _speechService.startListening(
+    final started = await _speechService.startListening(
       localeId: 'zh_CN',
       listenFor: const Duration(seconds: 30),
       pauseFor: const Duration(seconds: 3),
     );
+    if (!started && mounted) {
+      setState(() {
+        _isListening = false;
+        _isVoiceMode = false;
+      });
+    }
   }
 
   // 初始化语音识别
   Future<void> _initializeSpeechRecognition() async {
     _speechService.onResult = (result) {
+      if (!mounted) return;
       setState(() {
         _voiceText = _cleanInvalidUtf16(result);
       });
     };
 
-    _speechService.onError = (error) {
+    _speechService.onError = (error) async {
       debugPrint('语音识别错误: $error');
+      if (!mounted) return;
 
       // 关闭语音模式；仅在识别器确实不可用时才标记为不可用
       final lower = error.toLowerCase();
+      final permissionError = lower.contains('permission') ||
+          lower.contains('error_permission') ||
+          lower.contains('权限');
       final recognizerUnavailable = lower.contains('recognizernotavailable') ||
           lower.contains('recognizer_not_available') ||
           lower.contains('语音识别不可用') ||
@@ -1559,26 +1680,25 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
         }
       });
 
-      String userMessage = '语音识别错误: $error';
-      if (lower.contains('permission') ||
-          lower.contains('error_permission') ||
-          lower.contains('权限')) {
-        userMessage = '语音输入权限不足，请在系统设置中开启麦克风和语音识别权限。';
+      String userMessage = await _buildSpeechErrorMessage(error);
+      if (permissionError) {
+        userMessage = await _buildSpeechErrorMessage(
+          Platform.isAndroid ? 'error_permission' : error,
+        );
       } else if (recognizerUnavailable || lower.contains('不可用')) {
-        userMessage = '设备不支持语音识别或在模拟器上不可用。请在真机上测试并检查系统语音识别服务与权限。';
+        userMessage = await _buildSpeechErrorMessage(error);
       }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(userMessage),
-            backgroundColor: Colors.orange.withOpacity(0.9),
-          ),
-        );
-      }
+      if (!mounted) return;
+      _showTopMessage(
+        userMessage,
+        backgroundColor: Colors.orange.withValues(alpha: 0.92),
+        duration: const Duration(seconds: 10),
+      );
     };
 
     _speechService.onListeningStateChanged = (isListening) {
+      if (!mounted) return;
       setState(() {
         _isListening = isListening;
         if (!isListening) {
@@ -1590,63 +1710,12 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
       });
     };
 
-    _isSpeechAvailable = await _speechService.initialize();
-    if (!_isSpeechAvailable) {
-      debugPrint('当前设备不支持语音识别功能');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('当前设备不支持语音识别功能，可能是在模拟器或未启用系统识别服务。请在真机上测试并检查麦克风/语音识别权限。'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-    }
+    // Android 上不要在进入页面时预初始化，否则会过早触发麦克风权限弹窗，
+    // 用户拒绝或系统识别服务尚未就绪时会把语音按钮永久置为不可用。
   }
 
   // 切换语音输入状态
   Future<void> _toggleVoiceInput() async {
-    // 检查语音识别是否可用
-    if (!_isSpeechAvailable) {
-      final canUseNow = await _speechService.initialize();
-      if (canUseNow) {
-        setState(() {
-          _isSpeechAvailable = true;
-        });
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('当前设备不支持语音识别功能'),
-              backgroundColor: Colors.orange.withOpacity(0.8),
-            ),
-          );
-        }
-        return;
-      }
-    }
-
-    final hasPermission = await _speechService.checkPermission();
-    if (!hasPermission) {
-      final granted = await _speechService.requestPermission();
-      if (!granted) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('语音输入权限未开启，请在系统设置中授权'),
-              backgroundColor: Colors.red,
-              action: SnackBarAction(
-                label: '设置',
-                textColor: Colors.white,
-                onPressed: () => _speechService.openSettings(),
-              ),
-            ),
-          );
-        }
-        return;
-      }
-    }
-
     if (_isListening) {
       await _speechService.stopListening();
       setState(() {
@@ -1659,6 +1728,43 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
     } else {
       await _startVoiceInput();
     }
+  }
+
+  Future<String> _buildSpeechErrorMessage(String error) async {
+    final diagnostics = await _speechService.getPermissionDiagnostics();
+    final mic = diagnostics['microphone'] ?? 'unknown';
+    final speech = diagnostics['speech'] ?? 'unknown';
+    final initialized = diagnostics['initialized'] ?? 'false';
+    final lastError = diagnostics['lastError'] ?? error;
+    final recognizerPermissionError =
+        diagnostics['recognizerPermissionError'] == 'true';
+    final recognizerServiceError =
+        diagnostics['recognizerServiceError'] == 'true';
+    final appPermissionsGranted =
+        diagnostics['appPermissionsGranted'] == 'true';
+
+    final lower = error.toLowerCase();
+    String cause;
+    if (Platform.isAndroid && recognizerPermissionError) {
+      cause = '系统语音识别服务返回权限不足，不是本应用麦克风权限未开。';
+    } else if (Platform.isAndroid && recognizerServiceError) {
+      cause = '系统语音识别服务连接异常或不可用。';
+    } else if (lower.contains('error_permission') ||
+        lower.contains('permission') ||
+        lower.contains('权限')) {
+      cause = appPermissionsGranted ? '底层识别器权限不足。' : '本应用麦克风权限未开启。';
+    } else {
+      cause = '语音识别启动失败。';
+    }
+
+    final nextStep = Platform.isAndroid
+        ? '排查：设置中确认本应用麦克风已允许；再检查 Google App/系统语音识别/语音助手的麦克风权限；确认已安装并启用可用的语音识别服务。'
+        : '排查：检查麦克风权限和系统语音识别权限。';
+
+    return '$cause\n'
+        '错误码: $error\n'
+        'App麦克风: $mic；语音权限: ${speech == 'notRequired' ? '当前平台不需要' : speech}；识别器初始化: $initialized；最近错误: $lastError\n'
+        '$nextStep';
   }
 
   // 切换语音播放
@@ -1679,11 +1785,9 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   // 复制消息
   void _copyMessage(String text) {
     Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('已复制到剪贴板'),
-        backgroundColor: Color(0xFF00FF41),
-      ),
+    _showTopMessage(
+      '已复制到剪贴板',
+      backgroundColor: const Color(0xFF00FF41),
     );
   }
 
@@ -1751,8 +1855,8 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
               ListTile(
                 leading: const Icon(Icons.privacy_tip_outlined,
                     color: Colors.orange),
-                title: const Text('语音权限诊断',
-                    style: TextStyle(color: Colors.white)),
+                title:
+                    const Text('语音权限诊断', style: TextStyle(color: Colors.white)),
                 onTap: () {
                   Navigator.pop(context);
                   _showSpeechPermissionDiagnostics();
@@ -1782,6 +1886,22 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
     final mic = diagnostics['microphone'] ?? 'unknown';
     final speech = diagnostics['speech'] ?? 'unknown';
     final allGranted = diagnostics['allGranted'] == 'true';
+    final appPermissionsGranted =
+        diagnostics['appPermissionsGranted'] == 'true';
+    final recognizerPermissionError =
+        diagnostics['recognizerPermissionError'] == 'true';
+    final recognizerServiceError =
+        diagnostics['recognizerServiceError'] == 'true';
+    final platform = diagnostics['platform'] ?? 'unknown';
+    final initialized = diagnostics['initialized'] ?? 'false';
+    final lastError = diagnostics['lastError'] ?? '';
+    final statusText = recognizerPermissionError
+        ? '本应用麦克风权限已开启，但系统语音识别服务返回权限不足。请给 Google/系统语音识别服务开启麦克风权限，或更换/启用系统语音识别服务。'
+        : recognizerServiceError
+            ? '系统语音识别服务连接异常。请确认已安装并启用可用的语音识别服务。'
+            : appPermissionsGranted
+                ? '状态正常，可直接语音输入'
+                : '本应用权限未完整开启，请授权后重试';
 
     await showDialog(
       context: context,
@@ -1794,10 +1914,22 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
             children: [
               Text('麦克风权限: $mic'),
               const SizedBox(height: 8),
-              Text('语音识别权限: $speech'),
+              Text('语音识别权限: ${speech == 'notRequired' ? '当前平台不需要' : speech}'),
+              if (platform == 'android') ...[
+                const SizedBox(height: 8),
+                const Text('Android 语音服务权限: 由系统语音识别服务单独管理'),
+              ],
+              const SizedBox(height: 8),
+              Text('平台: $platform'),
+              const SizedBox(height: 8),
+              Text('识别器已初始化: $initialized'),
+              if (lastError.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text('最近错误: $lastError'),
+              ],
               const SizedBox(height: 12),
               Text(
-                allGranted ? '状态正常，可直接语音输入' : '权限未完整开启，请授权后重试',
+                statusText,
                 style: TextStyle(
                   color: allGranted ? Colors.green : Colors.red,
                   fontWeight: FontWeight.w600,
@@ -1847,11 +1979,10 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('拍照失败: $e'),
-            backgroundColor: Colors.red,
-          ),
+        _showTopMessage(
+          '拍照失败: $e',
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 6),
         );
       }
     }
@@ -1876,11 +2007,10 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('选择图片失败: $e'),
-            backgroundColor: Colors.red,
-          ),
+        _showTopMessage(
+          '选择图片失败: $e',
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 6),
         );
       }
     }
@@ -1901,11 +2031,10 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('选择文件失败: $e'),
-            backgroundColor: Colors.red,
-          ),
+        _showTopMessage(
+          '选择文件失败: $e',
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 6),
         );
       }
     }

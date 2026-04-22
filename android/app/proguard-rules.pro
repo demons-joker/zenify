@@ -1,0 +1,1 @@
+-keep class com.csdcorp.speech_to_text.** { *; }

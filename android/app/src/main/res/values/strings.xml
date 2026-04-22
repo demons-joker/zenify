@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="speech_recognition_attribution_label">Speech recognition microphone access</string>
+</resources>
