@@ -37,6 +37,9 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   bool _isListening = false;
   bool _isVoiceMode = false;
   bool _isSpeechAvailable = true;
+  bool _isStartingVoiceInput = false;
+  bool _acceptingVoiceInput = false;
+  bool _voiceTextCommitted = false;
   String _voiceText = '';
 
   // 语音播放相关
@@ -595,6 +598,9 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
 
   // 构建底部输入区域
   Widget _buildInputArea() {
+    final canSend =
+        _textController.text.trim().isNotEmpty || _selectedFiles.isNotEmpty;
+
     return Container(
       padding: EdgeInsets.only(
         left: 16,
@@ -683,30 +689,14 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                       ),
 
                       // 发送按钮
-                      if (_textController.text.isNotEmpty ||
-                          _selectedFiles.isNotEmpty)
-                        _buildCircleButton(
-                          icon: Icons.send_rounded,
-                          onPressed: _sendMessage,
-                          color: const Color(0xFF4A90D9),
-                          iconColor: Colors.white,
-                        ),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 4, bottom: 4),
+                        child: _buildSendButton(canSend),
+                      ),
                     ],
                   ),
                 ),
               ),
-
-              const SizedBox(width: 12),
-
-              // 语音输入按钮（备用）
-              if (!_isListening)
-                _buildCircleButton(
-                  icon: Icons.mic_rounded,
-                  onPressed: _startVoiceInput,
-                  color: const Color(0xFF4A90D9),
-                  iconColor: Colors.white,
-                  size: 48,
-                ),
             ],
           ),
         ],
@@ -722,11 +712,12 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   // 构建圆形按钮
   Widget _buildCircleButton({
     required IconData icon,
-    required VoidCallback onPressed,
+    required VoidCallback? onPressed,
     required Color color,
     Color? iconColor,
     double size = 44,
   }) {
+    final enabled = onPressed != null;
     return GestureDetector(
       onTap: onPressed,
       child: Container(
@@ -737,7 +728,8 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.3),
+              color:
+                  enabled ? color.withValues(alpha: 0.3) : Colors.transparent,
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -752,41 +744,63 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
     );
   }
 
+  Widget _buildSendButton(bool canSend) {
+    return Tooltip(
+      message: '发送',
+      child: _buildCircleButton(
+        icon: Icons.arrow_upward_rounded,
+        onPressed: canSend ? _sendMessage : null,
+        color: canSend ? const Color(0xFF4A90D9) : const Color(0xFFE5E7EB),
+        iconColor: canSend ? Colors.white : const Color(0xFF9CA3AF),
+        size: 38,
+      ),
+    );
+  }
+
   // 构建语音输入按钮
   Widget _buildVoiceInputButton() {
     // 如果语音不可用，显示禁用状态
     if (!_isSpeechAvailable) {
-      return Container(
-        padding: const EdgeInsets.all(12),
-        child: Icon(
-          Icons.mic_off_rounded,
-          color: Colors.grey[300],
-          size: 24,
+      return Padding(
+        padding: const EdgeInsets.only(left: 4, bottom: 4),
+        child: Tooltip(
+          message: '语音不可用',
+          child: _buildCircleButton(
+            icon: Icons.mic_off_rounded,
+            onPressed: null,
+            color: const Color(0xFFE5E7EB),
+            iconColor: const Color(0xFF9CA3AF),
+            size: 38,
+          ),
         ),
       );
     }
 
-    return GestureDetector(
-      onTap: _toggleVoiceInput,
-      onLongPress: _startVoiceInput,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          decoration: BoxDecoration(
-            color: _isListening || _isVoiceMode
-                ? const Color(0xFF4A90D9).withOpacity(0.2)
-                : Colors.transparent,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            _isListening
-                ? Icons.stop_rounded
-                : (_isVoiceMode ? Icons.mic_off_rounded : Icons.mic_rounded),
-            color: _isListening || _isVoiceMode
-                ? const Color(0xFF4A90D9)
-                : Colors.grey[500],
-            size: 24,
+    final active = _isListening || _isVoiceMode || _isStartingVoiceInput;
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 4),
+      child: Tooltip(
+        message: active ? '停止录音' : '语音输入',
+        child: GestureDetector(
+          onTap: _toggleVoiceInput,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: active ? const Color(0xFFFFE5E5) : Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color:
+                    active ? const Color(0xFFE5484D) : const Color(0xFFE5E7EB),
+                width: 1,
+              ),
+            ),
+            child: Icon(
+              active ? Icons.stop_rounded : Icons.mic_rounded,
+              color: active ? const Color(0xFFE5484D) : const Color(0xFF4A5568),
+              size: 21,
+            ),
           ),
         ),
       ),
@@ -1176,6 +1190,8 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
 
   // 发送消息
   void _sendMessage() {
+    _discardActiveVoiceInput(cancelRecognizer: true);
+
     final text = _textController.text.trim();
     if (text.isEmpty && _selectedFiles.isEmpty) return;
 
@@ -1591,9 +1607,20 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
 
   // 开始语音输入
   Future<void> _startVoiceInput() async {
+    if (_isStartingVoiceInput || _isListening) return;
+
+    setState(() {
+      _isStartingVoiceInput = true;
+    });
+
     if (!_isSpeechAvailable) {
       final canUseNow = await _speechService.initialize();
       if (!canUseNow) {
+        if (mounted) {
+          setState(() {
+            _isStartingVoiceInput = false;
+          });
+        }
         if (mounted) {
           final message = await _buildSpeechErrorMessage(
             _speechService.lastError ?? '当前设备不支持语音识别功能',
@@ -1618,6 +1645,11 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
       bool granted = await _speechService.requestPermission();
       if (!granted) {
         if (mounted) {
+          setState(() {
+            _isStartingVoiceInput = false;
+          });
+        }
+        if (mounted) {
           _showTopMessage(
             '需要麦克风权限才能使用语音输入。请在系统设置中允许本应用使用麦克风。',
             backgroundColor: Colors.red,
@@ -1633,6 +1665,8 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
     if (!mounted) return;
     setState(() {
       _isVoiceMode = true;
+      _acceptingVoiceInput = true;
+      _voiceTextCommitted = false;
       _voiceText = _textController.text;
     });
 
@@ -1645,6 +1679,16 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
       setState(() {
         _isListening = false;
         _isVoiceMode = false;
+        _isStartingVoiceInput = false;
+        _acceptingVoiceInput = false;
+        _voiceTextCommitted = true;
+      });
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isStartingVoiceInput = false;
       });
     }
   }
@@ -1652,9 +1696,11 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   // 初始化语音识别
   Future<void> _initializeSpeechRecognition() async {
     _speechService.onResult = (result) {
-      if (!mounted) return;
+      if (!mounted || !_acceptingVoiceInput || _voiceTextCommitted) return;
+      final cleaned = _cleanInvalidUtf16(result);
+      if (cleaned.trim().isEmpty) return;
       setState(() {
-        _voiceText = _cleanInvalidUtf16(result);
+        _voiceText = cleaned;
       });
     };
 
@@ -1675,6 +1721,10 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
       setState(() {
         _isListening = false;
         _isVoiceMode = false;
+        _isStartingVoiceInput = false;
+        _acceptingVoiceInput = false;
+        _voiceTextCommitted = true;
+        _voiceText = '';
         if (recognizerUnavailable) {
           _isSpeechAvailable = false;
         }
@@ -1699,15 +1749,18 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
 
     _speechService.onListeningStateChanged = (isListening) {
       if (!mounted) return;
+      final shouldCommit =
+          !isListening && _acceptingVoiceInput && !_voiceTextCommitted;
       setState(() {
         _isListening = isListening;
+        _isStartingVoiceInput = false;
         if (!isListening) {
           _isVoiceMode = false;
-          if (_voiceText.isNotEmpty) {
-            _textController.text = _voiceText;
-          }
         }
       });
+      if (shouldCommit) {
+        _commitVoiceTextToInput();
+      }
     };
 
     // Android 上不要在进入页面时预初始化，否则会过早触发麦克风权限弹窗，
@@ -1716,17 +1769,56 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
 
   // 切换语音输入状态
   Future<void> _toggleVoiceInput() async {
-    if (_isListening) {
+    if (_isListening || _isVoiceMode || _isStartingVoiceInput) {
       await _speechService.stopListening();
       setState(() {
         _isListening = false;
         _isVoiceMode = false;
-        if (_voiceText.isNotEmpty) {
-          _textController.text = _voiceText;
+        _isStartingVoiceInput = false;
+      });
+      Future<void>.delayed(const Duration(milliseconds: 250), () {
+        if (mounted) {
+          _commitVoiceTextToInput();
         }
       });
     } else {
       await _startVoiceInput();
+    }
+  }
+
+  void _commitVoiceTextToInput() {
+    if (!_acceptingVoiceInput || _voiceTextCommitted) return;
+
+    final text = _voiceText.trim();
+    _acceptingVoiceInput = false;
+    _voiceTextCommitted = true;
+    _voiceText = '';
+
+    if (text.isEmpty) return;
+    _textController.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
+
+  void _discardActiveVoiceInput({bool cancelRecognizer = false}) {
+    if (!_acceptingVoiceInput &&
+        !_isListening &&
+        !_isVoiceMode &&
+        !_isStartingVoiceInput &&
+        _voiceText.isEmpty) {
+      return;
+    }
+
+    _acceptingVoiceInput = false;
+    _voiceTextCommitted = true;
+    _voiceText = '';
+    _isListening = false;
+    _isVoiceMode = false;
+    _isStartingVoiceInput = false;
+
+    if (cancelRecognizer) {
+      unawaited(_speechService.cancelListening());
     }
   }
 
