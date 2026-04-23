@@ -11,7 +11,8 @@ class PreferenceSelectionScreen extends StatefulWidget {
   const PreferenceSelectionScreen({super.key});
 
   @override
-  State<PreferenceSelectionScreen> createState() => _PreferenceSelectionScreenState();
+  State<PreferenceSelectionScreen> createState() =>
+      _PreferenceSelectionScreenState();
 }
 
 class _PreferenceSelectionScreenState extends State<PreferenceSelectionScreen> {
@@ -34,8 +35,8 @@ class _PreferenceSelectionScreenState extends State<PreferenceSelectionScreen> {
       if (cachedData.isNotEmpty) {
         setState(() {
           mainGoal = cachedData['main_goal'];
-          isFromChronicDisease = mainGoal == 'Chronic Disease' && 
-                                cachedData['chronic_disease'] != null;
+          isFromChronicDisease = mainGoal == 'Chronic Disease' &&
+              cachedData['chronic_disease'] != null;
         });
         print('已加载缓存数据: $cachedData');
       }
@@ -45,10 +46,17 @@ class _PreferenceSelectionScreenState extends State<PreferenceSelectionScreen> {
   }
 
   Future<void> _updateProgress() async {
-    final progress = await QuestionnaireProgressHelper.calculateProgress('preference');
+    final progress =
+        await QuestionnaireProgressHelper.calculateProgress('preference');
     setState(() {
       progressInfo = progress;
     });
+  }
+
+  @override
+  void dispose() {
+    _addMoreController.dispose();
+    super.dispose();
   }
 
   @override
@@ -69,23 +77,25 @@ class _PreferenceSelectionScreenState extends State<PreferenceSelectionScreen> {
               ),
             ],
           ),
-          child: progressInfo != null ? CustomProgressAppBar(
-            leadingIcon: ImageConstant.imgVector,
-            onLeadingPressed: () => Navigator.of(context).pop(),
-            currentStep: progressInfo!.currentStep,
-            totalSteps: progressInfo!.totalSteps,
-            progressValue: progressInfo!.progressValue,
-            backgroundColor: Color(0x9EFFFFFF),
-            progressBackgroundColor: Color(0xFFF7F4F3),
-            progressColor: Color(0xFF52D1C6),
-            stepTextColor: Color(0xFFABABAB),
-            iconBackgroundColor: Color(0xFFF8F8F8),
-            showShadow: true,
-            height: 80.h,
-          ) : CustomProgressAppBar(
-            leadingIcon: ImageConstant.imgVector,
-            onLeadingPressed: () => Navigator.of(context).pop(),
-          ),
+          child: progressInfo != null
+              ? CustomProgressAppBar(
+                  leadingIcon: ImageConstant.imgVector,
+                  onLeadingPressed: () => Navigator.of(context).pop(),
+                  currentStep: progressInfo!.currentStep,
+                  totalSteps: progressInfo!.totalSteps,
+                  progressValue: progressInfo!.progressValue,
+                  backgroundColor: Color(0x9EFFFFFF),
+                  progressBackgroundColor: Color(0xFFF7F4F3),
+                  progressColor: Color(0xFF52D1C6),
+                  stepTextColor: Color(0xFFABABAB),
+                  iconBackgroundColor: Color(0xFFF8F8F8),
+                  showShadow: true,
+                  height: 80.h,
+                )
+              : CustomProgressAppBar(
+                  leadingIcon: ImageConstant.imgVector,
+                  onLeadingPressed: () => Navigator.of(context).pop(),
+                ),
         ),
       ),
       body: SingleChildScrollView(
@@ -226,9 +236,12 @@ class _PreferenceSelectionScreenState extends State<PreferenceSelectionScreen> {
               child: Center(
                 child: Text(
                   preference,
-                  style: TextStyleHelper.instance.title18SemiBoldPingFangSC.copyWith(
-                      height: 1.44,
-                      color: isSelected ? Color(0xFFFFFFFF) : Color(0xFF30322D)),
+                  style: TextStyleHelper.instance.title18SemiBoldPingFangSC
+                      .copyWith(
+                          height: 1.44,
+                          color: isSelected
+                              ? Color(0xFFFFFFFF)
+                              : Color(0xFF30322D)),
                 ),
               ),
             ),
@@ -267,7 +280,7 @@ class _PreferenceSelectionScreenState extends State<PreferenceSelectionScreen> {
 
       // Show success message and navigate
       if (!mounted) return;
-      
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

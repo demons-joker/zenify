@@ -41,10 +41,17 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen> {
   }
 
   Future<void> _updateProgress() async {
-    final progress = await QuestionnaireProgressHelper.calculateProgress('goalSelection');
+    final progress =
+        await QuestionnaireProgressHelper.calculateProgress('goalSelection');
     setState(() {
       progressInfo = progress;
     });
+  }
+
+  @override
+  void dispose() {
+    _addMoreController.dispose();
+    super.dispose();
   }
 
   @override
@@ -65,23 +72,25 @@ class _GoalSelectionScreenState extends State<GoalSelectionScreen> {
               ),
             ],
           ),
-          child: progressInfo != null ? CustomProgressAppBar(
-            leadingIcon: ImageConstant.imgVector,
-            onLeadingPressed: () => Navigator.of(context).pop(),
-            currentStep: progressInfo!.currentStep,
-            totalSteps: progressInfo!.totalSteps,
-            progressValue: progressInfo!.progressValue,
-            backgroundColor: Color(0x9EFFFFFF),
-            progressBackgroundColor: Color(0xFFF7F4F3),
-            progressColor: Color(0xFF52D1C6),
-            stepTextColor: Color(0xFFABABAB),
-            iconBackgroundColor: Color(0xFFF8F8F8),
-            showShadow: true,
-            height: 80.h,
-          ) : CustomProgressAppBar(
-            leadingIcon: ImageConstant.imgVector,
-            onLeadingPressed: () => Navigator.of(context).pop(),
-          ),
+          child: progressInfo != null
+              ? CustomProgressAppBar(
+                  leadingIcon: ImageConstant.imgVector,
+                  onLeadingPressed: () => Navigator.of(context).pop(),
+                  currentStep: progressInfo!.currentStep,
+                  totalSteps: progressInfo!.totalSteps,
+                  progressValue: progressInfo!.progressValue,
+                  backgroundColor: Color(0x9EFFFFFF),
+                  progressBackgroundColor: Color(0xFFF7F4F3),
+                  progressColor: Color(0xFF52D1C6),
+                  stepTextColor: Color(0xFFABABAB),
+                  iconBackgroundColor: Color(0xFFF8F8F8),
+                  showShadow: true,
+                  height: 80.h,
+                )
+              : CustomProgressAppBar(
+                  leadingIcon: ImageConstant.imgVector,
+                  onLeadingPressed: () => Navigator.of(context).pop(),
+                ),
         ),
       ),
       body: SingleChildScrollView(

@@ -1,12 +1,24 @@
 import 'dart:convert';
 import 'dart:async';
 import 'package:http/http.dart' as http;
+import 'package:zenify/core/app_logger.dart';
 import 'package:zenify/services/service_config.dart';
 import 'package:zenify/services/user_session.dart';
 
 class ApiService {
   static final _client = http.Client();
   static const _headers = {'Content-Type': 'application/json'};
+
+  static Map<String, String> _maskSensitiveHeaders(
+      Map<String, String> headers) {
+    final masked = <String, String>{...headers};
+    final authHeader = masked['Authorization'];
+    if (authHeader != null && authHeader.isNotEmpty) {
+      masked['Authorization'] = 'Bearer ***';
+    }
+    return masked;
+  }
+
   static Future<dynamic> request(
     ApiEndpoint endpoint, {
     Map<String, dynamic>? pathParams,
@@ -21,7 +33,7 @@ class ApiService {
       });
       var uri = Uri.parse('${ApiConfig.baseUrl}$processedPath');
       if (queryParams != null) {
-        uri = uri.replace(queryParameters: _convertParams(queryParams ?? {}));
+        uri = uri.replace(queryParameters: _convertParams(queryParams));
       }
       // print('uri: $uri');
 
@@ -32,7 +44,7 @@ class ApiService {
         ..headers.addAll(headers ?? {})
         ..body = body != null ? jsonEncode(body) : ''
         ..followRedirects = true;
-      print('headers: ${request.headers}');
+      AppLogger.info('headers: ${_maskSensitiveHeaders(request.headers)}');
 
       final response = await _client
           .send(request)
@@ -45,7 +57,7 @@ class ApiService {
     } on TimeoutException {
       throw Exception('请求超时，请检查网络连接');
     } catch (e) {
-      print('Error details: $e');
+      AppLogger.error('API request error: $e');
       throw Exception('请求失败: $e');
     }
   }
@@ -85,9 +97,9 @@ class ApiService {
         throw Exception('请求参数错误: ${response.body}');
       case 401:
         // 401 未授权错误，需要重新登录
-        print('Token 已过期或无效，需要重新登录');
+        AppLogger.warning('Token 已过期或无效，需要重新登录');
         // 清除用户会话，强制重新登录（异步执行，不等待）
-        UserSession.clear().catchError((e) => print('清除会话失败: $e'));
+        UserSession.clear().catchError((e) => AppLogger.error('清除会话失败: $e'));
         throw Exception('登录已过期，请重新登录');
       case 403:
         throw Exception('拒绝访问');

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/api.dart';
+import '../../services/recognition_report_service.dart';
 import '../../core/app_export.dart';
 
 class ReportCodePage extends StatefulWidget {
@@ -22,7 +22,7 @@ class _ReportCodePageState extends State<ReportCodePage> {
   /// 加载最新识别数据，和 report_detail.dart 中的方式一致
   Future<void> _loadRecognitionData() async {
     try {
-      final data = await Api.getLatestRecognition();
+      final data = await RecognitionReportService.getLatestRecord();
       if (mounted) {
         setState(() {
           _recognitionData = data;
@@ -250,7 +250,8 @@ class _ReportCodePageState extends State<ReportCodePage> {
             LinearProgressIndicator(
               value: progress,
               backgroundColor: const Color(0xFFE0E3E5),
-              valueColor: AlwaysStoppedAnimation<Color>(getProgressColor(label)),
+              valueColor:
+                  AlwaysStoppedAnimation<Color>(getProgressColor(label)),
             ),
           ],
         ),
@@ -285,7 +286,8 @@ class _ReportCodePageState extends State<ReportCodePage> {
           final imageUrl = food['image_url'] as String? ?? '';
 
           return Padding(
-            padding: EdgeInsets.only(bottom: index < foods.length - 1 ? 12.h : 0),
+            padding:
+                EdgeInsets.only(bottom: index < foods.length - 1 ? 12.h : 0),
             child: Container(
               height: 90.h, // 降低卡片高度
               decoration: BoxDecoration(
@@ -518,7 +520,7 @@ class _ReportCodePageState extends State<ReportCodePage> {
     }
 
     final iconColor = getAdviceColor(title);
-    
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

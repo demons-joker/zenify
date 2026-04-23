@@ -11,7 +11,8 @@ class FoodSourceSelectionScreen extends StatefulWidget {
   const FoodSourceSelectionScreen({super.key});
 
   @override
-  State<FoodSourceSelectionScreen> createState() => _FoodSourceSelectionScreenState();
+  State<FoodSourceSelectionScreen> createState() =>
+      _FoodSourceSelectionScreenState();
 }
 
 class _FoodSourceSelectionScreenState extends State<FoodSourceSelectionScreen> {
@@ -38,8 +39,8 @@ class _FoodSourceSelectionScreenState extends State<FoodSourceSelectionScreen> {
           mainGoal = cachedData['main_goal'];
           chronicDisease = cachedData['chronic_disease'];
           preference = cachedData['preference'];
-          isFromChronicDisease = mainGoal == 'Chronic Disease' && 
-                                chronicDisease != null;
+          isFromChronicDisease =
+              mainGoal == 'Chronic Disease' && chronicDisease != null;
         });
         print('已加载缓存数据: $cachedData');
       }
@@ -49,10 +50,17 @@ class _FoodSourceSelectionScreenState extends State<FoodSourceSelectionScreen> {
   }
 
   Future<void> _updateProgress() async {
-    final progress = await QuestionnaireProgressHelper.calculateProgress('foodSource');
+    final progress =
+        await QuestionnaireProgressHelper.calculateProgress('foodSource');
     setState(() {
       progressInfo = progress;
     });
+  }
+
+  @override
+  void dispose() {
+    _addMoreController.dispose();
+    super.dispose();
   }
 
   @override
@@ -229,9 +237,12 @@ class _FoodSourceSelectionScreenState extends State<FoodSourceSelectionScreen> {
               child: Center(
                 child: Text(
                   foodSource,
-                  style: TextStyleHelper.instance.title18SemiBoldPingFangSC.copyWith(
-                      height: 1.44,
-                      color: isSelected ? Color(0xFFFFFFFF) : Color(0xFF30322D)),
+                  style: TextStyleHelper.instance.title18SemiBoldPingFangSC
+                      .copyWith(
+                          height: 1.44,
+                          color: isSelected
+                              ? Color(0xFFFFFFFF)
+                              : Color(0xFF30322D)),
                 ),
               ),
             ),
@@ -270,7 +281,7 @@ class _FoodSourceSelectionScreenState extends State<FoodSourceSelectionScreen> {
 
       // Show success message and navigate
       if (!mounted) return;
-      
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

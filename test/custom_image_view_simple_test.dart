@@ -1,7 +1,7 @@
 // CustomImageView组件测试 - 简化版本
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/widgets/custom_image_view.dart';
+import 'package:zenify/widgets/custom_image_view.dart';
 
 void main() {
   group('CustomImageView Tests', () {
@@ -84,22 +84,23 @@ void main() {
 
       expect(find.byType(CustomImageView), findsOneWidget);
       expect(find.text('Skip'), findsOneWidget);
-      
+
       // 验证Row存在
       expect(find.byType(Row), findsOneWidget);
-      
+
       // 获取Row组件
       final rowFinder = find.byType(Row);
       final row = tester.widget<Row>(rowFinder);
       final children = row.children;
-      
+
       // 第一个子元素应该是Flexible包装的Text（文字在前）
       expect(children.first.runtimeType, equals(Flexible));
-      
+
       // 验证第一个Flexible包含Text
-      final firstFlexible = tester.widget<Flexible>(find.byType(Flexible).first);
+      final firstFlexible =
+          tester.widget<Flexible>(find.byType(Flexible).first);
       expect(firstFlexible.child.runtimeType, equals(Text));
-      
+
       // 如果有图片，最后一个子元素应该是Flexible包装的图片
       if (children.length > 1) {
         expect(children.last.runtimeType, equals(Flexible));

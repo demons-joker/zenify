@@ -38,6 +38,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
 
   flutter_lints: ^6.0.0
 
@@ -46,6 +48,8 @@ flutter:
   assets:
     - assets/
     - assets/images/
+    - assets/images/figma/
+    - assets/images/figma/report/
     - assets/transition/
   fonts:
     - family: iconfont

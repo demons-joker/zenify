@@ -1,12 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:zenify/services/upload_service.dart';
+import 'package:zenify/core/app_logger.dart';
 import 'package:zenify/services/mqtt_service.dart';
+import 'package:zenify/presentation/camera/camera_upload_coordinator.dart';
 import 'dart:async';
 import 'package:zenify/utils/toast_helper.dart';
 import 'package:zenify/utils/error_message_helper.dart';
+
+enum CameraAnalyzeStage {
+  idle,
+  uploading,
+  waitingMqtt,
+  analyzing,
+  completed,
+  failed,
+}
 
 class CameraPage extends StatefulWidget {
   @override
@@ -17,11 +28,15 @@ class _CameraPageState extends State<CameraPage> {
   CameraController? _cameraController;
   Future<void>? _initializeControllerFuture;
   XFile? _imageFile;
+  bool _cameraAvailable = false;
   bool _isTakingPhoto = false;
   bool _showPreview = false;
   bool _isInitializing = true;
-  bool _isAnalyzing = false;
-  bool _isSynced = false;
+  CameraAnalyzeStage _analyzeStage = CameraAnalyzeStage.idle;
+  String? _statusMessage;
+  File? _lastSubmittedFile;
+  Timer? _mqttWaitTimer;
+  final CameraUploadCoordinator _uploadCoordinator = CameraUploadCoordinator();
   StreamSubscription<RecognitionStatus>? _mqttSubscription;
 
   @override
@@ -34,15 +49,114 @@ class _CameraPageState extends State<CameraPage> {
   /// 监听 MQTT 消息
   void _listenToMQTT() {
     _mqttSubscription = MQTTService().statusStream.listen((status) {
-      if (status.status == RecognitionStatusType.analyzing && mounted) {
-        // 收到 recognition_started 消息，立即跳转到首页 ATE tab
-        Navigator.of(context).pop({'switchToATE': true});
+      if (!mounted) return;
+
+      if (status.status == RecognitionStatusType.analyzing) {
+        _cancelWaitTimeout();
+        setState(() {
+          _analyzeStage = CameraAnalyzeStage.analyzing;
+          _statusMessage = '识别已开始，正在处理...';
+        });
+      }
+
+      if (status.status == RecognitionStatusType.completed) {
+        _cancelWaitTimeout();
+        setState(() {
+          _analyzeStage = CameraAnalyzeStage.completed;
+          _statusMessage = '识别完成，正在返回结果页...';
+        });
+        Future.delayed(const Duration(milliseconds: 700), () {
+          if (mounted) {
+            Navigator.of(context).pop({'switchToATE': true});
+          }
+        });
       }
     });
   }
 
+  bool get _isSubmitting {
+    return _analyzeStage == CameraAnalyzeStage.uploading ||
+        _analyzeStage == CameraAnalyzeStage.waitingMqtt ||
+        _analyzeStage == CameraAnalyzeStage.analyzing;
+  }
+
+  void _cancelWaitTimeout() {
+    _mqttWaitTimer?.cancel();
+    _mqttWaitTimer = null;
+  }
+
+  void _startWaitTimeout() {
+    _cancelWaitTimeout();
+    _mqttWaitTimer = Timer(const Duration(seconds: 25), () {
+      if (!mounted) return;
+      setState(() {
+        _analyzeStage = CameraAnalyzeStage.failed;
+        _statusMessage = '等待识别通知超时，请重试';
+      });
+      ToastHelper.error(context, '识别通知超时，请重试');
+    });
+  }
+
+  Future<void> _submitImage() async {
+    if (_imageFile == null || _isSubmitting) {
+      return;
+    }
+
+    final file = File(_imageFile!.path);
+    _lastSubmittedFile = file;
+    setState(() {
+      _analyzeStage = CameraAnalyzeStage.uploading;
+      _statusMessage = '图片上传中...';
+    });
+
+    final result = await _uploadCoordinator.submitImage(file);
+    if (!mounted) return;
+
+    if (!result.success) {
+      setState(() {
+        _analyzeStage = CameraAnalyzeStage.failed;
+        _statusMessage = result.errorMessage ?? '上传失败，请稍后重试';
+      });
+      ToastHelper.error(
+          context, ErrorMessageHelper.format(result.errorMessage));
+      return;
+    }
+
+    setState(() {
+      _analyzeStage = CameraAnalyzeStage.waitingMqtt;
+      _statusMessage = '上传成功，等待识别开始...';
+    });
+    _startWaitTimeout();
+  }
+
+  void _cancelWaiting() {
+    _cancelWaitTimeout();
+    if (!mounted) return;
+    setState(() {
+      _analyzeStage = CameraAnalyzeStage.idle;
+      _statusMessage = null;
+    });
+  }
+
+  Future<void> _retrySubmit() async {
+    if (_lastSubmittedFile == null && _imageFile == null) {
+      return;
+    }
+    await _submitImage();
+  }
+
   Future<void> _initializeCamera() async {
     try {
+      if (!kIsWeb && !(Platform.isAndroid || Platform.isIOS)) {
+        AppLogger.warning('当前平台不支持 camera 插件，已降级为相册模式');
+        if (mounted) {
+          setState(() {
+            _cameraAvailable = false;
+          });
+        }
+        return;
+      }
+
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
         throw Exception('No cameras available');
@@ -59,9 +173,10 @@ class _CameraPageState extends State<CameraPage> {
 
       _initializeControllerFuture = _cameraController!.initialize();
       await _initializeControllerFuture;
+      _cameraAvailable = true;
     } catch (e) {
-      print('Camera initialization error: $e');
-      // 可以考虑在这里显示错误UI
+      _cameraAvailable = false;
+      AppLogger.warning('Camera initialization unavailable: $e');
     } finally {
       if (mounted) {
         setState(() => _isInitializing = false);
@@ -70,6 +185,11 @@ class _CameraPageState extends State<CameraPage> {
   }
 
   Future<void> _takePhoto() async {
+    if (!_cameraAvailable) {
+      if (!mounted) return;
+      ToastHelper.warning(context, '当前设备不支持拍照，请使用相册上传');
+      return;
+    }
     if (_cameraController == null ||
         !_cameraController!.value.isInitialized ||
         _isTakingPhoto) {
@@ -91,7 +211,8 @@ class _CameraPageState extends State<CameraPage> {
         throw Exception('Failed to create photo file');
       }
     } catch (e) {
-      print('Photo capture error: $e');
+      AppLogger.error('Photo capture error: $e');
+      if (!mounted) return;
       // 显示错误提示
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('拍照失败: ${e.toString()}')),
@@ -119,7 +240,8 @@ class _CameraPageState extends State<CameraPage> {
         });
       }
     } catch (e) {
-      print('Photo pick error: $e');
+      AppLogger.error('Photo pick error: $e');
+      if (!mounted) return;
       ToastHelper.error(context, ErrorMessageHelper.format(e));
     }
   }
@@ -129,6 +251,8 @@ class _CameraPageState extends State<CameraPage> {
       setState(() {
         _showPreview = false;
         _imageFile = null;
+        _analyzeStage = CameraAnalyzeStage.idle;
+        _statusMessage = null;
       });
     }
   }
@@ -147,10 +271,10 @@ class _CameraPageState extends State<CameraPage> {
           elevation: 0,
           leading: IconButton(
             icon: Icon(Icons.arrow_back_ios_new,
-                color: _isAnalyzing
+                color: _isSubmitting
                     ? Colors.white.withValues(alpha: 0.5)
                     : Colors.white),
-            onPressed: _isAnalyzing ? null : () => Navigator.of(context).pop(),
+            onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
           ),
         ),
         body: _isInitializing
@@ -163,7 +287,7 @@ class _CameraPageState extends State<CameraPage> {
                       child:
                           Image.file(File(_imageFile!.path), fit: BoxFit.cover),
                     )
-                  else if (_cameraController != null)
+                  else if (_cameraAvailable && _cameraController != null)
                     Positioned.fill(
                       child: CameraPreview(_cameraController!),
                     ),
@@ -179,28 +303,40 @@ class _CameraPageState extends State<CameraPage> {
                   // Loading indicator when taking photo
                   if (_isTakingPhoto)
                     Center(child: CircularProgressIndicator()),
-                  if (_isAnalyzing)
+                  if (_analyzeStage != CameraAnalyzeStage.idle)
                     Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          CircularProgressIndicator(),
+                          if (_analyzeStage == CameraAnalyzeStage.completed)
+                            Icon(Icons.check_circle,
+                                color: Colors.green, size: 48)
+                          else if (_analyzeStage == CameraAnalyzeStage.failed)
+                            Icon(Icons.error_outline,
+                                color: Colors.redAccent, size: 48)
+                          else
+                            CircularProgressIndicator(),
                           SizedBox(height: 16),
-                          Text('Uploading...',
-                              style: TextStyle(color: Colors.white)),
-                        ],
-                      ),
-                    ),
-                  if (_isSynced)
-                    Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.check_circle,
-                              color: Colors.green, size: 48),
-                          SizedBox(height: 16),
-                          Text('Synced successfully',
-                              style: TextStyle(color: Colors.white)),
+                          Text(
+                            _statusMessage ?? '',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          if (_analyzeStage == CameraAnalyzeStage.waitingMqtt)
+                            TextButton(
+                              onPressed: _cancelWaiting,
+                              child: const Text(
+                                '取消等待',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          if (_analyzeStage == CameraAnalyzeStage.failed)
+                            TextButton(
+                              onPressed: _retrySubmit,
+                              child: const Text(
+                                '重试上传',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -221,29 +357,18 @@ class _CameraPageState extends State<CameraPage> {
               TextButton(
                 child: Text('Reshoot',
                     style: TextStyle(
-                        color: _isAnalyzing
+                        color: _isSubmitting
                             ? Colors.white.withValues(alpha: 0.5)
                             : Colors.white)),
-                onPressed: _isAnalyzing ? null : _retakePhoto,
+                onPressed: _isSubmitting ? null : _retakePhoto,
               ),
               TextButton(
                 child: Text('OK',
                     style: TextStyle(
-                        color: _isAnalyzing
+                        color: _isSubmitting
                             ? Colors.white.withValues(alpha: 0.5)
                             : Colors.white)),
-                onPressed: _isAnalyzing
-                    ? null
-                    : () async {
-                        final file = File(_imageFile!.path);
-                        setState(() {
-                          _isAnalyzing = true;
-                        });
-
-                        // 上传图片，不等待AI分析完成
-                        await UploadService.uploadImage(file, context);
-                        // 当收到 MQTT recognition_started 消息时会自动跳转
-                      },
+                onPressed: _isSubmitting ? null : _submitImage,
               ),
             ],
           )
@@ -256,14 +381,22 @@ class _CameraPageState extends State<CameraPage> {
                 onPressed: _pickPhoto,
               ),
               GestureDetector(
-                onTap: _takePhoto,
+                onTap: _cameraAvailable ? _takePhoto : null,
                 child: Container(
                   width: 72,
                   height: 72,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 4),
+                    border: Border.all(
+                      color: _cameraAvailable
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.4),
+                      width: 4,
+                    ),
                   ),
+                  child: !_cameraAvailable
+                      ? const Icon(Icons.block, color: Colors.white70, size: 24)
+                      : null,
                 ),
               ),
               const SizedBox(width: 48),
@@ -275,6 +408,7 @@ class _CameraPageState extends State<CameraPage> {
 
   @override
   void dispose() {
+    _cancelWaitTimeout();
     _cameraController?.dispose();
     _mqttSubscription?.cancel();
     super.dispose();

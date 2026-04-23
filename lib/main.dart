@@ -5,7 +5,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:zenify/presentation/app_navigation_screen/app_navigation_screen.dart';
 import 'package:zenify/presentation/main_page.dart';
 
+import 'package:zenify/core/app_logger.dart';
 import 'package:zenify/services/user_session.dart';
+import 'package:zenify/services/user_data_cache.dart';
 import 'package:flutter/services.dart';
 
 import 'core/app_export.dart';
@@ -41,17 +43,22 @@ Widget _rootBuilder(
 
 class MyApp extends StatelessWidget {
   // 异步检查用户会话状态
-  static Future<bool> _checkUserSession(bool forceRegistration) async {
+  static Future<bool> _shouldShowOnboarding(bool forceRegistration) async {
     if (forceRegistration) {
-      return true; // 强制注册流程
+      return true; // 强制走引导流程
     }
 
     try {
       final userId = await UserSession.userId;
-      return userId == null; // 如果没有userId，需要注册
+      if (userId == null) {
+        return true;
+      }
+
+      final onboardingCompleted = await UserDataCache.isOnboardingComplete();
+      return !onboardingCompleted;
     } catch (e) {
-      print('Error checking user session: $e');
-      return true; // 出错时默认进入注册流程
+      AppLogger.error('Error checking user session: $e');
+      return true; // 出错时默认进入引导流程
     }
   }
 
@@ -77,7 +84,7 @@ class MyApp extends StatelessWidget {
       ),
       // Use FutureBuilder to handle async user session check
       home: FutureBuilder<bool>(
-        future: _checkUserSession(kForceRegistration),
+        future: _shouldShowOnboarding(kForceRegistration),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Scaffold(
@@ -89,9 +96,8 @@ class MyApp extends StatelessWidget {
           }
 
           // final needsRegistration = false;
-          final needsRegistration = snapshot.data ?? true;
-          // If user doesn't need registration, navigate to the updated home (IndexPage)
-          return needsRegistration ? AppNavigationScreen() : MainPage();
+          final needsOnboarding = snapshot.data ?? true;
+          return needsOnboarding ? AppNavigationScreen() : MainPage();
         },
       ),
       // For quick preview: start the app directly on the Report Detail page.
@@ -136,7 +142,7 @@ class _AppLifecycleObserver extends NavigatorObserver {
     super.didPop(route, previousRoute);
     if (previousRoute?.settings.name == '/') {
       // 仅打印日志，不关闭客户端
-      print('返回首页---------------------');
+      AppLogger.info('返回首页');
     }
   }
 }

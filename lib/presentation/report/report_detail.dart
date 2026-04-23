@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import '../../services/api.dart';
-import '../../services/user_session.dart';
+import '../../services/recognition_report_service.dart';
 
 class ReportDetailPage extends StatefulWidget {
   const ReportDetailPage({super.key});
@@ -84,7 +83,7 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
   /// 加载最新识别数据
   Future<void> _loadRecognitionData() async {
     try {
-      final data = await Api.getLatestRecognition();
+      final data = await RecognitionReportService.getLatestRecord();
       if (data != null && mounted) {
         setState(() {
           _recognitionData = data;
@@ -486,13 +485,15 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
 
   Widget _buildNutritionDetailsCard() {
     // 获取营养素克数
-    final nutritiveProportion = _recognitionData?['nutritive_proportion'] as Map? ?? {};
+    final nutritiveProportion =
+        _recognitionData?['nutritive_proportion'] as Map? ?? {};
     double getNumValue(dynamic value) {
       if (value is num) {
         return value.toDouble();
       }
       return 0.0;
     }
+
     final carbGrams = getNumValue(nutritiveProportion['carbohydrate']);
     final proteinGrams = getNumValue(nutritiveProportion['protein']);
     final fatGrams = getNumValue(nutritiveProportion['fat']);
@@ -550,7 +551,8 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
     );
   }
 
-  Widget _buildNutCard(String percent, String title, Color color, double grams) {
+  Widget _buildNutCard(
+      String percent, String title, Color color, double grams) {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(

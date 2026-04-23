@@ -1,6 +1,7 @@
 import 'package:zenify/services/user_session.dart';
-import './api_service.dart';
-import './service_config.dart';
+import 'package:zenify/services/api_service.dart';
+import 'package:zenify/services/service_config.dart';
+import 'package:zenify/core/app_logger.dart';
 
 class LoginRequest {
   final String name;
@@ -341,7 +342,7 @@ class Api {
   // 获取当前用户食物数据
   static Future<dynamic> getCurrentUserFoods(
       Map<String, dynamic> request) async {
-    print('请求参数: $request');
+    AppLogger.info('请求参数: $request');
     try {
       final response = await _handleRequest(
         ApiConfig.getCurrentUserFoods,
@@ -349,7 +350,12 @@ class Api {
       );
       return response;
     } catch (e) {
-      print('获取当前用户食物数据失败: $e');
+      final errorText = e.toString();
+      if (errorText.contains('404') || errorText.contains('资源不存在')) {
+        AppLogger.warning('当前用户暂无食物数据，返回空列表');
+        return [];
+      }
+      AppLogger.error('获取当前用户食物数据失败: $e');
       throw Exception('获取当前用户食物数据失败: $e');
     }
   }

@@ -14,7 +14,6 @@ import '../presentation/registration_complete_screen/registration_complete_scree
 import '../presentation/app_navigation_screen/app_navigation_screen.dart';
 // Auth pages
 import '../presentation/auth/login.dart';
-import '../presentation/registration/registration_flow.dart';
 import '../presentation/main_page.dart';
 // Home pages
 import '../presentation/home/index.dart';
@@ -93,7 +92,7 @@ class AppRoutes {
         registrationCompleteScreen: (context) => RegistrationCompleteScreen(),
         // Auth pages
         login: (context) => Login(),
-        registration: (context) => RegistrationFlow(),
+        registration: (context) => AppNavigationScreen(),
         // Legacy pages
         mainPage: (context) => MainPage(),
         // Set app default/home route to the updated IndexPage
@@ -126,6 +125,7 @@ class AppRoutes {
             title: args?['title'] as String? ?? '',
             tag: args?['tag'] as String? ?? '',
             foods: args?['foods'] as List<dynamic>? ?? [],
+            recordData: args?['recordData'] as Map<String, dynamic>?,
           );
         },
       };
@@ -229,6 +229,7 @@ class AppRoutes {
     required String title,
     required String tag,
     required List<dynamic> foods,
+    Map<String, dynamic>? recordData,
   }) {
     Navigator.of(context).pushNamed(
       mealAnalysisReport,
@@ -237,6 +238,7 @@ class AppRoutes {
         'title': title,
         'tag': tag,
         'foods': foods,
+        'recordData': recordData,
       },
     );
   }
@@ -246,7 +248,7 @@ class AppRoutes {
   static void navigateToRegistration(BuildContext context) {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (context) => RegistrationFlow(),
+        builder: (context) => AppNavigationScreen(),
       ),
     );
   }

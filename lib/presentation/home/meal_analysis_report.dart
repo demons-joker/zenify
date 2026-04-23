@@ -1,12 +1,14 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:zenify/models/enums.dart';
+import 'package:zenify/services/recognition_report_service.dart';
 
 class MealAnalysisReport extends StatefulWidget {
   final String image;
   final String title;
   final String tag; // 'Balanced' or 'Unbalanced'
   final List<dynamic> foods; // 食物列表
+  final Map<String, dynamic>? recordData;
 
   const MealAnalysisReport({
     super.key,
@@ -14,6 +16,7 @@ class MealAnalysisReport extends StatefulWidget {
     required this.title,
     required this.tag,
     required this.foods,
+    this.recordData,
   });
 
   @override
@@ -21,6 +24,20 @@ class MealAnalysisReport extends StatefulWidget {
 }
 
 class _MealAnalysisReportState extends State<MealAnalysisReport> {
+  List<dynamic> get _effectiveFoods {
+    if (widget.foods.isNotEmpty) {
+      return widget.foods;
+    }
+    return RecognitionReportService.resolveFoods(widget.recordData);
+  }
+
+  String get _effectiveImage {
+    if (widget.image.isNotEmpty) {
+      return widget.image;
+    }
+    return widget.recordData?['image_url']?.toString() ?? '';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -29,7 +46,7 @@ class _MealAnalysisReportState extends State<MealAnalysisReport> {
           // 背景图片（完全覆盖整个页面，可以超出）
           Positioned.fill(
             child: CachedNetworkImage(
-              imageUrl: widget.image,
+              imageUrl: _effectiveImage,
               fit: BoxFit.cover,
               placeholder: (context, url) => Container(
                 color: const Color(0xFF454A30),
@@ -160,7 +177,7 @@ class _MealAnalysisReportState extends State<MealAnalysisReport> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: CachedNetworkImage(
-          imageUrl: widget.image,
+          imageUrl: _effectiveImage,
           fit: BoxFit.cover,
           placeholder: (context, url) => Container(
             color: Colors.grey[300],
@@ -300,12 +317,12 @@ class _MealAnalysisReportState extends State<MealAnalysisReport> {
               child: const Text(
                 'Recommended intake',
                 style: TextStyle(
-                  color: Color(0xFFC8C8C8),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500),
+                    color: Color(0xFFC8C8C8),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500),
+              ),
             ),
           ),
-        ),
         ],
       ),
     );
@@ -411,7 +428,7 @@ class _MealAnalysisReportState extends State<MealAnalysisReport> {
     }
 
     // 分组食材
-    for (final foodData in widget.foods) {
+    for (final foodData in _effectiveFoods) {
       final food = foodData['food'] as Map<String, dynamic>?;
       final categoryStr = food?['category'] as String?;
 

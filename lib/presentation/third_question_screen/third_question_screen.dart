@@ -45,6 +45,12 @@ class _ThirdQuestionScreenState extends State<ThirdQuestionScreen> {
   bool get isChronicDiseaseRoute => mainGoal == 'Chronic Disease';
 
   @override
+  void dispose() {
+    _addMoreController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFFFCFCFC),
@@ -198,11 +204,12 @@ class _ThirdQuestionScreenState extends State<ThirdQuestionScreen> {
       child: Container(
         padding: EdgeInsets.symmetric(
           vertical: 8.h,
-          horizontal: diseaseText == 'Osteoporosis' || diseaseText == 'Depression'
-              ? 14.h
-              : diseaseText == 'Hypertension' || diseaseText == 'Arthritis'
-                  ? 20.h
-                  : 24.h,
+          horizontal:
+              diseaseText == 'Osteoporosis' || diseaseText == 'Depression'
+                  ? 14.h
+                  : diseaseText == 'Hypertension' || diseaseText == 'Arthritis'
+                      ? 20.h
+                      : 24.h,
         ),
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -248,16 +255,12 @@ class _ThirdQuestionScreenState extends State<ThirdQuestionScreen> {
     );
   }
 
-
-
   void _onDiseaseSelected(String disease) {
     setState(() {
       selectedOption = disease;
       _addMoreController.clear();
     });
   }
-
-
 
   Future<void> _saveData() async {
     try {
@@ -282,7 +285,7 @@ class _ThirdQuestionScreenState extends State<ThirdQuestionScreen> {
 
       // Show success message and navigate
       if (!mounted) return;
-      
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

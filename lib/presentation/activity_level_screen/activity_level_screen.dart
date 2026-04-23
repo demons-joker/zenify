@@ -64,9 +64,16 @@ class _ActivityLevelScreenState extends State<ActivityLevelScreen> {
           eatingStyle = cachedData['eating_style'];
           eatingRoutine = cachedData['eating_routine'];
           selectedActivityLevel = cachedData['activity_level'];
-          selectedAllergies = List<String>.from(cachedData['allergies'] ?? []);
-          isFromChronicDisease = mainGoal == 'Chronic Disease' && 
-                                chronicDisease != null;
+          final dynamic allergiesRaw = cachedData['allergies'];
+          if (allergiesRaw is List) {
+            selectedAllergies = List<String>.from(allergiesRaw);
+          } else if (allergiesRaw is String && allergiesRaw.trim().isNotEmpty) {
+            selectedAllergies = [allergiesRaw];
+          } else {
+            selectedAllergies = [];
+          }
+          isFromChronicDisease =
+              mainGoal == 'Chronic Disease' && chronicDisease != null;
         });
         print('已加载缓存数据: $cachedData');
       }
@@ -76,7 +83,8 @@ class _ActivityLevelScreenState extends State<ActivityLevelScreen> {
   }
 
   Future<void> _updateProgress() async {
-    final progress = await QuestionnaireProgressHelper.calculateProgress('activityLevel');
+    final progress =
+        await QuestionnaireProgressHelper.calculateProgress('activityLevel');
     setState(() {
       progressInfo = progress;
     });
@@ -239,7 +247,7 @@ class _ActivityLevelScreenState extends State<ActivityLevelScreen> {
     String description,
   ) {
     bool isSelected = selectedActivityLevel == title;
-    
+
     return GestureDetector(
       onTap: () => _onActivityLevelSelected(title),
       child: Container(
@@ -294,7 +302,8 @@ class _ActivityLevelScreenState extends State<ActivityLevelScreen> {
                 children: [
                   Text(
                     title,
-                    style: TextStyleHelper.instance.title18SemiBoldPingFangSC.copyWith(
+                    style: TextStyleHelper.instance.title18SemiBoldPingFangSC
+                        .copyWith(
                       color: isSelected ? Color(0xFFFFFFFF) : Color(0xFF30332D),
                       height: 1.29,
                     ),
@@ -303,8 +312,11 @@ class _ActivityLevelScreenState extends State<ActivityLevelScreen> {
                     SizedBox(height: 4.h),
                     Text(
                       description,
-                      style: TextStyleHelper.instance.title18MediumPingFangSC.copyWith(
-                        color: isSelected ? Color(0xFFFFFFFF).withValues(alpha: 0.9) : appTheme.gray_500,
+                      style: TextStyleHelper.instance.title18MediumPingFangSC
+                          .copyWith(
+                        color: isSelected
+                            ? Color(0xFFFFFFFF).withValues(alpha: 0.9)
+                            : appTheme.gray_500,
                         height: 1.3,
                       ),
                     ),
@@ -319,8 +331,9 @@ class _ActivityLevelScreenState extends State<ActivityLevelScreen> {
   }
 
   Widget _buildBottomContinueButton(BuildContext context) {
-    bool canContinue = selectedActivityLevel != null && selectedActivityLevel!.isNotEmpty;
-    
+    bool canContinue =
+        selectedActivityLevel != null && selectedActivityLevel!.isNotEmpty;
+
     return Container(
       height: 100.h,
       padding: EdgeInsets.all(20.h),
@@ -367,7 +380,8 @@ class _ActivityLevelScreenState extends State<ActivityLevelScreen> {
           child: Center(
             child: Text(
               "Continue",
-              style: TextStyleHelper.instance.title18SemiBoldPingFangSC.copyWith(
+              style:
+                  TextStyleHelper.instance.title18SemiBoldPingFangSC.copyWith(
                 color: canContinue ? Color(0xFFFFFFFF) : Color(0xFFABABAB),
                 height: 1.44,
               ),
@@ -411,7 +425,7 @@ class _ActivityLevelScreenState extends State<ActivityLevelScreen> {
     await _saveActivityLevelData();
 
     if (!mounted) return;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Great! Your activity level has been saved.'),

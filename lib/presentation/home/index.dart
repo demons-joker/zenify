@@ -2,12 +2,16 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'dart:async';
+import '../../core/app_logger.dart';
 import '../../core/app_export.dart';
 import '../../services/mqtt_service.dart';
 import '../../services/user_session.dart';
 import '../../services/api.dart';
 import '../../services/user_data_cache.dart';
 import '../menu/menu_page.dart';
+import 'home_history_coordinator.dart';
+import '../../utils/toast_helper.dart';
+import '../../utils/error_message_helper.dart';
 
 class IndexPage extends StatefulWidget {
   const IndexPage({super.key, this.initialTab});
@@ -95,6 +99,9 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
 
   // StreamSubscription for MQTT
   StreamSubscription<RecognitionStatus>? _mqttSubscription;
+  StreamSubscription<MQTTConnectionStatus>? _mqttConnectionSubscription;
+  MQTTConnectionStatus? _mqttConnectionStatus;
+  final HomeHistoryCoordinator _historyCoordinator = HomeHistoryCoordinator();
 
   @override
   void initState() {
@@ -138,58 +145,21 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
     try {
       final userId = await UserSession.userId;
       if (userId == null || !mounted) return;
-
-      // 计算目标日期 - 修复日期计算逻辑
-      final now = DateTime.now();
-      // DateTime.weekday: 1=周一, 2=周二, ..., 7=周日
-      // _selectedDay: 0=周日, 1=周一, ..., 6=周六
-      // 需要将 _selectedDay 转换为 weekday 格式
-      final selectedWeekday =
-          _selectedDay == 0 ? 7 : _selectedDay; // 0->7(周日), 1-6保持不变
-      final daysToSubtract = now.weekday - selectedWeekday;
-      final targetDate = now.subtract(Duration(days: daysToSubtract));
-      final dateStr =
-          '${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}';
-
-      print('加载历史数据: userId=$userId, date=$dateStr');
-      print('当前日期: ${now.toString()}, 目标日期: ${targetDate.toString()}');
-      print(
-          '当前weekday: ${now.weekday}, 选择weekday: $selectedWeekday, 减去天数: $daysToSubtract');
-
-      // 调用API获取识别记录
-      final result =
-          await Api.getRecognitions({'date': dateStr, 'user_id': userId});
-
-      print('API响应记录数: ${result.length}');
-
-      // 清空当前数据
-      _ateFoods = {
-        'BREAKFAST': [],
-        'LUNCH': [],
-        'DINNER': [],
-        'OTHER': [],
-      };
-
-      // 根据记录时间分类
-      for (var record in result) {
-        print('处理记录: ${record['created_at']}, status: ${record['status']}');
-        final mealType = _getMealTypeByTimeOfDay(record['created_at']);
-        print('分类为: $mealType');
-        _ateFoods[mealType]?.add(_convertToFoodCard(record));
-      }
-
-      // 打印最终分类结果
-      print('分类结果:');
-      _ateFoods.forEach((key, value) {
-        print('  $key: ${value.length}条');
-      });
+      final ateFoods = await _historyCoordinator.loadAteFoods(
+        userId: userId.toString(),
+        selectedDay: _selectedDay,
+      );
+      _ateFoods = ateFoods;
 
       if (mounted) {
         setState(() {});
       }
     } catch (e) {
-      print('加载历史数据失败: $e');
-      print('堆栈跟踪: ${StackTrace.current}');
+      AppLogger.error('加载历史数据失败: $e');
+      AppLogger.warning('堆栈跟踪: ${StackTrace.current}');
+      if (mounted) {
+        ToastHelper.error(context, ErrorMessageHelper.format(e));
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -212,12 +182,12 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
       final userId = await UserSession.userId;
       if (userId == null || !mounted) return;
 
-      print('加载当前用户食物数据: userId=$userId');
+      AppLogger.info('加载当前用户食物数据: userId=$userId');
 
       // 调用API获取当前用户食物数据
       final result = await Api.getCurrentUserFoods({'user_id': userId});
 
-      print('API响应食物数据: $result');
+      AppLogger.info('API响应食物数据条目: ${result is List ? result.length : 0}');
 
       if (mounted) {
         setState(() {
@@ -228,7 +198,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
         _loadCollectedStatus();
       }
     } catch (e) {
-      print('加载当前用户食物数据失败: $e');
+      AppLogger.error('加载当前用户食物数据失败: $e');
       if (mounted) {
         setState(() {
           _isLoadingFoods = false;
@@ -247,7 +217,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
-      print('加载收藏餐食失败: $e');
+      AppLogger.error('加载收藏餐食失败: $e');
     }
   }
 
@@ -307,7 +277,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
       // 刷新My Plan模块数据
       await _loadCollectedMeals();
     } catch (e) {
-      print('切换收藏状态失败: $e');
+      AppLogger.error('切换收藏状态失败: $e');
     }
   }
 
@@ -332,75 +302,6 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
     }
   }
 
-  /// 将识别记录转换为食物卡片数据
-  Map<String, dynamic> _convertToFoodCard(Map<String, dynamic> record) {
-    final status = record['status'] ?? 'unknown';
-    final isAnalyzing = status == 'accepted' || status == 'processing';
-
-    // 提取食物名称 - 使用英文名称
-    final foods = record['foods'] as List? ?? [];
-    final foodNames = foods
-        .map((f) => f['food']?['name_en'] ?? f['food']?['name'] ?? 'Unknown')
-        .join(', ');
-
-    // 根据状态设置标题
-    String title;
-    if (isAnalyzing) {
-      title = 'Analyzing...';
-    } else if (foodNames.isNotEmpty) {
-      title = foodNames;
-    } else {
-      title = 'Recognition Result';
-    }
-
-    return {
-      'id': record['id'],
-      'imageUrl': record['image_url'],
-      'title': title,
-      'isLiked': false,
-      'isAnalyzing': isAnalyzing,
-      'status': status,
-      'sessionId': record['session_id']?.toString(),
-      'timestamp': record['created_at'],
-      'data': record,
-    };
-  }
-
-  /// 根据时间字符串判断餐食类型
-  String _getMealTypeByTimeOfDay(dynamic timeStr) {
-    try {
-      DateTime time;
-      if (timeStr is String) {
-        time = DateTime.parse(timeStr);
-        print('解析时间: $timeStr -> $time, 小时: ${time.hour}');
-      } else if (timeStr is DateTime) {
-        time = timeStr;
-        print('使用DateTime: $time, 小时: ${time.hour}');
-      } else {
-        print('无效时间格式: $timeStr');
-        return 'OTHER';
-      }
-
-      final hour = time.hour;
-      String mealType;
-      if (hour >= 5 && hour < 11) {
-        mealType = 'BREAKFAST';
-      } else if (hour >= 11 && hour < 14) {
-        mealType = 'LUNCH';
-      } else if (hour >= 17 && hour < 21) {
-        mealType = 'DINNER';
-      } else {
-        mealType = 'OTHER';
-      }
-
-      print('时间 ${time.hour}时 分类为: $mealType');
-      return mealType;
-    } catch (e) {
-      print('解析时间失败: $e, 输入: $timeStr');
-      return 'OTHER';
-    }
-  }
-
   /// 初始化MQTT
   Future<void> _initMQTT() async {
     try {
@@ -408,8 +309,18 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
       _mqttSubscription = MQTTService().statusStream.listen((status) {
         _handleRecognitionStatus(status);
       });
+      _mqttConnectionSubscription =
+          MQTTService().connectionStatusStream.listen((connectionStatus) {
+        if (!mounted) return;
+        setState(() {
+          _mqttConnectionStatus = connectionStatus;
+        });
+      });
     } catch (e) {
-      print('MQTT init error: $e');
+      AppLogger.error('MQTT init error: $e');
+      if (mounted) {
+        ToastHelper.error(context, ErrorMessageHelper.format(e));
+      }
     }
   }
 
@@ -420,6 +331,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
     if (status.status == RecognitionStatusType.analyzing) {
       // 识别开始 - 切换到 ATE tab 并重新加载历史数据
       switchToATETab();
+      await _loadHistoryData();
     } else if (status.status == RecognitionStatusType.completed) {
       // 识别完成 - 重新加载历史数据
       await _loadHistoryData();
@@ -441,6 +353,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
     _tabController.dispose();
     _searchController.dispose();
     _mqttSubscription?.cancel();
+    _mqttConnectionSubscription?.cancel();
     super.dispose();
   }
 
@@ -454,6 +367,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
         children: [
           // 顶部区域：左边tab切换、中间logo、右边菜单
           _buildTopHeader(),
+          _buildMqttConnectionBanner(),
 
           // 周日期选择器 - 只在 ATE tab 显示
           if (_currentTabIndex == 1) _buildWeekSelector(),
@@ -478,6 +392,61 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMqttConnectionBanner() {
+    final status = _mqttConnectionStatus;
+    if (status == null || status.state == MQTTConnectionStateView.connected) {
+      return const SizedBox.shrink();
+    }
+
+    Color bgColor;
+    if (status.state == MQTTConnectionStateView.failed) {
+      bgColor = const Color(0xFFFFE5E5);
+    } else {
+      bgColor = const Color(0xFFFFF6E5);
+    }
+
+    final textColor = status.state == MQTTConnectionStateView.failed
+        ? const Color(0xFF8B0000)
+        : const Color(0xFF8A5A00);
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              status.message,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          if (status.state == MQTTConnectionStateView.failed ||
+              status.state == MQTTConnectionStateView.disconnected)
+            TextButton(
+              onPressed: () => MQTTService().connect(isReconnect: true),
+              child: Text(
+                '立即重试',
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -790,6 +759,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
             title: title,
             tag: 'Balanced',
             foods: data?['foods'] ?? [],
+            recordData: data,
           );
         }
       },

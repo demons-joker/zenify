@@ -28,7 +28,7 @@ class _UserProfileSetupScreenState extends State<UserProfileSetupScreen> {
   String selectedWeight = ""; // Default weight
   String selectedHeight = ""; // Default height
   String selectedAge = ""; // Default age
-  
+
   ProgressInfo? progressInfo;
 
   @override
@@ -59,10 +59,19 @@ class _UserProfileSetupScreenState extends State<UserProfileSetupScreen> {
   }
 
   Future<void> _updateProgress() async {
-    final progress = await QuestionnaireProgressHelper.calculateProgress('userProfile');
+    final progress =
+        await QuestionnaireProgressHelper.calculateProgress('userProfile');
     setState(() {
       progressInfo = progress;
     });
+  }
+
+  @override
+  void dispose() {
+    ageController.dispose();
+    weightController.dispose();
+    heightController.dispose();
+    super.dispose();
   }
 
   @override
@@ -71,16 +80,18 @@ class _UserProfileSetupScreenState extends State<UserProfileSetupScreen> {
       backgroundColor: appTheme.gray_50_02,
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(80.h),
-        child: progressInfo != null ? CustomProgressAppBar(
-          leadingIcon: ImageConstant.imgVector,
-          onLeadingPressed: () => Navigator.pop(context),
-          currentStep: progressInfo!.currentStep,
-          totalSteps: progressInfo!.totalSteps,
-          progressValue: progressInfo!.progressValue,
-        ) : CustomProgressAppBar(
-          leadingIcon: ImageConstant.imgVector,
-          onLeadingPressed: () => Navigator.pop(context),
-        ),
+        child: progressInfo != null
+            ? CustomProgressAppBar(
+                leadingIcon: ImageConstant.imgVector,
+                onLeadingPressed: () => Navigator.pop(context),
+                currentStep: progressInfo!.currentStep,
+                totalSteps: progressInfo!.totalSteps,
+                progressValue: progressInfo!.progressValue,
+              )
+            : CustomProgressAppBar(
+                leadingIcon: ImageConstant.imgVector,
+                onLeadingPressed: () => Navigator.pop(context),
+              ),
       ),
       body: Form(
         key: _formKey,
