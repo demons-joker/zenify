@@ -359,8 +359,8 @@ user/{userId}/recognition_completed  // 识别完成
 
 **技术实现：**
 - 使用 `camera` 包调用相机
-- 上传到服务器：`POST /api/mqtt/users/{userId}/plates/{plateId}/recognize/upload`
-- 触发识别：`POST /api/mqtt/users/{userId}/plates/{plateId}/recognize`
+- 上传到服务器：`POST /api/mqtt/users/{userId}/devices/{deviceId}/recognize/upload`
+- 触发识别：`POST /api/mqtt/users/{userId}/devices/{deviceId}/recognize`
 - MQTT 监听：实时接收识别状态
 
 **相机功能：**
@@ -498,9 +498,9 @@ PUT /api/v1/plan/foods/replace/{plan_food_id}
 
 **API：**
 ```dart
-POST /api/v1/plates/bind              // 绑定设备
-POST /api/v1/plates/unbind            // 解绑设备
-GET  /api/v1/plates/user/my-devices   // 获取设备列表
+POST /api/v1/devices/bind              // 绑定设备
+POST /api/v1/devices/unbind            // 解绑设备
+GET  /api/v1/devices/user/my-devices   // 获取设备列表
 ```
 
 **二维码扫描：**
@@ -556,7 +556,7 @@ class AdvancedHealthInfo {
 class MealRecord {
   String id;
   String userId;
-  String plateId;
+  String deviceId;
   MealType mealType;                 // 餐食类型
   DateTime timestamp;
   List<FoodItem> foods;              // 食物列表
@@ -689,8 +689,8 @@ Timeout: 30 seconds
 
 | 方法 | 端点 | 说明 |
 |-----|------|------|
-| GET | `/api/v1/users/{user_id}/plates/{plate_id}/meal-records/today` | 获取当天饮食记录 |
-| GET | `/api/v1/users/{user_id}/plates/{plate_id}/meal-records/{meal_record_id}` | 获取饮食记录详情 |
+| GET | `/api/v1/users/{user_id}/devices/{device_id}/meal-records/today` | 获取当天饮食记录 |
+| GET | `/api/v1/users/{user_id}/devices/{device_id}/meal-records/{meal_record_id}` | 获取饮食记录详情 |
 | GET | `/api/v1/users/recognitions` | 获取识别记录 |
 | GET | `/api/v1/users/recognitions/latest` | 获取最新识别记录 |
 
@@ -698,8 +698,8 @@ Timeout: 30 seconds
 
 | 方法 | 端点 | 说明 |
 |-----|------|------|
-| POST | `/api/mqtt/users/{user_id}/plates/{plate_id}/recognize` | 触发图像识别 |
-| POST | `/api/mqtt/users/{user_id}/plates/{plate_id}/recognize/upload` | 上传图像用于识别 |
+| POST | `/api/mqtt/users/{user_id}/devices/{device_id}/recognize` | 触发图像识别 |
+| POST | `/api/mqtt/users/{user_id}/devices/{device_id}/recognize/upload` | 上传图像用于识别 |
 
 ### AI 对话
 
@@ -712,9 +712,9 @@ Timeout: 30 seconds
 
 | 方法 | 端点 | 说明 |
 |-----|------|------|
-| POST | `/api/v1/plates/bind` | 绑定设备 |
-| POST | `/api/v1/plates/unbind` | 解绑设备 |
-| GET | `/api/v1/plates/user/my-devices` | 获取用户设备列表 |
+| POST | `/api/v1/devices/bind` | 绑定设备 |
+| POST | `/api/v1/devices/unbind` | 解绑设备 |
+| GET | `/api/v1/devices/user/my-devices` | 获取用户设备列表 |
 
 ### 用户食材
 
@@ -869,7 +869,7 @@ enum RecognitionStatusType {
 **职责：**
 - 管理用户登录状态
 - 持久化存储用户信息
-- 管理 plate_id
+- 管理当前活跃设备的对外 `device_id`（字符串，与 API 路径一致）
 
 **存储字段：**
 ```dart
@@ -883,7 +883,7 @@ phone           // 电话
 source          // 来源
 created_at      // 创建时间
 is_active       // 是否活跃
-plate_id        // 设备ID
+device_id       // 对外设备标识（字符串）
 ```
 
 **核心方法：**
@@ -900,8 +900,8 @@ static Future<String?> get userId
 // 获取 token
 static Future<String?> get token
 
-// 保存 plate_id
-static Future<void> savePlateId(String plateId)
+// 写入当前活跃 device_id（登录或拉取用户信息后同步）
+static Future<void> setActiveDeviceId(String deviceId)
 ```
 
 ### 5. UserDataCache（用户数据缓存）
@@ -1019,7 +1019,7 @@ static Future<dynamic> uploadImage(File imageFile)
 
 **上传端点：**
 ```
-POST /api/mqtt/users/{userId}/plates/{plateId}/recognize/upload
+POST /api/mqtt/users/{userId}/devices/{deviceId}/recognize/upload
 ```
 
 ### 9. DishService（菜品数据管理）
@@ -1613,34 +1613,7 @@ flutter build windows --release
 
 #### 开发环境
 
-```dart
-// lib/services/service_config.dart
-class ApiConfig {
-  static const String baseUrl = "http://127.0.0.1:8000";
-  static const String mqttBrokerAddress = "127.0.0.1";
-  static const int mqttPort = 1883;
-}
-```
-
-#### 测试环境
-
-```dart
-class ApiConfig {
-  static const String baseUrl = "http://test-api.example.com:8000";
-  static const String mqttBrokerAddress = "test-mqtt.example.com";
-  static const int mqttPort = 1883;
-}
-```
-
-#### 生产环境
-
-```dart
-class ApiConfig {
-  static const String baseUrl = "http://118.195.149.172:8000";
-  static const String mqttBrokerAddress = "118.195.149.172";
-  static const int mqttPort = 1883;
-}
-```
+环境相关常量以 `lib/services/service_config.dart` 为准（`String.fromEnvironment` / 默认值），此处不再重复粘贴易过期的 `ApiConfig` 片段；部署时通过 `--dart-define=API_BASE_URL=...` 等注入即可。
 
 ---
 

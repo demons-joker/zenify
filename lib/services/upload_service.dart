@@ -45,13 +45,17 @@ class UploadService {
   ) async {
     try {
       final userId = await UserSession.userId;
-      final plateId = await UserSession.plateId;
-      if (userId == null || plateId == null) {
+      final deviceId = await UserSession.deviceId;
+      final deviceType = await UserSession.deviceType;
+      if (userId == null || deviceId == null) {
         return UploadResult.failure(message: '用户或设备信息缺失');
       }
 
+      final uploadPath = deviceType == 'chat_robot'
+          ? '/api/mqtt/users/$userId/devices/$deviceId/recognize/robot/upload'
+          : '/api/mqtt/users/$userId/devices/$deviceId/recognize/upload';
       final uri = Uri.parse(
-          '${ApiConfig.baseUrl}/api/mqtt/users/$userId/plates/$plateId/recognize/upload');
+          '${ApiConfig.baseUrl}$uploadPath');
       AppLogger.info('upload uri: $uri');
       final request = http.MultipartRequest('POST', uri);
 

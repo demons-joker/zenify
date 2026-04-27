@@ -125,9 +125,23 @@ class _ReportPageState extends State<ReportPage> {
     setState(() {
       _isLoading = true;
     });
+
+    final supportsWeight = await UserSession.activeDeviceSupportsWeight;
+    if (!supportsWeight) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('当前设备类型不支持重量报告，请切换到餐盘设备')),
+        );
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
     final Map<String, dynamic> params = {
       'user_id': await UserSession.userId,
-      'plate_id': await UserSession.plateId
+      'device_id': await UserSession.deviceId
     };
     print('mealRecordId: $mealRecordId');
     if (mealRecordId != null) {

@@ -146,6 +146,8 @@ class UserInfo {
 class DeviceInfo {
   final int id;
   final String deviceId;
+  final String deviceType;
+  final Map<String, dynamic>? capabilityFlags;
   final DateTime? lastLoginAt;
   final bool isOnline;
   final String name;
@@ -154,6 +156,8 @@ class DeviceInfo {
   DeviceInfo({
     required this.id,
     required this.deviceId,
+    required this.deviceType,
+    this.capabilityFlags,
     this.lastLoginAt,
     required this.isOnline,
     required this.name,
@@ -164,6 +168,10 @@ class DeviceInfo {
     return DeviceInfo(
       id: json['id'] ?? 0,
       deviceId: json['device_id'] ?? '',
+      deviceType: json['device_type'] ?? 'smart_plate',
+      capabilityFlags: json['capability_flags'] is Map<String, dynamic>
+          ? json['capability_flags'] as Map<String, dynamic>
+          : null,
       lastLoginAt: json['last_login_at'] != null
           ? DateTime.parse(json['last_login_at'])
           : null,
@@ -174,6 +182,12 @@ class DeviceInfo {
           : DateTime.now(),
     );
   }
+
+  bool get supportsWeight =>
+      (capabilityFlags?['supports_weight'] as bool?) ?? deviceType == 'smart_plate';
+
+  bool get supportsImageUpload =>
+      (capabilityFlags?['supports_image_upload'] as bool?) ?? true;
 }
 
 class Api {
@@ -340,20 +354,42 @@ class Api {
   }
 
   // 获取当前用户食物数据
-  static Future<dynamic> getCurrentUserFoods(
+  static Future<Map<String, dynamic>> getCurrentUserFoods(
       Map<String, dynamic> request) async {
     AppLogger.info('请求参数: $request');
     try {
       final response = await _handleRequest(
-        ApiConfig.getCurrentUserFoods,
+        ApiConfig.getDailyRecommendation,
         pathParams: request,
       );
-      return response;
+      if (response is Map &&
+          response['success'] == true &&
+          response['data'] is Map) {
+        final data = response['data'] as Map<String, dynamic>;
+        final mealGroups = data['meal_groups'];
+        if (mealGroups is List) {
+          return {
+            "meal_groups": mealGroups,
+            "generated_today": data['generated_today'] == true,
+            "recommendation_source":
+                (data['recommendation_source'] ?? 'none').toString(),
+          };
+        }
+      }
+      return {
+        "meal_groups": <dynamic>[],
+        "generated_today": false,
+        "recommendation_source": "none",
+      };
     } catch (e) {
       final errorText = e.toString();
       if (errorText.contains('404') || errorText.contains('资源不存在')) {
         AppLogger.warning('当前用户暂无食物数据，返回空列表');
-        return [];
+        return {
+          "meal_groups": <dynamic>[],
+          "generated_today": false,
+          "recommendation_source": "none",
+        };
       }
       AppLogger.error('获取当前用户食物数据失败: $e');
       throw Exception('获取当前用户食物数据失败: $e');
@@ -430,8 +466,12 @@ class Api {
       Map<String, dynamic> request, Map<String, dynamic> params) async {
     print('请求参数: $request');
     try {
+      final deviceType = await UserSession.deviceType;
+      final endpoint = deviceType == 'chat_robot'
+          ? ApiConfig.getRecognizeRobot
+          : ApiConfig.getRecognize;
       final response = await _handleRequest(
-        ApiConfig.getRecognize,
+        endpoint,
         pathParams: request,
         body: params,
       );
@@ -441,22 +481,6 @@ class Api {
       throw Exception('获取图像识别结果（会耗费很多时间）失败: $e');
     }
   }
-
-  // //ai机器人
-  // static Future<dynamic> chartToAi(List request) async {
-  //   print('请求参数: $request');
-  //   try {
-  //     final response = await _handleRequest(
-  //       ApiConfig.aiChart,
-  //       body: request,
-  //     );
-  //     print('chartToAi: $response');
-  //     return response;
-  //   } catch (e) {
-  //     print('获取ai机器人消息失败: $e');
-  //     throw Exception('获取ai机器人消息失败: $e');
-  //   }
-  // }
 
   //整餐切换
   static Future<dynamic> replaceFoods(
@@ -527,7 +551,8 @@ class Api {
   }
 
   // 获取分析详情列表
-  static Future<List<dynamic>> getRecognitions(params) async {
+  static Future<List<dynamic>> getRecognitions(
+      Map<String, dynamic> params) async {
     try {
       final response = await _handleRequest(
         ApiConfig.getRecognitions,

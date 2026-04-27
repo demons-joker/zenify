@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../../core/app_logger.dart';
@@ -8,15 +6,41 @@ import '../../services/mqtt_service.dart';
 import '../../services/user_session.dart';
 import '../../services/api.dart';
 import '../../services/user_data_cache.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../menu/menu_page.dart';
 import 'home_history_coordinator.dart';
 import '../../utils/toast_helper.dart';
 import '../../utils/error_message_helper.dart';
 
+class _RecommendationSource {
+  static const String none = 'none';
+  static const String manualAdjusted = 'manual_adjusted';
+  static const String generatedFromProfile = 'generated_from_profile';
+  static const String todayExistingPlan = 'today_existing_plan';
+  static const String activePlan = 'active_plan';
+}
+
+class _RecommendationSourceStyle {
+  final String label;
+  final Color color;
+
+  const _RecommendationSourceStyle({
+    required this.label,
+    required this.color,
+  });
+}
+
 class IndexPage extends StatefulWidget {
-  const IndexPage({super.key, this.initialTab});
+  const IndexPage({
+    super.key,
+    this.initialTab,
+    this.hostTabActive = true,
+  });
 
   final String? initialTab;
+
+  /// 为 false 时表示首页在主导航中处于隐藏层（如切到报告/我的），仅取消本页 MQTT 监听，不断开全局连接。
+  final bool hostTabActive;
 
   // ignore: library_private_types_in_public_api
   static final GlobalKey<_IndexPageState> globalKey =
@@ -75,10 +99,25 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
   final List<String> _mealTypes = ['BREAKFAST', 'LUNCH', 'DINNER'];
   final TextEditingController _searchController = TextEditingController();
   bool _isSearchVisible = false;
+  String _selectedPlanSourceFilter = 'all';
+  static const String _myPlanSearchVisibleKey = 'home_my_plan_search_visible';
+  static const String _myPlanSourceFilterKey = 'home_my_plan_source_filter';
+  static const String _recommendSourceKey = 'home_recommend_source';
+  static const String _recommendGeneratedTodayKey =
+      'home_recommend_generated_today';
+  static const String _recommendSourceOverrideKey =
+      'home_recommend_source_override';
+  static const String _recommendSourceDateKey = 'home_recommend_source_date';
+  static const String _recommendSourceUserIdKey = 'home_recommend_source_user_id';
 
   // 当前用户食物数据
   List<dynamic> _currentUserFoods = [];
   bool _isLoadingFoods = false;
+  bool _recommendationGeneratedToday = false;
+  String _recommendationSource = _RecommendationSource.none;
+  String? _recommendationSourceOverride;
+  String? _recommendationSourceOverrideDate;
+  int? _recommendationSourceOverrideUserId;
 
   // 收藏状态 - 按日期和餐食类型存储
   Map<String, bool> _collectedStatus = {};
@@ -102,6 +141,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
   StreamSubscription<MQTTConnectionStatus>? _mqttConnectionSubscription;
   MQTTConnectionStatus? _mqttConnectionStatus;
   final HomeHistoryCoordinator _historyCoordinator = HomeHistoryCoordinator();
+  final GlobalKey _recommendSectionKey = GlobalKey();
 
   @override
   void initState() {
@@ -116,8 +156,10 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
       }
     }
 
-    // 初始化MQTT连接
-    _initMQTT();
+    // 初始化 MQTT（隐藏 Tab 时由 didUpdateWidget 再挂载监听）
+    if (widget.hostTabActive) {
+      _initMQTT();
+    }
 
     // 加载历史数据
     _loadHistoryData();
@@ -130,6 +172,152 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
 
     // 加载收藏状态
     _loadCollectedStatus();
+    _loadMyPlanViewPrefs();
+    _loadRecommendViewPrefs();
+  }
+
+  @override
+  void didUpdateWidget(IndexPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.hostTabActive == widget.hostTabActive) return;
+    if (widget.hostTabActive) {
+      unawaited(_resumeHostTabMqtt());
+    } else {
+      _pauseHostTabMqtt();
+    }
+  }
+
+  void _attachMqttListeners() {
+    if (!mounted) return;
+    if (_mqttSubscription != null) return;
+    _mqttSubscription = MQTTService().statusStream.listen((status) {
+      _handleRecognitionStatus(status);
+    });
+    _mqttConnectionSubscription =
+        MQTTService().connectionStatusStream.listen((connectionStatus) {
+      if (!mounted) return;
+      // 避免在鼠标/指针设备更新过程中同步 setState，触发 mouse_tracker 重入断言（尤其 macOS）。
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _mqttConnectionStatus = connectionStatus;
+        });
+      });
+    });
+  }
+
+  void _detachMqttListeners() {
+    _mqttSubscription?.cancel();
+    _mqttSubscription = null;
+    _mqttConnectionSubscription?.cancel();
+    _mqttConnectionSubscription = null;
+  }
+
+  void _pauseHostTabMqtt() {
+    _detachMqttListeners();
+    if (!mounted) return;
+    setState(() {
+      _mqttConnectionStatus = null;
+    });
+  }
+
+  Future<void> _resumeHostTabMqtt() async {
+    try {
+      await MQTTService().connect();
+      if (!mounted) return;
+      _attachMqttListeners();
+    } catch (e) {
+      AppLogger.error('MQTT resume error: $e');
+      if (mounted) {
+        ToastHelper.error(context, ErrorMessageHelper.format(e));
+      }
+    }
+  }
+
+  Future<void> _loadMyPlanViewPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedSearchVisible = prefs.getBool(_myPlanSearchVisibleKey);
+      final savedFilter = prefs.getString(_myPlanSourceFilterKey);
+      final allowed = _planSourceFilters.map((e) => e['key']).whereType<String>();
+      if (!mounted) return;
+      setState(() {
+        if (savedSearchVisible != null) {
+          _isSearchVisible = savedSearchVisible;
+        }
+        if (savedFilter != null && allowed.contains(savedFilter)) {
+          _selectedPlanSourceFilter = savedFilter;
+        }
+      });
+    } catch (e) {
+      AppLogger.warning('加载 MY PLAN 视图偏好失败: $e');
+    }
+  }
+
+  Future<void> _persistMyPlanViewPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_myPlanSearchVisibleKey, _isSearchVisible);
+      await prefs.setString(_myPlanSourceFilterKey, _selectedPlanSourceFilter);
+    } catch (e) {
+      AppLogger.warning('保存 MY PLAN 视图偏好失败: $e');
+    }
+  }
+
+  Future<void> _loadRecommendViewPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedSource = prefs.getString(_recommendSourceKey);
+      final savedGenerated = prefs.getBool(_recommendGeneratedTodayKey);
+      final savedOverride = prefs.getString(_recommendSourceOverrideKey);
+      final savedOverrideDate = prefs.getString(_recommendSourceDateKey);
+      final savedOverrideUserId = prefs.getInt(_recommendSourceUserIdKey);
+      if (!mounted) return;
+      setState(() {
+        if (savedSource != null && savedSource.isNotEmpty) {
+          _recommendationSource = savedSource;
+        }
+        if (savedGenerated != null) {
+          _recommendationGeneratedToday = savedGenerated;
+        }
+        if (savedOverride != null && savedOverride.isNotEmpty) {
+          _recommendationSourceOverride = savedOverride;
+          _recommendationSourceOverrideDate = savedOverrideDate;
+          _recommendationSourceOverrideUserId = savedOverrideUserId;
+          _recommendationSource = savedOverride;
+          _recommendationGeneratedToday = false;
+        }
+      });
+    } catch (e) {
+      AppLogger.warning('加载推荐来源偏好失败: $e');
+    }
+  }
+
+  Future<void> _persistRecommendViewPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_recommendSourceKey, _recommendationSource);
+      await prefs.setBool(
+          _recommendGeneratedTodayKey, _recommendationGeneratedToday);
+      final override = _recommendationSourceOverride;
+      if (override == null || override.isEmpty) {
+        await prefs.remove(_recommendSourceOverrideKey);
+        await prefs.remove(_recommendSourceDateKey);
+        await prefs.remove(_recommendSourceUserIdKey);
+      } else {
+        await prefs.setString(_recommendSourceOverrideKey, override);
+        if (_recommendationSourceOverrideDate != null) {
+          await prefs.setString(
+              _recommendSourceDateKey, _recommendationSourceOverrideDate!);
+        }
+        if (_recommendationSourceOverrideUserId != null) {
+          await prefs.setInt(
+              _recommendSourceUserIdKey, _recommendationSourceOverrideUserId!);
+        }
+      }
+    } catch (e) {
+      AppLogger.warning('保存推荐来源偏好失败: $e');
+    }
   }
 
   /// 加载历史识别数据
@@ -181,19 +369,38 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
     try {
       final userId = await UserSession.userId;
       if (userId == null || !mounted) return;
+      final today = DateTime.now().toIso8601String().split('T').first;
+      final canUseOverride = _recommendationSourceOverride != null &&
+          _recommendationSourceOverrideDate == today &&
+          _recommendationSourceOverrideUserId == userId;
+      if (!canUseOverride && _recommendationSourceOverride != null) {
+        _recommendationSourceOverride = null;
+        _recommendationSourceOverrideDate = null;
+        _recommendationSourceOverrideUserId = null;
+      }
 
       AppLogger.info('加载当前用户食物数据: userId=$userId');
 
       // 调用API获取当前用户食物数据
       final result = await Api.getCurrentUserFoods({'user_id': userId});
-
-      AppLogger.info('API响应食物数据条目: ${result is List ? result.length : 0}');
+      final mealGroups = result['meal_groups'];
+      final foods = mealGroups is List ? mealGroups : <dynamic>[];
+      AppLogger.info('API响应食物数据条目: ${foods.length}');
 
       if (mounted) {
         setState(() {
-          _currentUserFoods = result is List ? result : [];
+          _currentUserFoods = foods;
+          final backendGeneratedToday = result['generated_today'] == true;
+          final backendSource =
+              (result['recommendation_source'] ?? _RecommendationSource.none)
+                  .toString();
+          _recommendationGeneratedToday =
+              _recommendationSourceOverride == null ? backendGeneratedToday : false;
+          _recommendationSource =
+              _recommendationSourceOverride ?? backendSource;
           _isLoadingFoods = false;
         });
+        unawaited(_persistRecommendViewPrefs());
         // 加载收藏状态
         _loadCollectedStatus();
       }
@@ -206,6 +413,76 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
       }
     }
   }
+
+  /// 用户手动调整推荐后，将来源显式标记为 manual_adjusted。
+  void _markRecommendationAdjustedByUser() {
+    if (!mounted) return;
+    final today = DateTime.now().toIso8601String().split('T').first;
+    setState(() {
+      _recommendationGeneratedToday = false;
+      _recommendationSourceOverride = _RecommendationSource.manualAdjusted;
+      _recommendationSourceOverrideDate = today;
+      _recommendationSource = _recommendationSourceOverride!;
+    });
+    unawaited(() async {
+      _recommendationSourceOverrideUserId = await UserSession.userId;
+      await _persistRecommendViewPrefs();
+    }());
+  }
+
+  _RecommendationSourceStyle _recommendationSourceStyle(String source) {
+    switch (source) {
+      case _RecommendationSource.manualAdjusted:
+        return const _RecommendationSourceStyle(
+          label: '手动调整',
+          color: Color(0xFFB86B00),
+        );
+      case _RecommendationSource.generatedFromProfile:
+        return const _RecommendationSourceStyle(
+          label: '画像生成',
+          color: Color(0xFF2E7D32),
+        );
+      case _RecommendationSource.todayExistingPlan:
+        return const _RecommendationSourceStyle(
+          label: '今日已有计划',
+          color: Color(0xFF1565C0),
+        );
+      case _RecommendationSource.activePlan:
+        return const _RecommendationSourceStyle(
+          label: '活跃计划',
+          color: Color(0xFF6A1B9A),
+        );
+      case _RecommendationSource.none:
+        return const _RecommendationSourceStyle(
+          label: '无',
+          color: Color(0xFF4C4C4C),
+        );
+      default:
+        return _RecommendationSourceStyle(
+          label: source,
+          color: const Color(0xFF4C4C4C),
+        );
+    }
+  }
+
+  String _planSourceForDisplay(Map<String, dynamic> plan) {
+    return (plan['recommendation_source'] ?? _RecommendationSource.none)
+        .toString();
+  }
+
+  List<Map<String, String>> get _planSourceFilters => const [
+        {'key': 'all', 'label': '全部'},
+        {'key': _RecommendationSource.manualAdjusted, 'label': '手动调整'},
+        {
+          'key': _RecommendationSource.generatedFromProfile,
+          'label': '画像生成'
+        },
+        {
+          'key': _RecommendationSource.todayExistingPlan,
+          'label': '今日已有计划'
+        },
+        {'key': _RecommendationSource.activePlan, 'label': '活跃计划'},
+      ];
 
   /// 加载收藏的餐食数据
   Future<void> _loadCollectedMeals() async {
@@ -262,6 +539,8 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                   'category': food['category'],
                   'quantity': foodItem['quantity'],
                   'unit': foodItem['unit'],
+                  'recommendation_source': _recommendationSource,
+                  'generated_today': _recommendationGeneratedToday,
                 });
               }
             }
@@ -306,16 +585,8 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
   Future<void> _initMQTT() async {
     try {
       await MQTTService().connect();
-      _mqttSubscription = MQTTService().statusStream.listen((status) {
-        _handleRecognitionStatus(status);
-      });
-      _mqttConnectionSubscription =
-          MQTTService().connectionStatusStream.listen((connectionStatus) {
-        if (!mounted) return;
-        setState(() {
-          _mqttConnectionStatus = connectionStatus;
-        });
-      });
+      if (!mounted) return;
+      _attachMqttListeners();
     } catch (e) {
       AppLogger.error('MQTT init error: $e');
       if (mounted) {
@@ -352,8 +623,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
   void dispose() {
     _tabController.dispose();
     _searchController.dispose();
-    _mqttSubscription?.cancel();
-    _mqttConnectionSubscription?.cancel();
+    _detachMqttListeners();
     super.dispose();
   }
 
@@ -1165,6 +1435,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
   // RECOMMEND 推荐区域
   Widget _buildRecommendSection() {
     return SizedBox(
+      key: _recommendSectionKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1177,6 +1448,19 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
               fontWeight: FontWeight.normal,
             ),
           ),
+          if (_recommendationSource != _RecommendationSource.none) ...[
+            SizedBox(height: 6.h),
+            Text(
+              _recommendationGeneratedToday
+                  ? '今日已根据画像生成推荐'
+                  : '推荐来源：${_recommendationSourceStyle(_recommendationSource).label}',
+              style: TextStyle(
+                color: const Color(0xFF666666),
+                fontSize: 12.fSize,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
           SizedBox(height: 16.h),
 
           // 餐食类型切换
@@ -1602,6 +1886,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
           ),
         );
         if (result == true) {
+                    _markRecommendationAdjustedByUser();
           _loadCurrentUserFoods();
         }
       },
@@ -1674,6 +1959,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
 
   // 保留原有的 _buildFoodTypeLabels 方法（如果其他地方调用）
   // 构建食材类型标签和引导线（兼容旧代码）
+  // ignore: unused_element
   Widget _buildFoodTypeLabels(double cardSize) {
     // 获取当前选择的餐食类型对应的食物数据
     final selectedMealData = _currentUserFoods.firstWhere(
@@ -1919,6 +2205,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                   );
                   // 如果返回结果为 true，表示需要刷新数据
                   if (result == true) {
+                    _markRecommendationAdjustedByUser();
                     _loadCurrentUserFoods(); // 刷新用户数据
                   }
                 },
@@ -1941,6 +2228,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
 
   // MY PLAN 我的计划区域
   Widget _buildMyPlanSection() {
+    final filteredPlans = _getFilteredPlans();
     return SizedBox(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1990,15 +2278,16 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                     child: TextField(
                       controller: _searchController,
                       decoration: InputDecoration(
-                        hintText: 'Search...',
+                        hintText: 'Search name/source...',
                         prefixIcon:
                             Icon(Icons.search, color: Color(0xFF666666)),
                         suffixIcon: GestureDetector(
-                          onTap: () {
+                          onTap: () async {
                             setState(() {
                               _isSearchVisible = false;
                               _searchController.clear();
                             });
+                            await _persistMyPlanViewPrefs();
                           },
                           child: Icon(Icons.close, color: Color(0xFF666666)),
                         ),
@@ -2028,10 +2317,11 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                       children: [
                         // 搜索放大镜按钮
                         GestureDetector(
-                          onTap: () {
+                          onTap: () async {
                             setState(() {
                               _isSearchVisible = true;
                             });
+                            await _persistMyPlanViewPrefs();
                           },
                           child: Container(
                             width: 40.h,
@@ -2061,22 +2351,134 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                       ],
                     ),
                   ),
-                // 网格内容
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12.h,
-                    mainAxisSpacing: 12.h,
-                    childAspectRatio: 0.75,
+                if (_collectedMeals.isNotEmpty) ...[
+                  SizedBox(
+                    height: 30.h,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _planSourceFilters.length,
+                      separatorBuilder: (_, __) => SizedBox(width: 8.h),
+                      itemBuilder: (context, index) {
+                        final item = _planSourceFilters[index];
+                        final key = item['key']!;
+                        final label = item['label']!;
+                        final selected = _selectedPlanSourceFilter == key;
+                        return GestureDetector(
+                          onTap: () async {
+                            setState(() {
+                              _selectedPlanSourceFilter = key;
+                            });
+                            await _persistMyPlanViewPrefs();
+                          },
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 10.h, vertical: 6.h),
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? const Color(0xFF4C4C4C)
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(16.h),
+                              border: Border.all(
+                                color: selected
+                                    ? const Color(0xFF4C4C4C)
+                                    : const Color(0xFFE0E0E0),
+                                width: 1.h,
+                              ),
+                            ),
+                            child: Text(
+                              label,
+                              style: TextStyle(
+                                color: selected
+                                    ? Colors.white
+                                    : const Color(0xFF666666),
+                                fontSize: 11.fSize,
+                                fontWeight: selected
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                  itemCount: _getFilteredPlans().length,
-                  itemBuilder: (context, index) {
-                    final filteredPlan = _getFilteredPlans()[index];
-                    return _buildPlanCard(filteredPlan);
-                  },
-                ),
+                  SizedBox(height: 12.h),
+                ],
+                // 网格内容
+                if (filteredPlans.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(vertical: 28.h),
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '暂无收藏餐食 / No collected meals yet',
+                          style: TextStyle(
+                            color: const Color(0xFF8A8A8A),
+                            fontSize: 12.fSize,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 10.h),
+                        GestureDetector(
+                          onTap: () async {
+                            final targetContext = _recommendSectionKey.currentContext;
+                            if (targetContext != null) {
+                              await Scrollable.ensureVisible(
+                                targetContext,
+                                duration: const Duration(milliseconds: 350),
+                                curve: Curves.easeInOut,
+                                alignment: 0.05,
+                              );
+                              return;
+                            }
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content:
+                                    Text('请在上方 RECOMMEND 区点击 Collect 收藏后再查看 MY PLAN'),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 10.h, vertical: 6.h),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF4C4C4C),
+                              borderRadius: BorderRadius.circular(14.h),
+                            ),
+                            child: Text(
+                              'Go to RECOMMEND',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11.fSize,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12.h,
+                      mainAxisSpacing: 12.h,
+                      childAspectRatio: 0.75,
+                    ),
+                    itemCount: filteredPlans.length,
+                    itemBuilder: (context, index) {
+                      final filteredPlan = filteredPlans[index];
+                      return _buildPlanCard(filteredPlan);
+                    },
+                  ),
               ],
             ),
           ),
@@ -2089,6 +2491,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
   Widget _buildPlanCard(Map<String, dynamic> plan) {
     // 判断是否为收藏的食物（有name_en字段）
     final isCollectedFood = plan['name_en'] != null;
+    final recommendationSource = _planSourceForDisplay(plan);
 
     return Container(
       decoration: BoxDecoration(
@@ -2204,6 +2607,34 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                             ),
                           ),
                         ),
+                      if (isCollectedFood &&
+                          recommendationSource != _RecommendationSource.none)
+                        Expanded(
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 6.h, vertical: 2.h),
+                            decoration: BoxDecoration(
+                              color: _recommendationSourceStyle(
+                                      recommendationSource)
+                                  .color
+                                  .withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6.h),
+                            ),
+                            child: Text(
+                              _recommendationSourceStyle(recommendationSource)
+                                  .label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: _recommendationSourceStyle(
+                                        recommendationSource)
+                                    .color,
+                                fontSize: 10.fSize,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
                       Icon(
                         Icons.favorite_border,
                         color: Color(0xFF666666),
@@ -2228,11 +2659,27 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
       if (_searchController.text.isNotEmpty) {
         final searchTerm = _searchController.text.toLowerCase();
         return _collectedMeals.where((meal) {
-          return (meal['name_en']?.toString().toLowerCase() ?? '')
-              .contains(searchTerm);
+          final nameEn = meal['name_en']?.toString().toLowerCase() ?? '';
+          final name = meal['name']?.toString().toLowerCase() ?? '';
+          final source = _planSourceForDisplay(meal);
+          final sourceRaw = source.toLowerCase();
+          final sourceLabel =
+              _recommendationSourceStyle(source).label.toLowerCase();
+          final matchesSourceFilter = _selectedPlanSourceFilter == 'all' ||
+              source == _selectedPlanSourceFilter;
+          return matchesSourceFilter &&
+              (nameEn.contains(searchTerm) ||
+              name.contains(searchTerm) ||
+              sourceRaw.contains(searchTerm) ||
+              sourceLabel.contains(searchTerm));
         }).toList();
       }
-      return _collectedMeals;
+      if (_selectedPlanSourceFilter == 'all') {
+        return _collectedMeals;
+      }
+      return _collectedMeals
+          .where((meal) => _planSourceForDisplay(meal) == _selectedPlanSourceFilter)
+          .toList();
     }
 
     // 如果没有收藏的餐食，显示默认的diet plans

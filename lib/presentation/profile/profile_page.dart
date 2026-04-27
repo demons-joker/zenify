@@ -7,8 +7,10 @@ import 'package:zenify/utils/toast_helper.dart';
 import 'package:zenify/utils/error_message_helper.dart';
 
 class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
+
   @override
-  _ProfilePageState createState() => _ProfilePageState();
+  State<ProfilePage> createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
@@ -35,8 +37,23 @@ class _ProfilePageState extends State<ProfilePage> {
       final userInfoJson =
           response is Map ? response['user_info'] ?? response : response;
       if (mounted) {
+        final info = UserInfo.fromJson(userInfoJson);
+        if (info.devices.isNotEmpty) {
+          // 优先选择支持重量能力的设备，避免报告页误用机器人设备。
+          final active = info.devices.firstWhere(
+            (d) => d.supportsWeight,
+            orElse: () => info.devices.first,
+          );
+          await UserSession.setActiveDeviceContext(
+            active.deviceId,
+            deviceType: active.deviceType,
+            capabilityFlags: active.capabilityFlags,
+          );
+        } else {
+          await UserSession.clearActiveDeviceId();
+        }
         setState(() {
-          _userInfo = UserInfo.fromJson(userInfoJson);
+          _userInfo = info;
           _isLoading = false;
         });
       }
@@ -323,6 +340,14 @@ class _ProfilePageState extends State<ProfilePage> {
                               SizedBox(height: 4),
                               Text(
                                 'Device ID: ${device.deviceId}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'Type: ${device.deviceType}',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey[600],
