@@ -11,10 +11,13 @@ class ApiEndpoint {
 class ApiConfig {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://118.195.149.172:8000',
+    // defaultValue: 'http://118.195.149.172:8000',
+    defaultValue: 'http://127.0.0.1:8000',
   );
 
-  static const String apiVersion = "/api/v1";
+  static const String apiV1Version = "/api/v1";
+  static const String apiV2Version = "/api/v2";
+  static const String apiVersion = apiV1Version;
   static const String mqttBrokerAddress = String.fromEnvironment(
     'MQTT_BROKER_ADDRESS',
     defaultValue: '118.195.149.172',
@@ -28,11 +31,11 @@ class ApiConfig {
 
   // --- 用户 ---
   static const login = ApiEndpoint(
-    '$apiVersion/users/login',
+    '$apiV2Version/auth/login',
     HttpMethod.post,
   );
   static const register = ApiEndpoint(
-    '$apiVersion/users/register',
+    '$apiV2Version/auth/register',
     HttpMethod.post,
   );
   static const userInfo = ApiEndpoint(
@@ -40,7 +43,7 @@ class ApiConfig {
     HttpMethod.get,
   );
   static const getUserProfile = ApiEndpoint(
-    '$apiVersion/users/{user_id}/profile',
+    '$apiV2Version/profiles/me',
     HttpMethod.get,
   );
 
@@ -72,22 +75,35 @@ class ApiConfig {
     HttpMethod.get,
   );
   static const getDailyRecommendation = ApiEndpoint(
-    '$apiVersion/users/{user_id}/daily-recommendation',
+    '$apiV2Version/recommendations/daily/current',
     HttpMethod.get,
   );
   static const replacePlanFood = ApiEndpoint(
-    '$apiVersion/plan/foods/replace/{plan_food_id}',
+    '$apiV2Version/recommendations/items/{recommendation_item_id}/replace',
     HttpMethod.put,
   );
 
   // --- 饮食记录（设备维度）---
   static const getUserTodayMealRecords = ApiEndpoint(
-    '$apiVersion/users/{user_id}/devices/{device_id}/meal-records/today',
+    '$apiV2Version/meal-records/today',
+    HttpMethod.get,
+  );
+  static const getLatestMealRecord = ApiEndpoint(
+    '$apiV2Version/meal-records/latest',
     HttpMethod.get,
   );
   static const getMealRecordsDetail = ApiEndpoint(
-    '$apiVersion/users/{user_id}/devices/{device_id}/meal-records/{meal_record_id}',
+    '$apiV2Version/meal-records/{meal_record_id}',
     HttpMethod.get,
+  );
+
+  static const createMealSession = ApiEndpoint(
+    '$apiV2Version/meal-sessions',
+    HttpMethod.post,
+  );
+  static const uploadMealSessionRecognition = ApiEndpoint(
+    '$apiV2Version/meal-sessions/{meal_session_id}/recognitions/upload',
+    HttpMethod.post,
   );
 
   // --- 识别（MQTT 前缀路由）---
@@ -100,11 +116,11 @@ class ApiConfig {
     HttpMethod.post,
   );
   static const getRecognitions = ApiEndpoint(
-    '$apiVersion/users/recognitions',
+    '$apiV2Version/recognitions',
     HttpMethod.get,
   );
   static const getLatestRecognition = ApiEndpoint(
-    '$apiVersion/users/recognitions/latest',
+    '$apiV2Version/recognitions/latest',
     HttpMethod.get,
   );
 
@@ -116,16 +132,16 @@ class ApiConfig {
 
   // --- 设备 ---
   static const bindDevice = ApiEndpoint(
-    '$apiVersion/devices/bind',
+    '$apiV2Version/devices/{hardware_device_id}/binding',
     HttpMethod.post,
   );
   static const getUserDevices = ApiEndpoint(
-    '$apiVersion/devices/user/my-devices',
+    '$apiV2Version/devices',
     HttpMethod.get,
   );
   static const unbindDevice = ApiEndpoint(
-    '$apiVersion/devices/unbind',
-    HttpMethod.post,
+    '$apiV2Version/devices/{hardware_device_id}/binding',
+    HttpMethod.delete,
   );
 
   // --- 对话（流式由 ai_stream 拼 URL）---

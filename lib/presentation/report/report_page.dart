@@ -6,6 +6,7 @@ import 'package:zenify/components/common_card.dart';
 import 'package:zenify/services/user_session.dart';
 import 'package:zenify/utils/iconfont.dart';
 import 'package:zenify/services/api.dart';
+import 'package:zenify/services/recognition_report_service.dart';
 import 'package:zenify/models/meal_record.dart';
 
 class GlucoseData {
@@ -139,51 +140,55 @@ class _ReportPageState extends State<ReportPage> {
       return;
     }
 
-    final Map<String, dynamic> params = {
-      'user_id': await UserSession.userId,
-      'device_id': await UserSession.deviceId
-    };
     print('mealRecordId: $mealRecordId');
-    if (mealRecordId != null) {
-      params['meal_record_id'] = mealRecordId;
-    } else {
-      params['meal_record_id'] = 1;
-    }
     try {
-      final data = await Api.getMealRecordsDetail(params);
+      final data = mealRecordId != null
+          ? await Api.getMealRecordsDetail({
+              'meal_record_id': mealRecordId,
+            })
+          : await RecognitionReportService.getLatestRecord();
       print('mealRecordsData: $data');
-      setState(() {
-        if (data != null) {
-          mealRecordsData = MealRecord.fromJson(data);
-          print('mealRecordsData1: $data');
-          foods = mealRecordsData!.foods;
-          //营养成分数据
-          nData = [
-            NutrientData(
-                name: '蛋白质',
-                value: double.parse(mealRecordsData!.nutritiveProportion.protein
-                    .toStringAsFixed(2)),
-                color: chartColors[0]),
-            NutrientData(
-                name: '脂肪',
-                value: double.parse(mealRecordsData!.nutritiveProportion.fat
-                    .toStringAsFixed(2)),
-                color: chartColors[1]),
-            NutrientData(
-                name: '碳水化合物',
-                value: double.parse(mealRecordsData!
-                    .nutritiveProportion.carbohydrate
-                    .toStringAsFixed(2)),
-                color: chartColors[2]),
-            NutrientData(
-                name: '膳食纤维',
-                value: double.parse(mealRecordsData!.nutritiveProportion.fiber
-                    .toStringAsFixed(2)),
-                color: chartColors[3]),
-          ];
-          totalScore = mealRecordsData!.nutritionAnalysis.mealScore * 10;
-          totalCal = '${(mealRecordsData!.totalCalories).toInt()}kcal';
+      if (data == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('暂无可用的饮食报告数据')),
+          );
+          setState(() {
+            _isLoading = false;
+          });
         }
+        return;
+      }
+      setState(() {
+        mealRecordsData = MealRecord.fromJson(data);
+        print('mealRecordsData1: $data');
+        foods = mealRecordsData!.foods;
+        //营养成分数据
+        nData = [
+          NutrientData(
+              name: '蛋白质',
+              value: double.parse(
+                  mealRecordsData!.nutritiveProportion.protein.toStringAsFixed(2)),
+              color: chartColors[0]),
+          NutrientData(
+              name: '脂肪',
+              value: double.parse(
+                  mealRecordsData!.nutritiveProportion.fat.toStringAsFixed(2)),
+              color: chartColors[1]),
+          NutrientData(
+              name: '碳水化合物',
+              value: double.parse(mealRecordsData!
+                  .nutritiveProportion.carbohydrate
+                  .toStringAsFixed(2)),
+              color: chartColors[2]),
+          NutrientData(
+              name: '膳食纤维',
+              value: double.parse(
+                  mealRecordsData!.nutritiveProportion.fiber.toStringAsFixed(2)),
+              color: chartColors[3]),
+        ];
+        totalScore = mealRecordsData!.nutritionAnalysis.mealScore * 10;
+        totalCal = '${(mealRecordsData!.totalCalories).toInt()}kcal';
         _isLoading = false;
       });
     } catch (e) {
@@ -232,6 +237,8 @@ class _ReportPageState extends State<ReportPage> {
                 ],
               ),
             )
+          : mealRecordsData == null
+              ? const Center(child: Text('No report data available'))
           : SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),

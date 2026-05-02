@@ -43,9 +43,16 @@ Widget _rootBuilder(
 
 class MyApp extends StatelessWidget {
   // 异步检查用户会话状态
-  static Future<bool> _shouldShowOnboarding(bool forceRegistration) async {
+  static Future<bool> _shouldShowOnboarding(
+    bool forceRegistration,
+    bool skipOnboarding,
+  ) async {
     if (forceRegistration) {
       return true; // 强制走引导流程
+    }
+
+    if (skipOnboarding) {
+      return false;
     }
 
     try {
@@ -74,6 +81,9 @@ class MyApp extends StatelessWidget {
     // Default is false for production.
     const bool kForceRegistration =
         bool.fromEnvironment('FORCE_REGISTRATION', defaultValue: false);
+    // Temporary local-debug switch to skip onboarding during v2 cutover validation.
+    const bool kSkipOnboarding =
+        bool.fromEnvironment('SKIP_ONBOARDING', defaultValue: true);
 
     return MaterialApp(
       title: 'Zenify App',
@@ -84,7 +94,7 @@ class MyApp extends StatelessWidget {
       ),
       // Use FutureBuilder to handle async user session check
       home: FutureBuilder<bool>(
-        future: _shouldShowOnboarding(kForceRegistration),
+        future: _shouldShowOnboarding(kForceRegistration, kSkipOnboarding),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Scaffold(

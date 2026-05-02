@@ -90,7 +90,16 @@ class _Login extends State<Login> {
           ),
         );
         if (response != null) {
-          var userInfo = await Api.login(
+          Api.clearAuthCache();
+          await UserSession.saveLoginResponse(response);
+          await _persistRememberedUsername(username);
+          await UserDataCache.clearCache();
+
+          if (!mounted) return;
+          AppRoutes.navigateToMainPageAndReplace(context);
+          return; /*
+
+          await Api.login(
             LoginRequest(
               name: username,
               password: password,
@@ -101,7 +110,7 @@ class _Login extends State<Login> {
           Api.clearAuthCache();
 
           // 注册成功后自动登录
-          await UserSession.saveLoginResponse(userInfo);
+          await UserSession.saveLoginResponse(response);
           await _persistRememberedUsername(username);
 
           // 注册成功后清除本地缓存
@@ -109,6 +118,7 @@ class _Login extends State<Login> {
 
           if (!mounted) return;
           AppRoutes.navigateToMainPageAndReplace(context);
+          */
         } else {
           if (!mounted) return;
           ToastHelper.error(context, '注册失败，请稍后重试');

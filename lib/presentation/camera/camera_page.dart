@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:zenify/core/app_logger.dart';
 import 'package:zenify/services/mqtt_service.dart';
 import 'package:zenify/presentation/camera/camera_upload_coordinator.dart';
+import 'package:zenify/services/upload_service.dart';
 import 'dart:async';
 import 'package:zenify/utils/toast_helper.dart';
 import 'package:zenify/utils/error_message_helper.dart';
@@ -20,6 +21,23 @@ enum CameraAnalyzeStage {
 }
 
 class CameraPage extends StatefulWidget {
+  final CameraUploadCoordinator? uploadCoordinator;
+  final Stream<RecognitionStatus>? statusStream;
+  final String? initialImagePath;
+  final bool skipCameraInitialization;
+  final Duration mqttWaitTimeout;
+  final Duration completionNavigationDelay;
+
+  const CameraPage({
+    super.key,
+    this.uploadCoordinator,
+    this.statusStream,
+    this.initialImagePath,
+    this.skipCameraInitialization = false,
+    this.mqttWaitTimeout = const Duration(seconds: 25),
+    this.completionNavigationDelay = const Duration(milliseconds: 700),
+  });
+
   @override
   _CameraPageState createState() => _CameraPageState();
 }
@@ -36,20 +54,39 @@ class _CameraPageState extends State<CameraPage> {
   String? _statusMessage;
   File? _lastSubmittedFile;
   Timer? _mqttWaitTimer;
-  final CameraUploadCoordinator _uploadCoordinator = CameraUploadCoordinator();
+  late final CameraUploadCoordinator _uploadCoordinator;
   StreamSubscription<RecognitionStatus>? _mqttSubscription;
 
   @override
   void initState() {
     super.initState();
-    _initializeCamera();
+    _uploadCoordinator = widget.uploadCoordinator ?? CameraUploadCoordinator();
+    if (widget.initialImagePath != null) {
+      _imageFile = XFile(widget.initialImagePath!);
+      _showPreview = true;
+    }
+    if (widget.skipCameraInitialization) {
+      _cameraAvailable = false;
+      _isInitializing = false;
+    } else {
+      _initializeCamera();
+    }
     _listenToMQTT();
   }
 
   /// 监听 MQTT 消息
   void _listenToMQTT() {
-    _mqttSubscription = MQTTService().statusStream.listen((status) {
+    final statusStream = widget.statusStream ?? MQTTService().statusStream;
+    _mqttSubscription = statusStream.listen((status) {
       if (!mounted) return;
+
+      // The camera page should not block on recognition state once upload starts.
+      // Ignore MQTT status transitions during the upload request itself, because
+      // they can arrive before the HTTP call returns 202 and re-enable the old
+      // "wait on camera page" behavior.
+      if (_analyzeStage == CameraAnalyzeStage.uploading) {
+        return;
+      }
 
       if (status.status == RecognitionStatusType.analyzing) {
         _cancelWaitTimeout();
@@ -65,7 +102,7 @@ class _CameraPageState extends State<CameraPage> {
           _analyzeStage = CameraAnalyzeStage.completed;
           _statusMessage = '识别完成，正在返回结果页...';
         });
-        Future.delayed(const Duration(milliseconds: 700), () {
+        Future.delayed(widget.completionNavigationDelay, () {
           if (mounted) {
             Navigator.of(context).pop({'switchToATE': true});
           }
@@ -87,7 +124,7 @@ class _CameraPageState extends State<CameraPage> {
 
   void _startWaitTimeout() {
     _cancelWaitTimeout();
-    _mqttWaitTimer = Timer(const Duration(seconds: 25), () {
+    _mqttWaitTimer = Timer(widget.mqttWaitTimeout, () {
       if (!mounted) return;
       setState(() {
         _analyzeStage = CameraAnalyzeStage.failed;
@@ -121,6 +158,19 @@ class _CameraPageState extends State<CameraPage> {
           context, ErrorMessageHelper.format(result.errorMessage));
       return;
     }
+
+    if (_analyzeStage == CameraAnalyzeStage.analyzing ||
+        _analyzeStage == CameraAnalyzeStage.completed) {
+      return;
+    }
+
+    _cancelWaitTimeout();
+    Navigator.of(context).pop({
+      'switchToATE': true,
+      'recognitionPending': true,
+      'recognitionData': result.payload,
+    });
+    return;
 
     setState(() {
       _analyzeStage = CameraAnalyzeStage.waitingMqtt;
@@ -293,51 +343,108 @@ class _CameraPageState extends State<CameraPage> {
                     ),
 
                   // Bottom controls
-                  Positioned(
-                    bottom: MediaQuery.of(context).padding.bottom + 24,
-                    left: 0,
-                    right: 0,
-                    child: _buildBottomControls(),
-                  ),
+                  if (_analyzeStage == CameraAnalyzeStage.idle)
+                    Positioned(
+                      bottom: MediaQuery.of(context).padding.bottom + 24,
+                      left: 0,
+                      right: 0,
+                      child: _buildBottomControls(),
+                    ),
 
                   // Loading indicator when taking photo
                   if (_isTakingPhoto)
-                    Center(child: CircularProgressIndicator()),
+                    const Center(
+                      child: CircularProgressIndicator(
+                        key: Key('camera_capture_loading_indicator'),
+                      ),
+                    ),
                   if (_analyzeStage != CameraAnalyzeStage.idle)
-                    Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_analyzeStage == CameraAnalyzeStage.completed)
-                            Icon(Icons.check_circle,
-                                color: Colors.green, size: 48)
-                          else if (_analyzeStage == CameraAnalyzeStage.failed)
-                            Icon(Icons.error_outline,
-                                color: Colors.redAccent, size: 48)
-                          else
-                            CircularProgressIndicator(),
-                          SizedBox(height: 16),
-                          Text(
-                            _statusMessage ?? '',
-                            style: TextStyle(color: Colors.white),
+                    Positioned.fill(
+                      child: SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 32,
                           ),
-                          if (_analyzeStage == CameraAnalyzeStage.waitingMqtt)
-                            TextButton(
-                              onPressed: _cancelWaiting,
-                              child: const Text(
-                                '取消等待',
-                                style: TextStyle(color: Colors.white),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 280),
+                              child: Container(
+                                constraints: const BoxConstraints(maxHeight: 220),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 24,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.55),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (_analyzeStage ==
+                                          CameraAnalyzeStage.completed)
+                                        Icon(
+                                          Icons.check_circle,
+                                          key: const Key(
+                                              'camera_status_completed_icon'),
+                                          color: Colors.green,
+                                          size: 48,
+                                        )
+                                      else if (_analyzeStage ==
+                                          CameraAnalyzeStage.failed)
+                                        Icon(
+                                          Icons.error_outline,
+                                          key: const Key(
+                                              'camera_status_failed_icon'),
+                                          color: Colors.redAccent,
+                                          size: 48,
+                                        )
+                                      else
+                                        const CircularProgressIndicator(
+                                          key: Key(
+                                              'camera_status_loading_indicator'),
+                                        ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        _statusMessage ?? '',
+                                        key: const Key('camera_status_text'),
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                            color: Colors.white),
+                                      ),
+                                      if (_analyzeStage ==
+                                          CameraAnalyzeStage.waitingMqtt)
+                                        TextButton(
+                                          key: const Key(
+                                              'camera_cancel_wait_button'),
+                                          onPressed: _cancelWaiting,
+                                          child: const Text(
+                                            '取消等待',
+                                            style:
+                                                TextStyle(color: Colors.white),
+                                          ),
+                                        ),
+                                      if (_analyzeStage ==
+                                          CameraAnalyzeStage.failed)
+                                        TextButton(
+                                          key:
+                                              const Key('camera_retry_button'),
+                                          onPressed: _retrySubmit,
+                                          child: const Text(
+                                            '重试上传',
+                                            style:
+                                                TextStyle(color: Colors.white),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
-                          if (_analyzeStage == CameraAnalyzeStage.failed)
-                            TextButton(
-                              onPressed: _retrySubmit,
-                              child: const Text(
-                                '重试上传',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                        ],
+                          ),
+                        ),
                       ),
                     ),
                 ],
@@ -355,6 +462,7 @@ class _CameraPageState extends State<CameraPage> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               TextButton(
+                key: const Key('camera_reshoot_button'),
                 child: Text('Reshoot',
                     style: TextStyle(
                         color: _isSubmitting
@@ -363,6 +471,7 @@ class _CameraPageState extends State<CameraPage> {
                 onPressed: _isSubmitting ? null : _retakePhoto,
               ),
               TextButton(
+                key: const Key('camera_ok_button'),
                 child: Text('OK',
                     style: TextStyle(
                         color: _isSubmitting

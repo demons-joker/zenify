@@ -1,4 +1,4 @@
-import 'package:zenify/services/user_session.dart';
+﻿import 'package:zenify/services/user_session.dart';
 import 'package:zenify/services/api_service.dart';
 import 'package:zenify/services/service_config.dart';
 import 'package:zenify/core/app_logger.dart';
@@ -20,9 +20,9 @@ class LoginRequest {
 
   Map<String, dynamic> toJson() => {
         'name': name,
-        'email': email,
-        'full_name': fullName,
         'password': password,
+        if (email.isNotEmpty) 'email': email,
+        if (fullName.isNotEmpty) 'full_name': fullName,
         if (userProfile != null) 'user_profile': userProfile,
       };
 }
@@ -152,6 +152,9 @@ class DeviceInfo {
   final bool isOnline;
   final String name;
   final DateTime createdAt;
+  final int zoneCount;
+  final String? bindingStatus;
+  final String? status;
 
   DeviceInfo({
     required this.id,
@@ -162,24 +165,47 @@ class DeviceInfo {
     required this.isOnline,
     required this.name,
     required this.createdAt,
+    this.zoneCount = 0,
+    this.bindingStatus,
+    this.status,
   });
 
   factory DeviceInfo.fromJson(Map<String, dynamic> json) {
     return DeviceInfo(
       id: json['id'] ?? 0,
-      deviceId: json['device_id'] ?? '',
-      deviceType: json['device_type'] ?? 'smart_plate',
+      deviceId:
+          (json['hardware_device_id'] ?? json['device_id'] ?? '').toString(),
+      deviceType: (json['device_type'] ?? 'smart_plate').toString(),
       capabilityFlags: json['capability_flags'] is Map<String, dynamic>
           ? json['capability_flags'] as Map<String, dynamic>
-          : null,
+          : {
+              'supports_weight':
+                  ((json['device_type'] ?? 'smart_plate').toString() ==
+                          'smart_plate') ||
+                      ((json['zone_count'] is int
+                              ? json['zone_count'] as int
+                              : int.tryParse('${json['zone_count'] ?? 0}') ??
+                                  0) >
+                          0),
+              'supports_image_upload': true,
+            },
       lastLoginAt: json['last_login_at'] != null
           ? DateTime.parse(json['last_login_at'])
-          : null,
+          : json['bound_at'] != null
+              ? DateTime.parse(json['bound_at'])
+              : null,
       isOnline: json['is_online'] ?? false,
-      name: json['name'] ?? '未知设备',
+      name: json['device_name'] ?? json['name'] ?? '鏈煡璁惧',
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
-          : DateTime.now(),
+          : json['bound_at'] != null
+              ? DateTime.parse(json['bound_at'])
+              : DateTime.now(),
+      zoneCount: json['zone_count'] is int
+          ? json['zone_count'] as int
+          : int.tryParse('${json['zone_count'] ?? 0}') ?? 0,
+      bindingStatus: json['binding_status']?.toString(),
+      status: json['status']?.toString(),
     );
   }
 
@@ -191,7 +217,7 @@ class DeviceInfo {
 }
 
 class Api {
-  // 默认请求头
+  // 榛樿璇锋眰澶?
   static Map<String, String> get _defaultHeaders {
     return {
       'Content-Type': 'application/json; charset=utf-8',
@@ -200,9 +226,9 @@ class Api {
     };
   }
 
-  // 添加认证头
+  // 娣诲姞璁よ瘉澶?
   static Future<Map<String, String>> _getAuthHeaders() async {
-    // 每次都重新获取 token，确保使用最新的认证信息
+    // 姣忔閮介噸鏂拌幏鍙?token锛岀‘淇濅娇鐢ㄦ渶鏂扮殑璁よ瘉淇℃伅
     final token = await UserSession.token;
     if (token != null) {
       return {
@@ -214,12 +240,12 @@ class Api {
     }
   }
 
-  // 清除认证头缓存（已移除缓存机制，此方法保留但不执行任何操作）
+  // 娓呴櫎璁よ瘉澶寸紦瀛橈紙宸茬Щ闄ょ紦瀛樻満鍒讹紝姝ゆ柟娉曚繚鐣欎絾涓嶆墽琛屼换浣曟搷浣滐級
   static void clearAuthCache() {
-    // 缓存机制已移除，此方法保留以保持向后兼容性
+    // 缂撳瓨鏈哄埗宸茬Щ闄わ紝姝ゆ柟娉曚繚鐣欎互淇濇寔鍚戝悗鍏煎鎬?
   }
 
-  // 统一请求处理
+  // 缁熶竴璇锋眰澶勭悊
   static Future<dynamic> _handleRequest(
     ApiEndpoint endpoint, {
     dynamic body,
@@ -237,18 +263,18 @@ class Api {
         pathParams: pathParams,
         headers: combinedHeaders,
       );
-      // 如果需要，可以在这里统一处理响应数据
+      // 濡傛灉闇€瑕侊紝鍙互鍦ㄨ繖閲岀粺涓€澶勭悊鍝嶅簲鏁版嵁
       return response;
     } catch (e) {
-      // 统一错误处理
+      // 缁熶竴閿欒澶勭悊
       if (e is! FormatException) {
         rethrow;
       }
-      throw Exception('请求处理失败: ${e.message}');
+      throw Exception('璇锋眰澶勭悊澶辫触: ${e.message}');
     }
   }
 
-  // 注册
+  // 娉ㄥ唽
   static Future<dynamic> register(LoginRequest request) async {
     return _handleRequest(
       ApiConfig.register,
@@ -256,7 +282,7 @@ class Api {
     );
   }
 
-  // 登录
+  // 鐧诲綍
   static Future<dynamic> login(LoginRequest request) async {
     return _handleRequest(
       ApiConfig.login,
@@ -264,30 +290,48 @@ class Api {
     );
   }
 
-  // 获取用户信息
+  // 鑾峰彇鐢ㄦ埛淇℃伅
   static Future<dynamic> getUserInfo() async {
     final userId = await UserSession.userId;
     if (userId == null) {
-      throw Exception('用户未登录');
+      throw Exception('鐢ㄦ埛鏈櫥褰?');
     }
-    return _handleRequest(
-      ApiConfig.userInfo,
-      pathParams: {'user_id': userId},
-    );
+    final profileResponse = await _handleRequest(ApiConfig.getUserProfile);
+    final devices = await getUserDevices();
+
+    final profileMap = profileResponse is Map<String, dynamic>
+        ? profileResponse
+        : <String, dynamic>{};
+    final userMap = profileMap['user'] is Map<String, dynamic>
+        ? profileMap['user'] as Map<String, dynamic>
+        : <String, dynamic>{};
+
+    return {
+      'id': userMap['id'] ?? userId,
+      'name': userMap['name'] ?? '',
+      'email': userMap['email'] ?? '',
+      'phone': userMap['phone'] ?? '',
+      'full_name': userMap['full_name'] ?? '',
+      'source': userMap['source'] ?? 'app_v2',
+      'created_at':
+          userMap['created_at'] ?? DateTime.now().toIso8601String(),
+      'is_active': userMap['is_active'] ?? true,
+      'devices': devices,
+    };
   }
 
-  // 登出
+  // 鐧诲嚭
   static Future<dynamic> logout() async {
-    // 清除 API 认证缓存
+    // 娓呴櫎 API 璁よ瘉缂撳瓨
     clearAuthCache();
-    // 清除用户会话
+    // 娓呴櫎鐢ㄦ埛浼氳瘽
     await UserSession.clear();
     return true;
   }
 
-  // 获取所有食谱数据
+  // 鑾峰彇鎵€鏈夐璋辨暟鎹?
   static Future<List<Recipe>> getRecipes(RecipesRequest request) async {
-    print('请求参数: ${request.toJson()}');
+    print('璇锋眰鍙傛暟: ${request.toJson()}');
     try {
       final dynamic response = await _handleRequest(
         ApiConfig.getRecipes,
@@ -301,12 +345,12 @@ class Api {
       }
       throw Exception('Invalid response format');
     } catch (e) {
-      print('获取食谱api失败: $e');
-      throw Exception('获取食谱数据失败: $e');
+      print('鑾峰彇椋熻氨api澶辫触: $e');
+      throw Exception('鑾峰彇椋熻氨鏁版嵁澶辫触: $e');
     }
   }
 
-  // 获取食谱数据
+  // 鑾峰彇椋熻氨鏁版嵁
   static Future<dynamic> getRecipesById(String id) async {
     try {
       final response = await _handleRequest(
@@ -315,16 +359,16 @@ class Api {
       );
       return response;
     } catch (e) {
-      print('获取食谱byid失败: $e');
-      throw Exception('获取食谱数据失败: $e');
+      print('鑾峰彇椋熻氨byid澶辫触: $e');
+      throw Exception('鑾峰彇椋熻氨鏁版嵁澶辫触: $e');
     }
   }
 
-  //新增接口--------------start-------------
+  //鏂板鎺ュ彛--------------start-------------
 
-  // 获取所有食物列表
+  // 鑾峰彇鎵€鏈夐鐗╁垪琛?
   static Future<dynamic> getFoods(FoodsRequest request) async {
-    print('请求参数: $request');
+    print('璇锋眰鍙傛暟: $request');
     try {
       final response = await _handleRequest(
         ApiConfig.getFoods,
@@ -332,36 +376,37 @@ class Api {
       );
       return response;
     } catch (e) {
-      print('获取所有食物列表数据失败: $e');
-      throw Exception('获取所有食物列表数据失败: $e');
+      print('鑾峰彇鎵€鏈夐鐗╁垪琛ㄦ暟鎹け璐? $e');
+      throw Exception('鑾峰彇鎵€鏈夐鐗╁垪琛ㄦ暟鎹け璐? $e');
     }
   }
 
-  // 获取当前用户食谱数据
+  // 鑾峰彇褰撳墠鐢ㄦ埛椋熻氨鏁版嵁
   static Future<Map<String, dynamic>> getCurrentUserRecipes(
       Map<String, dynamic> request) async {
-    print('请求参数: $request');
+    print('璇锋眰鍙傛暟: $request');
     try {
       final response = await _handleRequest(
         ApiConfig.getCurrentUserRecipes,
-        pathParams: request,
       );
       return response;
     } catch (e) {
-      print('获取当前用户食谱数据失败: $e');
-      throw Exception('获取当前用户食谱数据失败: $e');
+      print('鑾峰彇褰撳墠鐢ㄦ埛椋熻氨鏁版嵁澶辫触: $e');
+      throw Exception('鑾峰彇褰撳墠鐢ㄦ埛椋熻氨鏁版嵁澶辫触: $e');
     }
   }
 
-  // 获取当前用户食物数据
+  // 鑾峰彇褰撳墠鐢ㄦ埛椋熺墿鏁版嵁
   static Future<Map<String, dynamic>> getCurrentUserFoods(
       Map<String, dynamic> request) async {
-    AppLogger.info('请求参数: $request');
+    AppLogger.info('璇锋眰鍙傛暟: $request');
     try {
       final response = await _handleRequest(
         ApiConfig.getDailyRecommendation,
-        pathParams: request,
       );
+      if (response is Map<String, dynamic> && response['meals'] is List) {
+        return _adaptV2DailyRecommendation(response);
+      }
       if (response is Map &&
           response['success'] == true &&
           response['data'] is Map) {
@@ -396,10 +441,10 @@ class Api {
     }
   }
 
-  // 修改当前用户食谱
+  // 淇敼褰撳墠鐢ㄦ埛椋熻氨
   static Future<dynamic> updateCurrentUserRecipes(
       Map<String, dynamic> request) async {
-    print('请求参数: $request');
+    print('璇锋眰鍙傛暟: $request');
     try {
       final response = await _handleRequest(
         ApiConfig.updateCurrentUserRecipes,
@@ -408,63 +453,99 @@ class Api {
       );
       return response;
     } catch (e) {
-      print('修改当前用户食谱数据失败: $e');
-      throw Exception('修改当前用户食谱数据失败: $e');
+      print('淇敼褰撳墠鐢ㄦ埛椋熻氨鏁版嵁澶辫触: $e');
+      throw Exception('淇敼褰撳墠鐢ㄦ埛椋熻氨鏁版嵁澶辫触: $e');
     }
   }
 
-  // 替换计划中的食物项
+  // 鏇挎崲璁″垝涓殑椋熺墿椤?
   static Future<dynamic> replacePlanFood(Map<String, dynamic> request) async {
-    print('请求参数: $request');
+    print('璇锋眰鍙傛暟: $request');
     try {
       final response = await _handleRequest(
         ApiConfig.replacePlanFood,
-        pathParams: request,
-        queryParams: request,
+        pathParams: {'recommendation_item_id': request['plan_food_id']},
+        body: {'food_id': request['food_id']},
       );
       return response;
     } catch (e) {
-      print('替换计划中的食物项失败: $e');
-      throw Exception('替换计划中的食物项失败: $e');
+      print('鏇挎崲璁″垝涓殑椋熺墿椤瑰け璐? $e');
+      throw Exception('鏇挎崲璁″垝涓殑椋熺墿椤瑰け璐? $e');
     }
   }
 
-  //获取用户当天的饮食记录
+  //鑾峰彇鐢ㄦ埛褰撳ぉ鐨勯ギ椋熻褰?
   static Future<dynamic> getUserTodayMealRecords(
       Map<String, dynamic> request) async {
-    print('请求参数: $request');
+    print('璇锋眰鍙傛暟: $request');
     try {
       final response = await _handleRequest(
         ApiConfig.getUserTodayMealRecords,
-        pathParams: request,
+        queryParams: {
+          if (request['device_id'] != null)
+            'hardware_device_id': request['device_id'],
+        },
       );
+      if (response is List) {
+        return response
+            .map((item) => _adaptV2MealRecordSummary(
+                  Map<String, dynamic>.from(item as Map),
+                ))
+            .toList();
+      }
       return response;
     } catch (e) {
-      print('获取当天饮食记录失败: $e');
-      throw Exception('获取当天饮食记录失败: $e');
+      print('鑾峰彇褰撳ぉ楗璁板綍澶辫触: $e');
+      throw Exception('鑾峰彇褰撳ぉ楗璁板綍澶辫触: $e');
     }
   }
 
-  //获取用户当天的饮食记录
+  //鑾峰彇鐢ㄦ埛褰撳ぉ鐨勯ギ椋熻褰?
+  static Future<Map<String, dynamic>?> getLatestMealRecord(
+      Map<String, dynamic> request) async {
+    try {
+      final response = await _handleRequest(
+        ApiConfig.getLatestMealRecord,
+        queryParams: {
+          if (request['device_id'] != null)
+            'hardware_device_id': request['device_id'],
+        },
+      );
+      if (response is Map<String, dynamic>) {
+        return _adaptV2MealRecordDetail(response);
+      }
+      return null;
+    } catch (e) {
+      final errorText = e.toString();
+      if (errorText.contains('404') || errorText.contains('资源不存在')) {
+        return null;
+      }
+      throw Exception('获取最新饮食记录失败: $e');
+    }
+  }
+
   static Future<dynamic> getMealRecordsDetail(
       Map<String, dynamic> request) async {
-    print('请求参数: $request');
+    print('璇锋眰鍙傛暟: $request');
     try {
       final response = await _handleRequest(
         ApiConfig.getMealRecordsDetail,
-        pathParams: request,
+        pathParams: {'meal_record_id': request['meal_record_id']},
       );
+      if (response is Map<String, dynamic>) {
+        return _adaptV2MealRecordDetail(response);
+      }
       return response;
     } catch (e) {
-      print('获取饮食记录详情失败: $e');
-      throw Exception('获取饮食记录详情失败: $e');
+      print('鑾峰彇楗璁板綍璇︽儏澶辫触: $e');
+      throw Exception('鑾峰彇楗璁板綍璇︽儏澶辫触: $e');
     }
   }
 
-  //获取图像识别结果（会耗费很多时间）
+  //鑾峰彇鍥惧儚璇嗗埆缁撴灉锛堜細鑰楄垂寰堝鏃堕棿锛?
   static Future<dynamic> getRecognize(
       Map<String, dynamic> request, Map<String, dynamic> params) async {
-    print('请求参数: $request');
+    print('璇锋眰鍙傛暟: $request');
     try {
       final deviceType = await UserSession.deviceType;
       final endpoint = deviceType == 'chat_robot'
@@ -477,15 +558,15 @@ class Api {
       );
       return response;
     } catch (e) {
-      print('获取图像识别结果（会耗费很多时间）失败: $e');
-      throw Exception('获取图像识别结果（会耗费很多时间）失败: $e');
+      print('鑾峰彇鍥惧儚璇嗗埆缁撴灉锛堜細鑰楄垂寰堝鏃堕棿锛夊け璐? $e');
+      throw Exception('鑾峰彇鍥惧儚璇嗗埆缁撴灉锛堜細鑰楄垂寰堝鏃堕棿锛夊け璐? $e');
     }
   }
 
-  //整餐切换
+  //鏁撮鍒囨崲
   static Future<dynamic> replaceFoods(
       Map<String, dynamic> request, Map<String, dynamic> body) async {
-    print('请求参数: $request');
+    print('璇锋眰鍙傛暟: $request');
     try {
       final response = await _handleRequest(
         ApiConfig.replaceFoods,
@@ -495,74 +576,98 @@ class Api {
       print('replaceFoods: $response');
       return response;
     } catch (e) {
-      print('整餐切换失败: $e');
-      throw Exception('整餐切换失败: $e');
+      print('鏁撮鍒囨崲澶辫触: $e');
+      throw Exception('鏁撮鍒囨崲澶辫触: $e');
     }
   }
 
-  // 设备相关API
-  // 绑定设备
+  // 璁惧鐩稿叧API
+  // 缁戝畾璁惧
   static Future<dynamic> bindDevice(String deviceId) async {
-    print('绑定设备请求参数: {"device_id": "$deviceId"}');
+    print('缁戝畾璁惧璇锋眰鍙傛暟: {"device_id": "$deviceId"}');
     try {
       final response = await _handleRequest(
         ApiConfig.bindDevice,
-        body: {'device_id': deviceId},
+        pathParams: {'hardware_device_id': deviceId},
       );
-      print('绑定设备成功: $response');
+      await getUserDevices();
+      print('缁戝畾璁惧鎴愬姛: $response');
       return response;
     } catch (e) {
-      print('绑定设备失败: $e');
-      throw Exception('绑定设备失败: $e');
+      print('缁戝畾璁惧澶辫触: $e');
+      throw Exception('缁戝畾璁惧澶辫触: $e');
     }
   }
 
-  // 获取用户绑定的设备列表
+  // 鑾峰彇鐢ㄦ埛缁戝畾鐨勮澶囧垪琛?
   static Future<List<dynamic>> getUserDevices() async {
     try {
       final response = await _handleRequest(
         ApiConfig.getUserDevices,
       );
-      print('获取用户设备列表成功: $response');
+      print('鑾峰彇鐢ㄦ埛璁惧鍒楄〃鎴愬姛: $response');
       if (response is List) {
-        return response;
+        final normalizedDevices = response.map((device) {
+          if (device is! Map) return device;
+          final raw = device.map(
+            (key, value) => MapEntry(key.toString(), value),
+          );
+          return {
+            ...raw,
+            'device_id':
+                raw['hardware_device_id'] ?? raw['device_id'] ?? '',
+            'name': raw['device_name'] ?? raw['name'] ?? 'Unknown device',
+          };
+        }).toList();
+        await UserSession.syncActiveDeviceFromPayload(normalizedDevices);
+        return normalizedDevices;
       }
+      await UserSession.clearActiveDeviceId();
       return [];
     } catch (e) {
-      print('获取用户设备列表失败: $e');
-      throw Exception('获取用户设备列表失败: $e');
+      print('鑾峰彇鐢ㄦ埛璁惧鍒楄〃澶辫触: $e');
+      throw Exception('鑾峰彇鐢ㄦ埛璁惧鍒楄〃澶辫触: $e');
     }
   }
 
-  // 解绑设备
+  // 瑙ｇ粦璁惧
   static Future<dynamic> unbindDevice(String deviceId) async {
-    print('解绑设备请求参数: device_id=$deviceId');
+    print('瑙ｇ粦璁惧璇锋眰鍙傛暟: device_id=$deviceId');
     try {
       final response = await _handleRequest(
         ApiConfig.unbindDevice,
-        body: {'device_id': deviceId},
+        pathParams: {'hardware_device_id': deviceId},
       );
-      print('解绑设备成功: $response');
+      await getUserDevices();
+      print('瑙ｇ粦璁惧鎴愬姛: $response');
       return response;
     } catch (e) {
-      print('解绑设备失败: $e');
-      throw Exception('解绑设备失败: $e');
+      print('瑙ｇ粦璁惧澶辫触: $e');
+      throw Exception('瑙ｇ粦璁惧澶辫触: $e');
     }
   }
 
-  // 获取分析详情列表
+  // 鑾峰彇鍒嗘瀽璇︽儏鍒楄〃
   static Future<List<dynamic>> getRecognitions(
       Map<String, dynamic> params) async {
     try {
       final response = await _handleRequest(
         ApiConfig.getRecognitions,
-        queryParams: params,
+        queryParams: {
+          if (params['date'] != null) 'date': params['date'],
+          if (params['device_id'] != null)
+            'hardware_device_id': params['device_id'],
+        },
       );
       print('获取分析详情列表: $response');
-      if (response is Map && response['success'] == true) {
-        final recognitions = response['recognitions'] as List? ?? [];
-        print('获取到${recognitions.length}条识别记录');
-        return recognitions;
+      if (response is List) {
+        final recognitions = response;
+        print('获取到 ${recognitions.length} 条识别记录');
+        return recognitions
+            .map((item) => _adaptV2Recognition(
+                  Map<String, dynamic>.from(item as Map),
+                ))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -571,44 +676,302 @@ class Api {
     }
   }
 
-  // 获取最新一条识别记录
+  // 鑾峰彇鏈€鏂颁竴鏉¤瘑鍒褰?
   static Future<Map<String, dynamic>?> getLatestRecognition() async {
     try {
-      final userId = await UserSession.userId;
+      final deviceId = await UserSession.deviceId;
       final response = await _handleRequest(
         ApiConfig.getLatestRecognition,
-        queryParams: {'user_id': userId},
+        queryParams: {
+          if (deviceId != null) 'hardware_device_id': deviceId,
+        },
       );
       print('获取最新识别记录: $response');
-      if (response is Map && response['success'] == true) {
-        final mealRecord = response['meal_record'] as Map<String, dynamic>?;
-        return mealRecord;
+      if (response is Map<String, dynamic>) {
+        return _adaptV2Recognition(response);
       }
       return null;
     } catch (e) {
+      final errorText = e.toString();
+      if (errorText.contains('404') || errorText.contains('资源不存在')) {
+        return null;
+      }
       print('获取最新识别记录失败: $e');
       throw Exception('获取最新识别记录失败: $e');
     }
   }
 
-  // 获取用户资料
+  // 鑾峰彇鐢ㄦ埛璧勬枡
   static Future<Map<String, dynamic>> getUserProfile() async {
+    final directResponse = await _handleRequest(ApiConfig.getUserProfile);
+    if (directResponse is Map<String, dynamic>) {
+      return directResponse;
+    }
+    return {}; /*
+
     final userId = await UserSession.userId;
     if (userId == null) {
-      throw Exception('用户未登录');
+      throw Exception('鐢ㄦ埛鏈櫥褰?);
     }
 
-    print('获取用户资料请求: user_id=$userId');
+    print('鑾峰彇鐢ㄦ埛璧勬枡璇锋眰: user_id=$userId');
     try {
       final response = await _handleRequest(
         ApiConfig.getUserProfile,
         pathParams: {'user_id': userId},
       );
-      print('获取用户资料成功: $response');
+      print('鑾峰彇鐢ㄦ埛璧勬枡鎴愬姛: $response');
       return response;
     } catch (e) {
-      print('获取用户资料失败: $e');
-      throw Exception('获取用户资料失败: $e');
+      print('鑾峰彇鐢ㄦ埛璧勬枡澶辫触: $e');
+      throw Exception('鑾峰彇鐢ㄦ埛璧勬枡澶辫触: $e');
     }
+    */
+  }
+
+  static Map<String, dynamic> _adaptV2DailyRecommendation(
+      Map<String, dynamic> response) {
+    final recommendationDate =
+        (response['recommendation_date'] ?? '').toString().split('T').first;
+    final generatedAt =
+        (response['generated_at'] ?? '').toString().split('T').first;
+    final today = DateTime.now().toIso8601String().split('T').first;
+    final meals = response['meals'] as List? ?? const [];
+
+    final mealGroups = meals.map<Map<String, dynamic>>((meal) {
+      final mealMap = meal is Map<String, dynamic>
+          ? meal
+          : Map<String, dynamic>.from(meal as Map);
+      final items = mealMap['items'] as List? ?? const [];
+
+      final normalizedFoods = items.map<Map<String, dynamic>>((item) {
+        final itemMap = item is Map<String, dynamic>
+            ? item
+            : Map<String, dynamic>.from(item as Map);
+        final quantity =
+            (itemMap['quantity_grams'] as num?)?.toDouble() ?? 0.0;
+        final itemCalories = (itemMap['calories'] as num?)?.toDouble() ?? 0.0;
+        final caloriesPer100g =
+            (itemMap['food_calories_per_100g'] as num?)?.toDouble() ??
+                (quantity > 0 ? (itemCalories / quantity) * 100.0 : 0.0);
+
+        return {
+          'id': itemMap['id'],
+          'quantity': quantity,
+          'unit': 'g',
+          'food': {
+            'id': itemMap['food_id'],
+            'name': itemMap['food_name'] ?? '',
+            'name_en':
+                itemMap['food_name_en'] ?? itemMap['display_name'] ?? '',
+            'category': itemMap['food_category'] ?? itemMap['item_role'],
+            'image_url': itemMap['food_image_url'],
+            'calories_per_100g': caloriesPer100g,
+          },
+        };
+      }).toList();
+
+      return {
+        'meal_type': (mealMap['meal_type'] ?? '').toString().toUpperCase(),
+        'calories': (mealMap['actual_calories'] ??
+            mealMap['target_calories'] ??
+            0.0),
+        'foods': normalizedFoods,
+      };
+    }).toList();
+
+    return {
+      'meal_groups': mealGroups,
+      'generated_today': recommendationDate == today || generatedAt == today,
+      'recommendation_source': 'generated_from_profile',
+    };
+  }
+
+  static Map<String, dynamic> _adaptV2Recognition(
+      Map<String, dynamic> response) {
+    final items = response['items'] as List? ?? const [];
+    final foods = items.map<Map<String, dynamic>>((item) {
+      final itemMap = item is Map<String, dynamic>
+          ? item
+          : Map<String, dynamic>.from(item as Map);
+      return {
+        'quantity': (itemMap['estimated_weight_grams'] as num?)?.toDouble() ?? 0.0,
+        'unit': 'g',
+        'food': {
+          'id': itemMap['food_id'],
+          'name': itemMap['food_name'] ?? itemMap['recognized_name'] ?? '',
+          'name_en': itemMap['food_name_en'] ?? itemMap['food_name'] ?? '',
+          'category': itemMap['food_category'],
+          'image_url': itemMap['food_image_url'],
+          'calories_per_100g':
+              (itemMap['food_calories_per_100g'] as num?)?.toDouble() ?? 0.0,
+        },
+      };
+    }).toList();
+
+    return {
+      'id': response['id'],
+      'image_url': response['image_url'],
+      'status': response['status'] ?? 'completed',
+      'session_id': response['meal_session_id'],
+      'created_at': response['completed_at'] ?? response['requested_at'],
+      'foods': foods,
+    };
+  }
+
+  static Map<String, dynamic> _adaptV2MealRecordSummary(
+      Map<String, dynamic> response) {
+    final items = response['items'] as List? ?? const [];
+    return {
+      'id': response['id'],
+      'meal_session_id': response['meal_session_id'],
+      'hardware_device_id': response['hardware_device_id'],
+      'meal_type': response['meal_type'],
+      'start_time': response['start_time'],
+      'duration_minutes':
+          ((response['duration_seconds'] as num?)?.toDouble() ?? 0.0) / 60.0,
+      'total_calories': (response['total_calories'] as num?)?.toDouble() ?? 0.0,
+      'image_url': response['image_url'],
+      'foods': items
+          .map((item) => _adaptV2MealRecordFood(
+                item is Map<String, dynamic>
+                    ? item
+                    : Map<String, dynamic>.from(item as Map),
+              ))
+          .toList(),
+    };
+  }
+
+  static Map<String, dynamic> _adaptV2MealRecordDetail(
+      Map<String, dynamic> response) {
+    final items = response['items'] as List? ?? const [];
+    final foods = items
+        .map((item) => _adaptV2MealRecordFood(
+              item is Map<String, dynamic>
+                  ? item
+                  : Map<String, dynamic>.from(item as Map),
+            ))
+        .toList();
+
+    final totalProtein =
+        (response['total_protein_grams'] as num?)?.toDouble() ?? 0.0;
+    final totalFat = (response['total_fat_grams'] as num?)?.toDouble() ?? 0.0;
+    final totalCarb = (response['total_carb_grams'] as num?)?.toDouble() ?? 0.0;
+    final totalFiber = foods.fold<double>(
+      0.0,
+      (sum, item) =>
+          sum + (((item['food'] as Map)['nutrition_per_100g']?['fiber'] as num?)
+                      ?.toDouble() ??
+                  0.0),
+    );
+    final hasVegetable = foods.any(
+      (item) => ((item['food'] as Map)['category'] ?? '') == 'vegetable',
+    );
+    final hasProtein = foods.any(
+      (item) => ((item['food'] as Map)['category'] ?? '') == 'protein',
+    );
+    final hasCarb = foods.any(
+      (item) => ((item['food'] as Map)['category'] ?? '') == 'carbohydrate',
+    );
+    final mealScore = hasVegetable && hasProtein && hasCarb ? 8.5 : 6.5;
+
+    final proteinFoods = foods
+        .where((item) => ((item['food'] as Map)['category'] ?? '') == 'protein')
+        .map((item) => item['food'])
+        .toList();
+    final highFiberFoods = foods
+        .where((item) =>
+            ((item['food'] as Map)['category'] ?? '') == 'vegetable' ||
+            ((((item['food'] as Map)['nutrition_per_100g']?['fiber'] as num?)
+                        ?.toDouble() ??
+                    0.0) >
+                3.0))
+        .map((item) => item['food'])
+        .toList();
+
+    return {
+      'id': response['id'],
+      'image_url': response['image_url'] ?? '',
+      'start_time': response['start_time'],
+      'duration_minutes':
+          ((response['duration_seconds'] as num?)?.toDouble() ?? 0.0) / 60.0,
+      'total_calories': (response['total_calories'] as num?)?.toDouble() ?? 0.0,
+      'meal_type': response['meal_type'] ?? 'unknown',
+      'notes': '',
+      'foods': foods,
+      'nutritive_proportion': {
+        'carbohydrate': totalCarb,
+        'protein': totalProtein,
+        'fat': totalFat,
+        'fiber': totalFiber,
+        'vitamins': <dynamic>[],
+      },
+      'nutrition_analysis': {
+        'balanced_meal': hasVegetable && hasProtein && hasCarb,
+        'meal_score': mealScore / 10.0,
+        'high_quality_protein': proteinFoods,
+        'high_fiber': highFiberFoods,
+        'low_gi': <dynamic>[],
+        'immunity_boosting': <dynamic>[],
+        'antioxidant': <dynamic>[],
+        'calcium_rich': <dynamic>[],
+        'acne_promoting': <dynamic>[],
+        'sleep_affecting': <dynamic>[],
+      },
+      'health_tips': {
+        'post_meal_exercise': 'Light walking for 10-15 minutes is recommended.',
+        'dietary_suggestions':
+            hasVegetable ? 'Keep the current balance and hydration.' : 'Add more vegetables in the next meal.',
+        'digestion_note': 'Eat slowly and stay hydrated.',
+        'cooking_method_advice': 'Prefer steaming, boiling, or light stir-frying.',
+      },
+    };
+  }
+
+  static Map<String, dynamic> _adaptV2MealRecordFood(
+      Map<String, dynamic> item) {
+    final quantity = (item['quantity_grams'] as num?)?.toDouble() ?? 0.0;
+    final calories = (item['calories'] as num?)?.toDouble() ?? 0.0;
+    final caloriesPer100g =
+        (item['food_calories_per_100g'] as num?)?.toDouble() ??
+            (quantity > 0 ? (calories / quantity) * 100.0 : 0.0);
+    final nutritionPer100g = item['food_nutrition_per_100g'] is Map<String, dynamic>
+        ? item['food_nutrition_per_100g'] as Map<String, dynamic>
+        : <String, dynamic>{};
+
+    return {
+      'quantity': quantity,
+      'unit': 'g',
+      'calories': calories,
+      'zone_id': item['zone_index'] ?? 0,
+      'supply_proportion': 0.0,
+      'food': {
+        'id': item['food_id'] ?? 0,
+        'name': item['food_name'] ?? item['recognized_name'] ?? '',
+        'name_en': item['food_name_en'] ?? item['food_name'] ?? '',
+        'image_url': item['food_image_url'] ?? '',
+        'description': item['food_description'] ?? '',
+        'preparation_method': item['food_preparation_method'] ?? '',
+        'category': item['food_category'] ?? '',
+        'subcategory': item['food_subcategory'] ?? '',
+        'calories_per_100g': caloriesPer100g,
+        'nutrition_per_100g': {
+          'protein':
+              (nutritionPer100g['protein'] as num?)?.toDouble() ?? 0.0,
+          'fat': (nutritionPer100g['fat'] as num?)?.toDouble() ?? 0.0,
+          'carbohydrate':
+              (nutritionPer100g['carbohydrate'] as num?)?.toDouble() ??
+                  (nutritionPer100g['carbs'] as num?)?.toDouble() ??
+                  0.0,
+          'calories':
+              (nutritionPer100g['calories'] as num?)?.toDouble() ??
+                  caloriesPer100g,
+          'fiber':
+              (nutritionPer100g['fiber'] as num?)?.toDouble() ?? 0.0,
+          'vitamins': <dynamic>[],
+        },
+      },
+    };
   }
 }
+

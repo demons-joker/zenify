@@ -135,6 +135,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
 
   // 是否正在加载数据
   bool _isLoadingHistory = false;
+  bool _isPollingHistory = false;
 
   // StreamSubscription for MQTT
   StreamSubscription<RecognitionStatus>? _mqttSubscription;
@@ -321,14 +322,18 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
   }
 
   /// 加载历史识别数据
-  Future<void> _loadHistoryData() async {
-    if (_isLoadingHistory) return;
+  Future<void> _loadHistoryData({bool silent = false}) async {
+    if (_isLoadingHistory || _isPollingHistory) return;
 
     if (!mounted) return;
 
-    setState(() {
-      _isLoadingHistory = true;
-    });
+    if (silent) {
+      _isPollingHistory = true;
+    } else {
+      setState(() {
+        _isLoadingHistory = true;
+      });
+    }
 
     try {
       final userId = await UserSession.userId;
@@ -345,11 +350,13 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
     } catch (e) {
       AppLogger.error('加载历史数据失败: $e');
       AppLogger.warning('堆栈跟踪: ${StackTrace.current}');
-      if (mounted) {
+      if (mounted && !silent) {
         ToastHelper.error(context, ErrorMessageHelper.format(e));
       }
     } finally {
-      if (mounted) {
+      if (silent) {
+        _isPollingHistory = false;
+      } else if (mounted) {
         setState(() {
           _isLoadingHistory = false;
         });
@@ -600,23 +607,65 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
     if (!mounted) return;
 
     if (status.status == RecognitionStatusType.analyzing) {
-      // 识别开始 - 切换到 ATE tab 并重新加载历史数据
-      switchToATETab();
-      await _loadHistoryData();
+      switchToATETab(refreshHistory: false);
+      await _loadHistoryData(silent: true);
     } else if (status.status == RecognitionStatusType.completed) {
-      // 识别完成 - 重新加载历史数据
-      await _loadHistoryData();
+      await _loadHistoryData(silent: true);
     }
   }
 
   /// 切换到 ATE tab
-  void switchToATETab() {
+  void switchToATETab({bool refreshHistory = true}) {
     if (!mounted) return;
     setState(() {
       _currentTabIndex = 1; // ATE tab 的索引是 1
     });
-    // 切换后重新加载数据，确保显示最新的识别记录
-    _loadHistoryData();
+    if (refreshHistory) {
+      _loadHistoryData(silent: true);
+    }
+  }
+
+  void handleCameraUploadResult(Map<String, dynamic> result) {
+    if (!mounted) return;
+
+    final recognitionData = result['recognitionData'];
+    final hasRecognitionData = recognitionData is Map;
+
+    setState(() {
+      _currentTabIndex = 1;
+      _selectedDay = DateTime.now().weekday;
+    });
+
+    if (hasRecognitionData) {
+      _insertPendingRecognitionCard(
+        Map<String, dynamic>.from(recognitionData as Map),
+      );
+      return;
+    }
+
+    _loadHistoryData(silent: true);
+  }
+
+  void _insertPendingRecognitionCard(Map<String, dynamic> recognitionData) {
+    final normalizedRecord = {
+      'id': recognitionData['id'],
+      'image_url': recognitionData['image_url'],
+      'status': recognitionData['status'] ?? 'pending',
+      'session_id': recognitionData['meal_session_id'],
+      'created_at': recognitionData['requested_at'] ?? recognitionData['completed_at'],
+      'foods': const <dynamic>[],
+    };
+    final mealType =
+        _historyCoordinator.resolveMealTypeByTimeOfDay(normalizedRecord['created_at']);
+    final pendingCard = _historyCoordinator.buildFoodCard(normalizedRecord);
+
+    for (final foods in _ateFoods.values) {
+      foods.removeWhere((item) => item['id'] == pendingCard['id']);
+    }
+
+    final targetList = _ateFoods.putIfAbsent(mealType, () => <Map<String, dynamic>>[]);
+    targetList.insert(0, pendingCard);
+    setState(() {});
   }
 
   @override
@@ -1077,7 +1126,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                               ),
                               SizedBox(height: 8.h),
                               Text(
-                                'Analyzing',
+                                'Recognizing',
                                 style: TextStyle(
                                   color: Color(0xFF747474),
                                   fontSize: 12.fSize,
@@ -1146,13 +1195,15 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                             padding: EdgeInsets.symmetric(
                                 horizontal: 5.h, vertical: 4.h),
                             decoration: BoxDecoration(
-                              color: Color(0xFFE1EC7C),
+                              color: isAnalyzing
+                                  ? const Color(0xFFFFE8A3)
+                                  : const Color(0xFFE1EC7C),
                               borderRadius: BorderRadius.circular(90),
                             ),
                             child: FittedBox(
                               fit: BoxFit.scaleDown,
                               child: Text(
-                                'Balanced',
+                                isAnalyzing ? 'Recognizing' : 'Balanced',
                                 style: TextStyle(
                                   color: Color(0xFF747474),
                                   fontSize: 16.fSize,

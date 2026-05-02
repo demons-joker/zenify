@@ -9,8 +9,7 @@ class HomeHistoryCoordinator {
     final dateStr =
         '${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}';
 
-    final result =
-        await Api.getRecognitions({'date': dateStr, 'user_id': userId});
+    final result = await Api.getRecognitions({'date': dateStr});
     final groupedFoods = {
       'BREAKFAST': <Map<String, dynamic>>[],
       'LUNCH': <Map<String, dynamic>>[],
@@ -19,8 +18,8 @@ class HomeHistoryCoordinator {
     };
 
     for (final record in result) {
-      final mealType = _getMealTypeByTimeOfDay(record['created_at']);
-      groupedFoods[mealType]?.add(_convertToFoodCard(record));
+      final mealType = resolveMealTypeByTimeOfDay(record['created_at']);
+      groupedFoods[mealType]?.add(buildFoodCard(record));
     }
     return groupedFoods;
   }
@@ -32,15 +31,20 @@ class HomeHistoryCoordinator {
     return now.subtract(Duration(days: daysToSubtract));
   }
 
-  Map<String, dynamic> _convertToFoodCard(Map<String, dynamic> record) {
-    final status = record['status'] ?? 'unknown';
-    final isAnalyzing = status == 'accepted' || status == 'processing';
+  Map<String, dynamic> buildFoodCard(Map<String, dynamic> record) {
+    final status = (record['status'] ?? 'unknown').toString().toLowerCase();
+    final isAnalyzing = {
+      'accepted',
+      'processing',
+      'pending',
+      'queued',
+    }.contains(status);
     final foods = record['foods'] as List? ?? [];
     final foodNames = foods
         .map((f) => f['food']?['name_en'] ?? f['food']?['name'] ?? 'Unknown')
         .join(', ');
     final title = isAnalyzing
-        ? 'Analyzing...'
+        ? 'Recognizing your meal...'
         : (foodNames.isNotEmpty ? foodNames : 'Recognition Result');
 
     return {
@@ -56,7 +60,7 @@ class HomeHistoryCoordinator {
     };
   }
 
-  String _getMealTypeByTimeOfDay(dynamic timeStr) {
+  String resolveMealTypeByTimeOfDay(dynamic timeStr) {
     try {
       final DateTime time =
           timeStr is String ? DateTime.parse(timeStr) : timeStr as DateTime;

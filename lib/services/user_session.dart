@@ -13,6 +13,7 @@ class UserSession {
   static const String _sourceKey = 'source';
   static const String _createdAtKey = 'created_at';
   static const String _isActiveKey = 'is_active';
+  static const String _onboardingCompleteKey = 'onboarding_complete';
   static const String _deviceIdKey = 'device_id';
   static const String _deviceTypeKey = 'device_type';
   static const String _deviceCapabilitiesKey = 'device_capability_flags';
@@ -25,7 +26,7 @@ class UserSession {
     final prefs = await _prefs;
     final token = response['access_token'];
     final tokenType = response['token_type'];
-    final userInfo = response['user_info'] ?? {};
+    final userInfo = response['user_info'] ?? response['user'] ?? {};
 
     await prefs.setString(_tokenKey, token);
     await prefs.setString(_tokenTypeKey, tokenType);
@@ -36,7 +37,17 @@ class UserSession {
     await prefs.setString(_phoneKey, userInfo['phone'] ?? '');
     await prefs.setString(_sourceKey, userInfo['source'] ?? '');
     await prefs.setString(_createdAtKey, userInfo['created_at'] ?? '');
-    await prefs.setBool(_isActiveKey, userInfo['is_active'] ?? false);
+    await prefs.setBool(_isActiveKey, userInfo['is_active'] ?? true);
+    await prefs.setBool(
+      _onboardingCompleteKey,
+      response['onboarding_complete'] == true,
+    );
+
+    final devices = response['devices'];
+    if (devices is List && devices.isNotEmpty) {
+      await syncActiveDeviceFromPayload(devices);
+      return;
+    }
 
     // 登录返回的 device_ids 为对外 device_id 字符串列表；取第一个作为当前活跃设备
     final deviceIds = userInfo['device_ids'];
@@ -47,6 +58,68 @@ class UserSession {
         first is String ? first : first.toString(),
       );
     }
+  }
+
+  static Future<void> syncActiveDeviceFromPayload(List<dynamic> devices) async {
+    if (devices.isEmpty) {
+      await clearActiveDeviceId();
+      return;
+    }
+
+    Map<String, dynamic>? selected;
+    for (final raw in devices) {
+      if (raw is! Map) continue;
+      final device = raw.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
+      final capabilityFlags =
+          _normalizeCapabilityFlags(device['capability_flags'], device);
+      if (capabilityFlags['supports_weight'] == true) {
+        selected = device;
+        break;
+      }
+      selected ??= device;
+    }
+
+    if (selected == null) {
+      await clearActiveDeviceId();
+      return;
+    }
+
+    final deviceId = (selected['hardware_device_id'] ?? selected['device_id'])
+        ?.toString();
+    if (deviceId == null || deviceId.isEmpty) {
+      await clearActiveDeviceId();
+      return;
+    }
+
+    final deviceType = (selected['device_type'] ?? 'smart_plate').toString();
+    final capabilityFlags =
+        _normalizeCapabilityFlags(selected['capability_flags'], selected);
+    await setActiveDeviceContext(
+      deviceId,
+      deviceType: deviceType,
+      capabilityFlags: capabilityFlags,
+    );
+  }
+
+  static Map<String, dynamic> _normalizeCapabilityFlags(
+    dynamic rawFlags,
+    Map<String, dynamic> device,
+  ) {
+    if (rawFlags is Map<String, dynamic>) {
+      return rawFlags;
+    }
+
+    final zoneCount = device['zone_count'] is int
+        ? device['zone_count'] as int
+        : int.tryParse('${device['zone_count'] ?? 0}') ?? 0;
+    final deviceType = (device['device_type'] ?? 'smart_plate').toString();
+
+    return {
+      'supports_weight': deviceType == 'smart_plate' || zoneCount > 0,
+      'supports_image_upload': true,
+    };
   }
 
   /// 绑定后或拉取用户信息后，将当前用于 API 路径的设备对外 ID 写入本地。
@@ -137,6 +210,11 @@ class UserSession {
     return prefs.getBool(_isActiveKey);
   }
 
+  static Future<bool> get onboardingComplete async {
+    final prefs = await _prefs;
+    return prefs.getBool(_onboardingCompleteKey) ?? false;
+  }
+
   /// 当前活跃设备的对外 `device_id`（与后端路径 `/devices/{device_id}/...` 一致）。
   static Future<String?> get deviceId async {
     final prefs = await _prefs;
@@ -213,7 +291,11 @@ class UserSession {
     await prefs.remove(_nameKey);
     await prefs.remove(_emailKey);
     await prefs.remove(_fullNameKey);
+    await prefs.remove(_phoneKey);
+    await prefs.remove(_sourceKey);
+    await prefs.remove(_createdAtKey);
     await prefs.remove(_isActiveKey);
+    await prefs.remove(_onboardingCompleteKey);
     await prefs.remove(_deviceIdKey);
     await prefs.remove(_deviceTypeKey);
     await prefs.remove(_deviceCapabilitiesKey);

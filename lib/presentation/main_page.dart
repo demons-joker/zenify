@@ -373,7 +373,8 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
       final result = await AppRoutes.navigateToCameraPage(context);
       if (!mounted) return;
       if (result is Map && result['switchToATE'] == true) {
-        IndexPage.globalKey.currentState?.switchToATETab();
+        IndexPage.globalKey.currentState
+            ?.handleCameraUploadResult(Map<String, dynamic>.from(result));
       }
     });
   }
