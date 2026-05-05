@@ -51,53 +51,6 @@ class FoodsRequest {
       };
 }
 
-class Recipe {
-  final String name;
-  final String description;
-  final int durationDays;
-  final String? dietaryRules;
-  final bool isPreset;
-  final int id;
-
-  Recipe({
-    required this.name,
-    required this.description,
-    required this.durationDays,
-    this.dietaryRules,
-    required this.isPreset,
-    required this.id,
-  });
-
-  factory Recipe.fromJson(Map<String, dynamic> json) {
-    return Recipe(
-      name: json['name'],
-      description: json['description'],
-      durationDays: json['duration_days'],
-      dietaryRules: json['dietary_rules'],
-      isPreset: json['is_preset'],
-      id: json['id'],
-    );
-  }
-}
-
-class RecipesRequest {
-  final int skip;
-  final int limit;
-  final bool? isPreset;
-
-  const RecipesRequest({
-    required this.skip,
-    required this.limit,
-    this.isPreset,
-  });
-
-  Map<String, dynamic> toJson() => {
-        'skip': skip,
-        'limit': limit,
-        if (isPreset != null) 'is_preset': isPreset,
-      };
-}
-
 class UserInfo {
   final int id;
   final String name;
@@ -329,41 +282,6 @@ class Api {
     return true;
   }
 
-  // 鑾峰彇鎵€鏈夐璋辨暟鎹?
-  static Future<List<Recipe>> getRecipes(RecipesRequest request) async {
-    print('璇锋眰鍙傛暟: ${request.toJson()}');
-    try {
-      final dynamic response = await _handleRequest(
-        ApiConfig.getRecipes,
-        queryParams: request.toJson(),
-      );
-      if (response is List) {
-        return response
-            .map<Recipe>(
-                (item) => Recipe.fromJson(item as Map<String, dynamic>))
-            .toList();
-      }
-      throw Exception('Invalid response format');
-    } catch (e) {
-      print('鑾峰彇椋熻氨api澶辫触: $e');
-      throw Exception('鑾峰彇椋熻氨鏁版嵁澶辫触: $e');
-    }
-  }
-
-  // 鑾峰彇椋熻氨鏁版嵁
-  static Future<dynamic> getRecipesById(String id) async {
-    try {
-      final response = await _handleRequest(
-        ApiConfig.getRecipe,
-        pathParams: {'recipe_id': id},
-      );
-      return response;
-    } catch (e) {
-      print('鑾峰彇椋熻氨byid澶辫触: $e');
-      throw Exception('鑾峰彇椋熻氨鏁版嵁澶辫触: $e');
-    }
-  }
-
   //鏂板鎺ュ彛--------------start-------------
 
   // 鑾峰彇鎵€鏈夐鐗╁垪琛?
@@ -378,21 +296,6 @@ class Api {
     } catch (e) {
       print('鑾峰彇鎵€鏈夐鐗╁垪琛ㄦ暟鎹け璐? $e');
       throw Exception('鑾峰彇鎵€鏈夐鐗╁垪琛ㄦ暟鎹け璐? $e');
-    }
-  }
-
-  // 鑾峰彇褰撳墠鐢ㄦ埛椋熻氨鏁版嵁
-  static Future<Map<String, dynamic>> getCurrentUserRecipes(
-      Map<String, dynamic> request) async {
-    print('璇锋眰鍙傛暟: $request');
-    try {
-      final response = await _handleRequest(
-        ApiConfig.getCurrentUserRecipes,
-      );
-      return response;
-    } catch (e) {
-      print('鑾峰彇褰撳墠鐢ㄦ埛椋熻氨鏁版嵁澶辫触: $e');
-      throw Exception('鑾峰彇褰撳墠鐢ㄦ埛椋熻氨鏁版嵁澶辫触: $e');
     }
   }
 
@@ -441,20 +344,23 @@ class Api {
     }
   }
 
-  // 淇敼褰撳墠鐢ㄦ埛椋熻氨
-  static Future<dynamic> updateCurrentUserRecipes(
-      Map<String, dynamic> request) async {
-    print('璇锋眰鍙傛暟: $request');
+  static Future<Map<String, dynamic>> generateDailyRecommendation({
+    bool forceRegenerate = false,
+  }) async {
     try {
       final response = await _handleRequest(
-        ApiConfig.updateCurrentUserRecipes,
-        pathParams: request,
-        queryParams: request,
+        ApiConfig.generateDailyRecommendation,
+        body: {
+          'force_regenerate': forceRegenerate,
+        },
       );
-      return response;
+      if (response is Map<String, dynamic> && response['meals'] is List) {
+        return _adaptV2DailyRecommendation(response);
+      }
+      throw Exception('Invalid recommendation generate response');
     } catch (e) {
-      print('淇敼褰撳墠鐢ㄦ埛椋熻氨鏁版嵁澶辫触: $e');
-      throw Exception('淇敼褰撳墠鐢ㄦ埛椋熻氨鏁版嵁澶辫触: $e');
+      AppLogger.error('生成当日推荐失败: $e');
+      throw Exception('生成当日推荐失败: $e');
     }
   }
 
@@ -539,45 +445,6 @@ class Api {
     } catch (e) {
       print('鑾峰彇楗璁板綍璇︽儏澶辫触: $e');
       throw Exception('鑾峰彇楗璁板綍璇︽儏澶辫触: $e');
-    }
-  }
-
-  //鑾峰彇鍥惧儚璇嗗埆缁撴灉锛堜細鑰楄垂寰堝鏃堕棿锛?
-  static Future<dynamic> getRecognize(
-      Map<String, dynamic> request, Map<String, dynamic> params) async {
-    print('璇锋眰鍙傛暟: $request');
-    try {
-      final deviceType = await UserSession.deviceType;
-      final endpoint = deviceType == 'chat_robot'
-          ? ApiConfig.getRecognizeRobot
-          : ApiConfig.getRecognize;
-      final response = await _handleRequest(
-        endpoint,
-        pathParams: request,
-        body: params,
-      );
-      return response;
-    } catch (e) {
-      print('鑾峰彇鍥惧儚璇嗗埆缁撴灉锛堜細鑰楄垂寰堝鏃堕棿锛夊け璐? $e');
-      throw Exception('鑾峰彇鍥惧儚璇嗗埆缁撴灉锛堜細鑰楄垂寰堝鏃堕棿锛夊け璐? $e');
-    }
-  }
-
-  //鏁撮鍒囨崲
-  static Future<dynamic> replaceFoods(
-      Map<String, dynamic> request, Map<String, dynamic> body) async {
-    print('璇锋眰鍙傛暟: $request');
-    try {
-      final response = await _handleRequest(
-        ApiConfig.replaceFoods,
-        pathParams: request,
-        body: body,
-      );
-      print('replaceFoods: $response');
-      return response;
-    } catch (e) {
-      print('鏁撮鍒囨崲澶辫触: $e');
-      throw Exception('鏁撮鍒囨崲澶辫触: $e');
     }
   }
 

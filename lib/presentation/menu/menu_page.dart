@@ -94,13 +94,7 @@ class _MenuPageState extends State<MenuPage> {
       if (mounted) {
         setState(() {
           // 解析响应数据，提取foods列表
-          if (response is Map && response['foods'] is List) {
-            allFoods = response['foods'];
-          } else if (response is List) {
-            allFoods = response;
-          } else {
-            allFoods = [];
-          }
+          allFoods = response is List ? response : <dynamic>[];
           categoryFilteredFoods = allFoods;
 
           filteredFoods = categoryFilteredFoods; // 初始显示按category筛选后的所有食物

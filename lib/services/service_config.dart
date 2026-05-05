@@ -15,9 +15,7 @@ class ApiConfig {
     defaultValue: 'http://127.0.0.1:8000',
   );
 
-  static const String apiV1Version = "/api/v1";
   static const String apiV2Version = "/api/v2";
-  static const String apiVersion = apiV1Version;
   static const String mqttBrokerAddress = String.fromEnvironment(
     'MQTT_BROKER_ADDRESS',
     defaultValue: '118.195.149.172',
@@ -25,7 +23,6 @@ class ApiConfig {
   static const String _mqttPortString =
       String.fromEnvironment('MQTT_PORT', defaultValue: '1883');
   static final int mqttPort = int.tryParse(_mqttPortString) ?? 1883;
-  static const String mqttVersion = "/api/mqtt";
   static const int connectTimeout = 30000;
   static const int receiveTimeout = 30000;
 
@@ -38,10 +35,6 @@ class ApiConfig {
     '$apiV2Version/auth/register',
     HttpMethod.post,
   );
-  static const userInfo = ApiEndpoint(
-    '$apiVersion/users/{user_id}',
-    HttpMethod.get,
-  );
   static const getUserProfile = ApiEndpoint(
     '$apiV2Version/profiles/me',
     HttpMethod.get,
@@ -49,34 +42,17 @@ class ApiConfig {
 
   // --- 食谱 / 食物（列表与详情）---
   static const getFoods = ApiEndpoint(
-    '$apiVersion/foods',
+    '$apiV2Version/foods',
     HttpMethod.get,
   );
-  static const getRecipes = ApiEndpoint(
-    '$apiVersion/recipes',
-    HttpMethod.get,
-  );
-  static const getRecipe = ApiEndpoint(
-    '$apiVersion/recipes/{recipe_id}',
-    HttpMethod.get,
-  );
-
   // --- 当前用户食谱计划 ---
-  static const getCurrentUserRecipes = ApiEndpoint(
-    '$apiVersion/users/{user_id}/recipe-plans/current',
-    HttpMethod.get,
-  );
-  static const updateCurrentUserRecipes = ApiEndpoint(
-    '$apiVersion/users/{user_id}/recipe-plans/update',
-    HttpMethod.put,
-  );
-  static const getCurrentUserFoods = ApiEndpoint(
-    '$apiVersion/users/{user_id}/recipe-plans/current/foods',
-    HttpMethod.get,
-  );
   static const getDailyRecommendation = ApiEndpoint(
     '$apiV2Version/recommendations/daily/current',
     HttpMethod.get,
+  );
+  static const generateDailyRecommendation = ApiEndpoint(
+    '$apiV2Version/recommendations/daily/generate',
+    HttpMethod.post,
   );
   static const replacePlanFood = ApiEndpoint(
     '$apiV2Version/recommendations/items/{recommendation_item_id}/replace',
@@ -107,14 +83,6 @@ class ApiConfig {
   );
 
   // --- 识别（MQTT 前缀路由）---
-  static const getRecognize = ApiEndpoint(
-    '$mqttVersion/users/{user_id}/devices/{device_id}/recognize',
-    HttpMethod.post,
-  );
-  static const getRecognizeRobot = ApiEndpoint(
-    '$mqttVersion/users/{user_id}/devices/{device_id}/recognize/robot',
-    HttpMethod.post,
-  );
   static const getRecognitions = ApiEndpoint(
     '$apiV2Version/recognitions',
     HttpMethod.get,
@@ -125,11 +93,6 @@ class ApiConfig {
   );
 
   // --- 整餐替换 ---
-  static const replaceFoods = ApiEndpoint(
-    '$apiVersion/users/{user_id}/replace/foods',
-    HttpMethod.put,
-  );
-
   // --- 设备 ---
   static const bindDevice = ApiEndpoint(
     '$apiV2Version/devices/{hardware_device_id}/binding',
@@ -145,6 +108,6 @@ class ApiConfig {
   );
 
   // --- 对话（流式由 ai_stream 拼 URL）---
-  static const aiChart = '$apiVersion/chat';
-  static const aiChartWithFile = '$apiVersion/chat/with-file';
+  static const aiChart = '$apiV2Version/chat';
+  static const aiChartWithFile = '$apiV2Version/chat/with-file';
 }

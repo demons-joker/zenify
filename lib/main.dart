@@ -119,7 +119,6 @@ class MyApp extends StatelessWidget {
       // // Legacy pages (with required parameters - use navigation helper methods)
       // static const String menuPage = '/menu';
       // static const String dishDetail = '/dish_detail';
-      // static const String recipeList = '/recipe_list';
 
       initialRoute: AppRoutes.initialRoute,
       routes: AppRoutes.routes,

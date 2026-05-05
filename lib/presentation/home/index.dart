@@ -30,6 +30,12 @@ class _RecommendationSourceStyle {
   });
 }
 
+class _RecommendationFallbackTestMode {
+  static const String off = 'off';
+  static const String empty = 'empty';
+  static const String fail = 'fail';
+}
+
 class IndexPage extends StatefulWidget {
   const IndexPage({
     super.key,
@@ -51,6 +57,11 @@ class IndexPage extends StatefulWidget {
 }
 
 class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
+  static const String _recommendationFallbackTestMode =
+      String.fromEnvironment(
+    'RECOMMENDATION_FALLBACK_TEST_MODE',
+    defaultValue: _RecommendationFallbackTestMode.off,
+  );
   late TabController _tabController;
   final List<String> _tabs = ['EAT', 'ATE'];
   int _selectedDay = DateTime.now().weekday; // 0-6 for Monday-Sunday
@@ -118,6 +129,9 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
   String? _recommendationSourceOverride;
   String? _recommendationSourceOverrideDate;
   int? _recommendationSourceOverrideUserId;
+  String? _lastAutoGenerateAttemptKey;
+  String? _recommendationFallbackError;
+  bool _hasInjectedRecommendationFallbackFailure = false;
 
   // 收藏状态 - 按日期和餐食类型存储
   Map<String, bool> _collectedStatus = {};
@@ -365,18 +379,20 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
   }
 
   /// 加载当前用户食物数据
-  Future<void> _loadCurrentUserFoods() async {
+  Future<void> _loadCurrentUserFoods({bool allowGenerateFallback = true}) async {
     if (_isLoadingFoods) return;
     if (!mounted) return;
 
     setState(() {
       _isLoadingFoods = true;
+      _recommendationFallbackError = null;
     });
 
     try {
       final userId = await UserSession.userId;
       if (userId == null || !mounted) return;
       final today = DateTime.now().toIso8601String().split('T').first;
+      final autoGenerateAttemptKey = '$userId:$today';
       final canUseOverride = _recommendationSourceOverride != null &&
           _recommendationSourceOverrideDate == today &&
           _recommendationSourceOverrideUserId == userId;
@@ -389,14 +405,66 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
       AppLogger.info('加载当前用户食物数据: userId=$userId');
 
       // 调用API获取当前用户食物数据
-      final result = await Api.getCurrentUserFoods({'user_id': userId});
-      final mealGroups = result['meal_groups'];
-      final foods = mealGroups is List ? mealGroups : <dynamic>[];
+      var result = await Api.getCurrentUserFoods({'user_id': userId});
+      var mealGroups = result['meal_groups'];
+      var foods = mealGroups is List ? mealGroups : <dynamic>[];
+      final shouldForceEmptyState =
+          _recommendationFallbackTestMode ==
+              _RecommendationFallbackTestMode.empty ||
+          (_recommendationFallbackTestMode ==
+                  _RecommendationFallbackTestMode.fail &&
+              !_hasInjectedRecommendationFallbackFailure);
+      if (shouldForceEmptyState) {
+        AppLogger.warning(
+            'Recommendation fallback test mode active: $_recommendationFallbackTestMode');
+        result = {
+          ...result,
+          'meal_groups': <dynamic>[],
+          'generated_today': false,
+          'recommendation_source': _RecommendationSource.none,
+        };
+        foods = <dynamic>[];
+      }
+      final shouldAttemptAutoGenerate = allowGenerateFallback &&
+          _lastAutoGenerateAttemptKey != autoGenerateAttemptKey;
+      if (foods.isEmpty && shouldAttemptAutoGenerate) {
+        _lastAutoGenerateAttemptKey = autoGenerateAttemptKey;
+        AppLogger.info(
+            'Auto-generate daily recommendation start: key=$autoGenerateAttemptKey');
+        AppLogger.info('当前无推荐，尝试生成当日推荐');
+        if (_recommendationFallbackTestMode ==
+                _RecommendationFallbackTestMode.fail &&
+            !_hasInjectedRecommendationFallbackFailure) {
+          _hasInjectedRecommendationFallbackFailure = true;
+          _recommendationFallbackError =
+              'Recommendation fallback test mode forced a generation failure.';
+          AppLogger.warning(
+              'Recommendation fallback test mode forced failure: key=$autoGenerateAttemptKey');
+          foods = <dynamic>[];
+        } else {
+          result = await Api.generateDailyRecommendation();
+          mealGroups = result['meal_groups'];
+          foods = mealGroups is List ? mealGroups : <dynamic>[];
+          if (foods.isEmpty) {
+            _recommendationFallbackError =
+                'Recommendation generation returned no items.';
+            AppLogger.warning(
+                'Auto-generate daily recommendation returned no items: key=$autoGenerateAttemptKey');
+          } else {
+            AppLogger.info(
+                'Auto-generate daily recommendation succeeded: key=$autoGenerateAttemptKey, mealGroups=${foods.length}');
+          }
+        }
+      }
       AppLogger.info('API响应食物数据条目: ${foods.length}');
 
       if (mounted) {
         setState(() {
           _currentUserFoods = foods;
+          if (foods.isNotEmpty &&
+              _lastAutoGenerateAttemptKey == autoGenerateAttemptKey) {
+            _lastAutoGenerateAttemptKey = null;
+          }
           final backendGeneratedToday = result['generated_today'] == true;
           final backendSource =
               (result['recommendation_source'] ?? _RecommendationSource.none)
@@ -416,12 +484,19 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
       if (mounted) {
         setState(() {
           _isLoadingFoods = false;
+          _recommendationFallbackError = ErrorMessageHelper.format(e);
         });
       }
     }
   }
 
   /// 用户手动调整推荐后，将来源显式标记为 manual_adjusted。
+  Future<void> _retryGenerateRecommendationFallback() async {
+    AppLogger.info('Manual retry for daily recommendation fallback');
+    _lastAutoGenerateAttemptKey = null;
+    await _loadCurrentUserFoods();
+  }
+
   void _markRecommendationAdjustedByUser() {
     if (!mounted) return;
     final today = DateTime.now().toIso8601String().split('T').first;
@@ -522,12 +597,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
         }
       } else {
         // 添加收藏 - 收藏当前餐食类型的所有食物
-        final selectedMealData = _currentUserFoods.firstWhere(
-          (item) =>
-              item['meal_type']?.toString().toLowerCase() ==
-              _selectedMealType.toLowerCase(),
-          orElse: () => null,
-        );
+        final selectedMealData = _findSelectedMealData();
 
         if (selectedMealData != null) {
           final foods = selectedMealData['foods'] as List?;
@@ -608,7 +678,9 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
 
     if (status.status == RecognitionStatusType.analyzing) {
       switchToATETab(refreshHistory: false);
-      await _loadHistoryData(silent: true);
+      if (!_hasAnalyzingCards()) {
+        await _loadHistoryData(silent: true);
+      }
     } else if (status.status == RecognitionStatusType.completed) {
       await _loadHistoryData(silent: true);
     }
@@ -666,6 +738,28 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
     final targetList = _ateFoods.putIfAbsent(mealType, () => <Map<String, dynamic>>[]);
     targetList.insert(0, pendingCard);
     setState(() {});
+  }
+
+  bool _hasAnalyzingCards() {
+    for (final foods in _ateFoods.values) {
+      for (final item in foods) {
+        if (item['isAnalyzing'] == true) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  Map<String, dynamic>? _findSelectedMealData() {
+    for (final item in _currentUserFoods) {
+      if (item is Map<String, dynamic> &&
+          item['meal_type']?.toString().toLowerCase() ==
+              _selectedMealType.toLowerCase()) {
+        return item;
+      }
+    }
+    return null;
   }
 
   @override
@@ -1168,21 +1262,29 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
                     Row(
                       children: [
                         // 收藏爱心按钮
-                        SizedBox(
-                          width: 32.h,
-                          height: 32.h,
-                          child: GestureDetector(
+                        Opacity(
+                          opacity: isAnalyzing ? 0.35 : 1,
+                          child: SizedBox(
+                            width: 32.h,
+                            height: 32.h,
+                            child: IgnorePointer(
+                              ignoring: isAnalyzing,
+                              child: GestureDetector(
                             onTap: () {
                               setState(() {
                                 // 这里可以切换收藏状态
                               });
                             },
-                            child: Icon(
-                              isLiked ? Icons.favorite : Icons.favorite_border,
-                              color: isLiked
-                                  ? Color.fromARGB(255, 214, 37, 37)
-                                  : Color(0xFF747474),
-                              size: 20.h,
+                                child: Icon(
+                                  isLiked
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  color: isLiked
+                                      ? Color.fromARGB(255, 214, 37, 37)
+                                      : Color(0xFF747474),
+                                  size: 20.h,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -1761,21 +1863,71 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
     }
 
     // 获取当前选择的餐食类型对应的食物数据
-    final selectedMealData = _currentUserFoods.firstWhere(
-      (item) =>
-          item['meal_type']?.toString().toLowerCase() ==
-          _selectedMealType.toLowerCase(),
-      orElse: () => null,
-    );
+    final selectedMealData = _findSelectedMealData();
 
     if (selectedMealData == null) {
-      return Text(
-        'No data',
-        style: TextStyle(
-          color: Color(0xFF908070),
-          fontSize: 14.fSize,
+      final hasFallbackError = _recommendationFallbackError != null &&
+          _recommendationFallbackError!.isNotEmpty;
+      return LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12.h, vertical: 8.h),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      hasFallbackError
+                          ? 'Unable to generate recommendation'
+                          : 'No recommendation yet',
+                      style: TextStyle(
+                        color: Color(0xFF908070),
+                        fontSize: 14.fSize,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (hasFallbackError) ...[
+                      SizedBox(height: 6.h),
+                      Text(
+                        _recommendationFallbackError!,
+                        style: TextStyle(
+                          color: const Color(0xFFB0B0B0),
+                          fontSize: 11.fSize,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 4,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    SizedBox(height: 10.h),
+                    GestureDetector(
+                      onTap: _retryGenerateRecommendationFallback,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 12.h, vertical: 8.h),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFC8FD00),
+                          borderRadius: BorderRadius.circular(999.h),
+                        ),
+                        child: Text(
+                          hasFallbackError ? 'Retry' : 'Generate',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 12.fSize,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
-        textAlign: TextAlign.center,
       );
     }
 
@@ -1818,14 +1970,8 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
   // 构建食材列表 - 三行布局
   Widget _buildFoodList() {
     // 获取当前选择的餐食类型对应的食物数据
-    final selectedMealData = _currentUserFoods.isNotEmpty
-        ? _currentUserFoods.firstWhere(
-            (item) =>
-                item['meal_type']?.toString().toLowerCase() ==
-                _selectedMealType.toLowerCase(),
-            orElse: () => null,
-          )
-        : null;
+    final selectedMealData =
+        _currentUserFoods.isNotEmpty ? _findSelectedMealData() : null;
 
     // 收集所有食物信息，按类别分组
     Map<String, Map<String, dynamic>> categorizedFoods = {
@@ -2013,12 +2159,7 @@ class _IndexPageState extends State<IndexPage> with TickerProviderStateMixin {
   // ignore: unused_element
   Widget _buildFoodTypeLabels(double cardSize) {
     // 获取当前选择的餐食类型对应的食物数据
-    final selectedMealData = _currentUserFoods.firstWhere(
-      (item) =>
-          item['meal_type']?.toString().toLowerCase() ==
-          _selectedMealType.toLowerCase(),
-      orElse: () => null,
-    );
+    final selectedMealData = _findSelectedMealData();
 
     // 收集所有食物信息（最多4个），按类别分组
     Map<String, List<String>> categorizedFoods = {

@@ -32,8 +32,6 @@ import '../presentation/profile/profile_page.dart';
 import '../presentation/menu/menu_page.dart';
 // Dish detail page
 import '../presentation/dish_detail/dish_detail_page.dart';
-// Recipe page
-import '../presentation/recipe/recipe_list.dart';
 
 class AppRoutes {
   // Presentation screens
@@ -74,7 +72,6 @@ class AppRoutes {
   // Legacy pages (with required parameters - use navigation helper methods)
   static const String menuPage = '/menu';
   static const String dishDetail = '/dish_detail';
-  static const String recipeList = '/recipe_list';
 
   static Map<String, WidgetBuilder> get routes => {
         // Presentation screens
@@ -173,23 +170,6 @@ class AppRoutes {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => DishDetailPage(dish: dish),
-      ),
-    );
-  }
-
-  /// Navigate to RecipeListPage with required parameters
-  /// Usage: AppRoutes.navigateToRecipeList(context, initialRecipe, onRecipeSelected).then((_) => {/*onReturn*/})
-  static Future navigateToRecipeList(
-    BuildContext context, {
-    required dynamic initialRecipe,
-    required Function(dynamic) onRecipeSelected,
-  }) {
-    return Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => RecipeListPage(
-          initialRecipe: initialRecipe,
-          onRecipeSelected: onRecipeSelected,
-        ),
       ),
     );
   }
